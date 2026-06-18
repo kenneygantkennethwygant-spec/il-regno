@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>IL REGNO</title>
     
-    <!-- Manifest PWA -->
     <script>
         const manifest = {
             name: "IL REGNO", short_name: "REGNO", start_url: ".", display: "standalone",
@@ -23,7 +22,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👑</text></svg>">
     
-    <!-- HLS.js per streaming IPTV -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
     <style>
@@ -102,7 +100,6 @@
         .adblock-btn { display: block; width: 100%; padding: 11px; border-radius: 10px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; text-align: center; }
         .adblock-btn.brave { background: #fb542b; color: #fff; } .adblock-btn.ublock { background: #4285f4; color: #fff; }
         
-        /* PLAYER FULLSCREEN (modale) */
         .player-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: none; cursor: none; }
         .player-modal.active { display: flex; }
         .player-modal.show-cursor { cursor: default; }
@@ -114,7 +111,6 @@
         .player-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; }
         .player-wrapper video { width: 100%; height: 100%; }
         
-        /* PREFERITI */
         .preferiti-card { background: linear-gradient(135deg, #2a2410, #1a1a10); border: 1px solid rgba(240,192,64,0.3); }
         .star-btn { background: none; border: none; color: #5a5a6e; cursor: pointer; font-size: 1.2rem; padding: 0 4px; transition: 0.2s; }
         .star-btn.active { color: #f0c040; }
@@ -144,11 +140,10 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v29.0 • Player Fullscreen</p></div>
+            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v29.1 • Fullscreen Fix</p></div>
         </footer>
     </div>
 
-    <!-- PLAYER FULLSCREEN -->
     <div class="player-modal" id="playerModal">
         <div class="player-topbar" id="playerTopbar">
             <button class="back-btn" onclick="chiudiPlayer()">← Indietro</button>
@@ -185,11 +180,8 @@
         window.togglePreferito = function(url, titolo, icona, type) {
             let pref = JSON.parse(localStorage.getItem('ilregno_preferiti') || '[]');
             const index = pref.findIndex(p => p.url === url);
-            if (index > -1) {
-                pref.splice(index, 1);
-            } else {
-                pref.push({ url, titolo, icona: icona || '🔗', type });
-            }
+            if (index > -1) pref.splice(index, 1);
+            else pref.push({ url, titolo, icona: icona || '🔗', type });
             localStorage.setItem('ilregno_preferiti', JSON.stringify(pref));
             location.reload();
         };
@@ -200,10 +192,7 @@
         }
 
         function getProxiedUrl(url) {
-            if (localStorage.getItem('ilregno_adblock') === 'true') {
-                return window.PROXY_URL + encodeURIComponent(url);
-            }
-            return url;
+            return localStorage.getItem('ilregno_adblock') === 'true' ? window.PROXY_URL + encodeURIComponent(url) : url;
         }
 
         function creaCardPreferiti() {
@@ -211,11 +200,8 @@
             if (pref.length === 0) return '';
             let html = '<div class="categoria-card preferiti-card"><div class="card-header" onclick="this.nextElementSibling.classList.toggle(\'open\'); this.querySelector(\'.card-toggle\').classList.toggle(\'open\')"><div class="card-icon-wrapper" style="background:#f0c04020;color:#f0c040"><span>⭐</span></div><h2>Preferiti</h2><span class="card-badge" style="background:#f0c04020;color:#f0c040">'+pref.length+'</span><span class="card-toggle">▶</span></div><div class="card-body"><div class="link-list">';
             pref.forEach(p => {
-                if (p.type === 'live') {
-                    html += `<div class="link-item live-link" onclick="event.stopPropagation(); apriPlayer('${p.url.replace(/'/g,"\\'")}','${p.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${p.icona||'📺'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">▶</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','live')">⭐</button></div>`;
-                } else {
-                    html += `<a href="${getProxiedUrl(p.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${p.icona||'🔗'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">→</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','link')">⭐</button></a>`;
-                }
+                if (p.type === 'live') html += `<div class="link-item live-link" onclick="event.stopPropagation(); apriPlayer('${p.url.replace(/'/g,"\\'")}','${p.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${p.icona||'📺'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">▶</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','live')">⭐</button></div>`;
+                else html += `<a href="${getProxiedUrl(p.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${p.icona||'🔗'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">→</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','link')">⭐</button></a>`;
             });
             html += '</div></div></div>';
             return html;
@@ -226,20 +212,14 @@
             const grid = document.getElementById('categorieGrid');
             if (!categorie) { grid.innerHTML = '<div class="empty-state"><p>Nessun dato.</p></div>'; return; }
             grid.innerHTML = '';
-            
             const prefCard = creaCardPreferiti();
-            if (prefCard) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = prefCard;
-                grid.appendChild(tempDiv.firstElementChild);
-            }
+            if (prefCard) { const tempDiv = document.createElement('div'); tempDiv.innerHTML = prefCard; grid.appendChild(tempDiv.firstElementChild); }
             
             ordine.forEach(key => {
                 const cat = categorie[key];
                 if (!cat || !cat.link) return;
                 const links = Array.isArray(cat.link) ? cat.link.filter(l => l && l.titolo && l.url) : Object.values(cat.link).filter(l => l && l.titolo && l.url);
                 if (links.length === 0) return;
-                
                 const c = colori[key] || '#f0c040';
                 const isLive = key === 'live-tv';
                 const card = document.createElement('div');
@@ -254,13 +234,10 @@
                     <div class="card-body">
                         ${isLive ? '<input type="text" class="search-input" placeholder="Cerca canale..." oninput="filtraCanali(this)">' : ''}
                         <div class="link-list">
-                            ${links.map(l => {
-                                if (isLive) {
-                                    return `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" onclick="event.stopPropagation(); apriPlayer('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'📺'}','live')">⭐</button></div>`;
-                                } else {
-                                    return `<a href="${getProxiedUrl(l.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${l.icona||'🔗'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">→</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'🔗'}','link')">⭐</button></a>`;
-                                }
-                            }).join('')}
+                            ${links.map(l => isLive
+                                ? `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" onclick="event.stopPropagation(); apriPlayer('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'📺'}','live')">⭐</button></div>`
+                                : `<a href="${getProxiedUrl(l.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${l.icona||'🔗'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">→</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'🔗'}','link')">⭐</button></a>`
+                            ).join('')}
                         </div>
                     </div>`;
                 grid.appendChild(card);
@@ -272,20 +249,15 @@
         let immagineBase64 = '', modificaId = null, currentHls = null, hideControlsTimer = null;
         const PASSWORD = 'regno2024', STORAGE_KEY = 'ilregno_admin_logged';
 
-        // ==================== PLAYER FULLSCREEN ====================
         function apriPlayer(url, titolo) {
             document.getElementById('mainApp').style.display = 'none';
             const playerModal = document.getElementById('playerModal');
             playerModal.classList.add('active');
             document.getElementById('canaleNome').textContent = titolo;
-            
-            showControls();
-            resetHideTimer();
-            
+            showControls(); resetHideTimer();
             playerModal.addEventListener('mousemove', handleMouseMove);
             playerModal.addEventListener('click', handleInteraction);
             playerModal.addEventListener('keydown', handleInteraction);
-            
             const video = document.getElementById('playerVideo');
             if (currentHls) { currentHls.destroy(); currentHls = null; }
             if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
@@ -302,18 +274,9 @@
         
         function handleMouseMove() { showControls(); resetHideTimer(); }
         function handleInteraction() { showControls(); resetHideTimer(); }
-        function showControls() {
-            document.getElementById('playerTopbar').classList.add('visible');
-            document.getElementById('playerModal').classList.add('show-cursor');
-        }
-        function hideControls() {
-            document.getElementById('playerTopbar').classList.remove('visible');
-            document.getElementById('playerModal').classList.remove('show-cursor');
-        }
-        function resetHideTimer() {
-            if (hideControlsTimer) clearTimeout(hideControlsTimer);
-            hideControlsTimer = setTimeout(hideControls, 3000);
-        }
+        function showControls() { document.getElementById('playerTopbar').classList.add('visible'); document.getElementById('playerModal').classList.add('show-cursor'); }
+        function hideControls() { document.getElementById('playerTopbar').classList.remove('visible'); document.getElementById('playerModal').classList.remove('show-cursor'); }
+        function resetHideTimer() { if (hideControlsTimer) clearTimeout(hideControlsTimer); hideControlsTimer = setTimeout(hideControls, 3000); }
         
         function chiudiPlayer() {
             if (hideControlsTimer) clearTimeout(hideControlsTimer);
@@ -329,31 +292,30 @@
         }
         
         function toggleFullscreen() {
-            const p = document.getElementById('playerModal');
-            if (!document.fullscreenElement) p.requestFullscreen().catch(()=>{});
-            else document.exitFullscreen();
+            const container = document.getElementById('playerModal');
+            if (container.requestFullscreen) {
+                container.requestFullscreen().catch(() => {});
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+            }
         }
 
-        // ==================== BLOCCO ANNUNCI ====================
         function toggleAdblock() {
             const current = localStorage.getItem('ilregno_adblock') === 'true';
-            const newState = !current;
-            localStorage.setItem('ilregno_adblock', newState ? 'true' : 'false');
-            document.getElementById('btnAdblock').classList.toggle('active', newState);
-            alert('Blocco annunci ' + (newState ? 'ATTIVO' : 'DISATTIVO') + '. Ricarica la pagina per applicare.');
+            localStorage.setItem('ilregno_adblock', current ? 'false' : 'true');
+            document.getElementById('btnAdblock').classList.toggle('active', !current);
+            alert('Blocco annunci ' + (!current ? 'ATTIVO' : 'DISATTIVO') + '. Ricarica la pagina per applicare.');
             location.reload();
         }
-        if (localStorage.getItem('ilregno_adblock') === 'true') {
-            document.getElementById('btnAdblock').classList.add('active');
-        }
+        if (localStorage.getItem('ilregno_adblock') === 'true') document.getElementById('btnAdblock').classList.add('active');
 
         window.filtraCanali = function(input) {
             const filter = input.value.toLowerCase();
             const cardBody = input.closest('.card-body');
-            const items = cardBody.querySelectorAll('.link-item');
-            items.forEach(item => {
-                const titolo = item.getAttribute('data-titolo') || '';
-                item.style.display = titolo.includes(filter) ? '' : 'none';
+            cardBody.querySelectorAll('.link-item').forEach(item => {
+                item.style.display = (item.getAttribute('data-titolo') || '').includes(filter) ? '' : 'none';
             });
         };
 
@@ -361,54 +323,36 @@
             document.getElementById('modalOverlay')?.remove();
             const overlay = document.createElement('div');
             overlay.className = 'modal-overlay'; overlay.id = 'modalOverlay';
-            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>🛡️ Naviga senza Pubblicità</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>
-            <p style="color:#9898a8;font-size:0.85rem;margin-bottom:16px;line-height:1.5">Per navigare senza pop-up e annunci fastidiosi:</p>
-            <div class="adblock-section"><h3>🤖 <span class="adblock-badge badge-android">ANDROID</span></h3><p>Usa <strong>Brave Browser</strong> con blocco annunci aggressivo.</p><button class="adblock-btn brave" onclick="window.open('https://play.google.com/store/apps/details?id=com.brave.browser','_blank')">📥 Scarica Brave</button></div>
-            <div class="adblock-section"><h3>🍎 <span class="adblock-badge badge-ios">IPHONE / IPAD</span></h3><p>Usa <strong>Brave Browser</strong> con blocco aggressivo.</p><button class="adblock-btn brave" onclick="window.open('https://apps.apple.com/app/brave-browser/id1052879175','_blank')">📥 Scarica Brave</button></div>
-            <div class="adblock-section"><h3>💻 <span class="adblock-badge badge-chrome">CHROME / PC</span></h3><p>Installa <strong>uBlock Origin Lite</strong>.</p><button class="adblock-btn ublock" onclick="window.open('https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh','_blank')">📥 Installa uBlock</button></div>
-            <button class="btn-submit" style="background:#333;color:#fff;margin-top:12px" onclick="chiudiModale()">✕ Chiudi</button></div>`;
+            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>🛡️ Naviga senza Pubblicità</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><p style="color:#9898a8;font-size:0.85rem;margin-bottom:16px;line-height:1.5">Per navigare senza pop-up e annunci fastidiosi:</p><div class="adblock-section"><h3>🤖 <span class="adblock-badge badge-android">ANDROID</span></h3><p>Usa <strong>Brave Browser</strong> con blocco annunci aggressivo.</p><button class="adblock-btn brave" onclick="window.open('https://play.google.com/store/apps/details?id=com.brave.browser','_blank')">📥 Scarica Brave</button></div><div class="adblock-section"><h3>🍎 <span class="adblock-badge badge-ios">IPHONE / IPAD</span></h3><p>Usa <strong>Brave Browser</strong> con blocco aggressivo.</p><button class="adblock-btn brave" onclick="window.open('https://apps.apple.com/app/brave-browser/id1052879175','_blank')">📥 Scarica Brave</button></div><div class="adblock-section"><h3>💻 <span class="adblock-badge badge-chrome">CHROME / PC</span></h3><p>Installa <strong>uBlock Origin Lite</strong>.</p><button class="adblock-btn ublock" onclick="window.open('https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh','_blank')">📥 Installa uBlock</button></div><button class="btn-submit" style="background:#333;color:#fff;margin-top:12px" onclick="chiudiModale()">✕ Chiudi</button></div>`;
             overlay.addEventListener('click', e => { if(e.target===overlay) chiudiModale(); });
             document.body.appendChild(overlay);
         }
 
-        function checkLogin() { const logged = localStorage.getItem(STORAGE_KEY); if(logged==='true'){mostraBottoniAdmin();}else{nascondiBottoniAdmin();} }
-        function login() { const pwd = prompt('🔐 Password admin:'); if(pwd===PASSWORD){localStorage.setItem(STORAGE_KEY,'true');mostraBottoniAdmin();}else if(pwd!==null){alert('❌ Password errata!');} }
+        function checkLogin() { (localStorage.getItem(STORAGE_KEY)==='true' ? mostraBottoniAdmin : nascondiBottoniAdmin)(); }
+        function login() { const pwd = prompt('🔐 Password admin:'); if(pwd===PASSWORD){localStorage.setItem(STORAGE_KEY,'true');mostraBottoniAdmin();}else if(pwd!==null) alert('❌ Password errata!'); }
         function logout() { if(confirm('🚪 Uscire?')){localStorage.removeItem(STORAGE_KEY);nascondiBottoniAdmin();chiudiModale();} }
         function mostraBottoniAdmin() { 
-            document.getElementById('btnAggiungi').classList.add('visible'); 
-            document.getElementById('btnModifica').classList.add('visible'); 
-            document.getElementById('btnElimina').classList.add('visible'); 
-            document.getElementById('btnLogin').style.display='none'; 
-            document.getElementById('logoutBtn').classList.add('visible'); 
+            document.getElementById('btnAggiungi').classList.add('visible'); document.getElementById('btnModifica').classList.add('visible');
+            document.getElementById('btnElimina').classList.add('visible'); document.getElementById('btnLogin').style.display='none';
+            document.getElementById('logoutBtn').classList.add('visible');
         }
         function nascondiBottoniAdmin() { 
-            document.getElementById('btnAggiungi').classList.remove('visible'); 
-            document.getElementById('btnModifica').classList.remove('visible'); 
-            document.getElementById('btnElimina').classList.remove('visible'); 
-            document.getElementById('btnLogin').style.display='block'; 
-            document.getElementById('logoutBtn').classList.remove('visible'); 
+            document.getElementById('btnAggiungi').classList.remove('visible'); document.getElementById('btnModifica').classList.remove('visible');
+            document.getElementById('btnElimina').classList.remove('visible'); document.getElementById('btnLogin').style.display='block';
+            document.getElementById('logoutBtn').classList.remove('visible');
         }
         function chiudiModale() { document.getElementById('modalOverlay')?.remove(); modificaId = null; }
 
         function apriAdmin() {
             if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
-            document.getElementById('modalOverlay')?.remove();
-            immagineBase64 = ''; modificaId = null;
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay'; overlay.id = 'modalOverlay';
-            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>➕ Aggiungi Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>
-            <div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv">📺 LIVE TV</option><option value="sport">🏅 Sport</option><option value="film">🎬 Film</option><option value="serie-tv">📺 Serie TV</option><option value="anime">🐉 Anime</option></select></div>
-            <div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" placeholder="es. Rai 1"></div>
-            <div class="form-group"><label>URL</label><input type="url" id="urlInput" placeholder="https://..."></div>
-            <div class="form-group"><label>Icona (emoji)</label><input type="text" id="iconaInput" placeholder="📺" maxlength="2"></div>
-            <div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Clicca per caricare</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img"></div>
-            <button class="btn-submit" onclick="salvaLink()">✨ Aggiungi</button></div>`;
+            document.getElementById('modalOverlay')?.remove(); immagineBase64 = ''; modificaId = null;
+            const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'modalOverlay';
+            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>➕ Aggiungi Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv">📺 LIVE TV</option><option value="sport">🏅 Sport</option><option value="film">🎬 Film</option><option value="serie-tv">📺 Serie TV</option><option value="anime">🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" placeholder="es. Rai 1"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" placeholder="https://..."></div><div class="form-group"><label>Icona (emoji)</label><input type="text" id="iconaInput" placeholder="📺" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Clicca per caricare</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img"></div><button class="btn-submit" onclick="salvaLink()">✨ Aggiungi</button></div>`;
             overlay.addEventListener('click', e => { if(e.target===overlay) chiudiModale(); });
             document.body.appendChild(overlay);
         }
         function caricaImmagine(event) {
-            const file = event.target.files[0];
-            if(!file) return;
+            const file = event.target.files[0]; if(!file) return;
             if(file.size > 500000) return alert('⚠️ Max 500KB');
             const reader = new FileReader();
             reader.onload = function(e) { immagineBase64 = e.target.result; const p = document.getElementById('previewImg'); if(p){p.src=immagineBase64;p.style.display='block';} };
@@ -438,13 +382,11 @@
             if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
             try {
                 const snapshot = await window.getFunc(window.refFunc(window.db, 'categorie'));
-                const dati = snapshot.val();
-                if(!dati) return alert('Nessun link.');
+                const dati = snapshot.val(); if(!dati) return alert('Nessun link.');
                 const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', anime:'#f97316' };
                 let html = '<div class="modal"><div class="modal-header"><h2>✏️ Modifica Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
                 ['live-tv','sport','film','serie-tv','anime'].forEach(key => {
-                    const cat = dati[key];
-                    if(!cat||!cat.link) return;
+                    const cat = dati[key]; if(!cat||!cat.link) return;
                     const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link).filter(([id,l])=>l&&l.titolo);
                     if(!links.length) return;
                     html += `<div class="gestione-cat" style="border-left-color:${colori[key]||'#f0c040'}"><strong style="color:${colori[key]||'#f0c040'}">${cat.icona||''} ${cat.nome||key}</strong>`;
@@ -462,13 +404,11 @@
             if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
             try {
                 const snapshot = await window.getFunc(window.refFunc(window.db,'categorie'));
-                const dati = snapshot.val();
-                if(!dati) return alert('Nessun link.');
+                const dati = snapshot.val(); if(!dati) return alert('Nessun link.');
                 const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', anime:'#f97316' };
                 let html = '<div class="modal"><div class="modal-header"><h2>🗑️ Elimina Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
                 ['live-tv','sport','film','serie-tv','anime'].forEach(key => {
-                    const cat = dati[key];
-                    if(!cat||!cat.link) return;
+                    const cat = dati[key]; if(!cat||!cat.link) return;
                     const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link).filter(([id,l])=>l&&l.titolo);
                     if(!links.length) return;
                     html += `<div class="gestione-cat" style="border-left-color:${colori[key]||'#f0c040'}"><strong style="color:${colori[key]||'#f0c040'}">${cat.icona||''} ${cat.nome||key}</strong>`;
@@ -485,20 +425,10 @@
         async function modificaLink(categoria, id) {
             try {
                 const snapshot = await window.getFunc(window.refFunc(window.db, `categorie/${categoria}/link/${id}`));
-                const link = snapshot.val();
-                if(!link) return alert('Non trovato.');
-                chiudiModale();
-                immagineBase64 = link.immagine || '';
-                modificaId = id;
-                const overlay = document.createElement('div');
-                overlay.className='modal-overlay'; overlay.id='modalOverlay';
-                overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>✏️ Modifica</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>
-                <div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv" ${categoria==='live-tv'?'selected':''}>📺 LIVE TV</option><option value="sport" ${categoria==='sport'?'selected':''}>🏅 Sport</option><option value="film" ${categoria==='film'?'selected':''}>🎬 Film</option><option value="serie-tv" ${categoria==='serie-tv'?'selected':''}>📺 Serie TV</option><option value="anime" ${categoria==='anime'?'selected':''}>🐉 Anime</option></select></div>
-                <div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" value="${link.titolo||''}"></div>
-                <div class="form-group"><label>URL</label><input type="url" id="urlInput" value="${link.url||''}"></div>
-                <div class="form-group"><label>Icona</label><input type="text" id="iconaInput" value="${link.icona||''}" maxlength="2"></div>
-                <div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Cambia</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img" style="${link.immagine?'display:block':''}" src="${link.immagine||''}"></div>
-                <button class="btn-submit" onclick="salvaLink()">💾 Salva</button></div>`;
+                const link = snapshot.val(); if(!link) return alert('Non trovato.');
+                chiudiModale(); immagineBase64 = link.immagine || ''; modificaId = id;
+                const overlay = document.createElement('div'); overlay.className='modal-overlay'; overlay.id='modalOverlay';
+                overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>✏️ Modifica</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv" ${categoria==='live-tv'?'selected':''}>📺 LIVE TV</option><option value="sport" ${categoria==='sport'?'selected':''}>🏅 Sport</option><option value="film" ${categoria==='film'?'selected':''}>🎬 Film</option><option value="serie-tv" ${categoria==='serie-tv'?'selected':''}>📺 Serie TV</option><option value="anime" ${categoria==='anime'?'selected':''}>🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" value="${link.titolo||''}"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" value="${link.url||''}"></div><div class="form-group"><label>Icona</label><input type="text" id="iconaInput" value="${link.icona||''}" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Cambia</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img" style="${link.immagine?'display:block':''}" src="${link.immagine||''}"></div><button class="btn-submit" onclick="salvaLink()">💾 Salva</button></div>`;
                 overlay.addEventListener('click',e=>{if(e.target===overlay)chiudiModale();});
                 document.body.appendChild(overlay);
             } catch(e) { alert('❌ Errore: '+e.message); }
