@@ -27,7 +27,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
     <style>
-        /* TUTTO LO STILE PRECEDENTE (identico alla versione stabile) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #060609; color: #fff; min-height: 100vh; background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(240,192,64,0.04), transparent), radial-gradient(ellipse 50% 30% at 50% 110%, rgba(168,85,247,0.03), transparent); }
@@ -103,16 +102,7 @@
         .adblock-btn { display: block; width: 100%; padding: 11px; border-radius: 10px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; text-align: center; }
         .adblock-btn.brave { background: #fb542b; color: #fff; } .adblock-btn.ublock { background: #4285f4; color: #fff; }
         
-        /* PLAYER INLINE NELLA CARD */
-        .live-player-container { display: none; margin-bottom: 10px; position: relative; background: #000; border-radius: 12px; overflow: hidden; }
-        .live-player-container.active { display: block; }
-        .live-player-container video { width: 100%; display: block; max-height: 250px; background: #000; }
-        .player-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%); padding: 16px 12px 12px; display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity 0.3s; }
-        .live-player-container:hover .player-overlay { opacity: 1; }
-        .player-overlay button { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 4px; }
-        .player-overlay .canale-titolo { flex: 1; font-size: 0.85rem; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
-        
-        /* PLAYER FULLSCREEN (per schermo intero) */
+        /* PLAYER FULLSCREEN (modale) */
         .player-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: none; cursor: none; }
         .player-modal.active { display: flex; }
         .player-modal.show-cursor { cursor: default; }
@@ -154,14 +144,14 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v28.1 • Player Fixato</p></div>
+            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v29.0 • Player Fullscreen</p></div>
         </footer>
     </div>
 
-    <!-- PLAYER FULLSCREEN (per schermo intero) -->
+    <!-- PLAYER FULLSCREEN -->
     <div class="player-modal" id="playerModal">
         <div class="player-topbar" id="playerTopbar">
-            <button class="back-btn" onclick="chiudiFullscreen()">← Indietro</button>
+            <button class="back-btn" onclick="chiudiPlayer()">← Indietro</button>
             <span class="canale-nome" id="canaleNome">Canale</span>
             <button class="fs-btn" onclick="toggleFullscreen()">⛶</button>
         </div>
@@ -222,7 +212,7 @@
             let html = '<div class="categoria-card preferiti-card"><div class="card-header" onclick="this.nextElementSibling.classList.toggle(\'open\'); this.querySelector(\'.card-toggle\').classList.toggle(\'open\')"><div class="card-icon-wrapper" style="background:#f0c04020;color:#f0c040"><span>⭐</span></div><h2>Preferiti</h2><span class="card-badge" style="background:#f0c04020;color:#f0c040">'+pref.length+'</span><span class="card-toggle">▶</span></div><div class="card-body"><div class="link-list">';
             pref.forEach(p => {
                 if (p.type === 'live') {
-                    html += `<div class="link-item live-link" onclick="event.stopPropagation(); playChannelInline('${p.url.replace(/'/g,"\\'")}','${p.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${p.icona||'📺'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">▶</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','live')">⭐</button></div>`;
+                    html += `<div class="link-item live-link" onclick="event.stopPropagation(); apriPlayer('${p.url.replace(/'/g,"\\'")}','${p.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${p.icona||'📺'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">▶</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','live')">⭐</button></div>`;
                 } else {
                     html += `<a href="${getProxiedUrl(p.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${p.icona||'🔗'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">→</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','link')">⭐</button></a>`;
                 }
@@ -262,23 +252,11 @@
                         <span class="card-toggle">▶</span>
                     </div>
                     <div class="card-body">
-                        ${isLive ? `
-                        <div class="live-player-container" id="livePlayerContainer">
-                            <video id="liveVideo" autoplay playsinline></video>
-                            <div class="player-overlay" id="playerOverlay">
-                                <span class="canale-titolo" id="liveTitolo">Canale</span>
-                                <button onclick="togglePlayPause()">⏯️</button>
-                                <button onclick="nextChannel()">⏭️</button>
-                                <button onclick="exitLivePlayer()">✕</button>
-                                <button onclick="openFullscreen()">⛶</button>
-                            </div>
-                        </div>
-                        <input type="text" class="search-input" placeholder="Cerca canale..." oninput="filtraCanali(this)">
-                        ` : ''}
+                        ${isLive ? '<input type="text" class="search-input" placeholder="Cerca canale..." oninput="filtraCanali(this)">' : ''}
                         <div class="link-list">
-                            ${links.map((l, index) => {
+                            ${links.map(l => {
                                 if (isLive) {
-                                    return `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" data-url="${l.url.replace(/"/g, '&quot;')}" data-titolo-orig="${l.titolo}" data-icona="${l.icona||'📺'}" data-index="${index}" onclick="event.stopPropagation(); playChannelInline('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}', ${index})"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'📺'}','live')">⭐</button></div>`;
+                                    return `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" onclick="event.stopPropagation(); apriPlayer('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'📺'}','live')">⭐</button></div>`;
                                 } else {
                                     return `<a href="${getProxiedUrl(l.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${l.icona||'🔗'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">→</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'🔗'}','link')">⭐</button></a>`;
                                 }
@@ -287,126 +265,63 @@
                     </div>`;
                 grid.appendChild(card);
             });
-
-            // Salva i link globalmente per la navigazione
-            if (typeof links !== 'undefined') window.liveLinks = links;
         });
     </script>
 
     <script>
-        let immagineBase64 = '', modificaId = null, fullscreenHls = null, hideControlsTimer = null;
+        let immagineBase64 = '', modificaId = null, currentHls = null, hideControlsTimer = null;
         const PASSWORD = 'regno2024', STORAGE_KEY = 'ilregno_admin_logged';
-        window.liveLinks = [];
-        window.currentLiveIndex = -1;
-        window.liveHls = null;
 
-        // ==================== PLAYER INLINE ====================
-        function playChannelInline(url, titolo, index) {
-            const container = document.getElementById('livePlayerContainer');
-            const video = document.getElementById('liveVideo');
-            const titoloEl = document.getElementById('liveTitolo');
-            
-            if (!container || !video || !titoloEl) return;
-            
-            window.currentLiveIndex = index;
-            container.classList.add('active');
-            titoloEl.textContent = titolo;
-            
-            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
-            
-            if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-                window.liveHls = new Hls({ maxBufferLength: 30 });
-                window.liveHls.loadSource(url);
-                window.liveHls.attachMedia(video);
-                window.liveHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
-            } else {
-                video.src = url;
-                video.play().catch(() => {});
-            }
-        }
-
-        function exitLivePlayer() {
-            const container = document.getElementById('livePlayerContainer');
-            const video = document.getElementById('liveVideo');
-            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
-            if (video) {
-                video.pause();
-                video.src = '';
-            }
-            if (container) container.classList.remove('active');
-            window.currentLiveIndex = -1;
-        }
-
-        function togglePlayPause() {
-            const video = document.getElementById('liveVideo');
-            if (!video) return;
-            if (video.paused) video.play().catch(()=>{});
-            else video.pause();
-        }
-
-        function nextChannel() {
-            if (window.currentLiveIndex < 0 || !window.liveLinks || !window.liveLinks.length) return;
-            const nextIndex = (window.currentLiveIndex + 1) % window.liveLinks.length;
-            const nextLink = window.liveLinks[nextIndex];
-            if (nextLink) playChannelInline(nextLink.url, nextLink.titolo, nextIndex);
-        }
-
-        function openFullscreen() {
-            const video = document.getElementById('liveVideo');
-            const url = video ? video.src || (window.liveHls ? window.liveHls.url : '') : '';
-            const titolo = document.getElementById('liveTitolo') ? document.getElementById('liveTitolo').textContent : 'Canale';
-            if (!url) return;
-            
-            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
-            if (video) { video.pause(); video.src = ''; }
-            const container = document.getElementById('livePlayerContainer');
-            if (container) container.classList.remove('active');
-            
+        // ==================== PLAYER FULLSCREEN ====================
+        function apriPlayer(url, titolo) {
             document.getElementById('mainApp').style.display = 'none';
             const playerModal = document.getElementById('playerModal');
             playerModal.classList.add('active');
             document.getElementById('canaleNome').textContent = titolo;
             
-            const fsVideo = document.getElementById('playerVideo');
-            if (fullscreenHls) { fullscreenHls.destroy(); fullscreenHls = null; }
+            showControls();
+            resetHideTimer();
+            
+            playerModal.addEventListener('mousemove', handleMouseMove);
+            playerModal.addEventListener('click', handleInteraction);
+            playerModal.addEventListener('keydown', handleInteraction);
+            
+            const video = document.getElementById('playerVideo');
+            if (currentHls) { currentHls.destroy(); currentHls = null; }
             if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-                fullscreenHls = new Hls({ maxBufferLength: 30 });
-                fullscreenHls.loadSource(url);
-                fullscreenHls.attachMedia(fsVideo);
-                fullscreenHls.on(Hls.Events.MANIFEST_PARSED, () => fsVideo.play().catch(()=>{}));
+                currentHls = new Hls({ maxBufferLength: 30 });
+                currentHls.loadSource(url);
+                currentHls.attachMedia(video);
+                currentHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
+                currentHls.on(Hls.Events.ERROR, () => { video.src = url; video.play().catch(()=>{}); });
             } else {
-                fsVideo.src = url;
-                fsVideo.play().catch(()=>{});
+                video.src = url;
+                video.play().catch(() => alert('⚠️ Flusso non disponibile.'));
             }
-            showControlsFs();
-            resetHideTimerFs();
-            playerModal.addEventListener('mousemove', handleMouseMoveFs);
-            playerModal.addEventListener('click', handleInteractionFs);
-            playerModal.addEventListener('keydown', handleInteractionFs);
         }
-
-        function showControlsFs() {
+        
+        function handleMouseMove() { showControls(); resetHideTimer(); }
+        function handleInteraction() { showControls(); resetHideTimer(); }
+        function showControls() {
             document.getElementById('playerTopbar').classList.add('visible');
             document.getElementById('playerModal').classList.add('show-cursor');
         }
-        function hideControlsFs() {
+        function hideControls() {
             document.getElementById('playerTopbar').classList.remove('visible');
             document.getElementById('playerModal').classList.remove('show-cursor');
         }
-        function resetHideTimerFs() {
+        function resetHideTimer() {
             if (hideControlsTimer) clearTimeout(hideControlsTimer);
-            hideControlsTimer = setTimeout(hideControlsFs, 3000);
+            hideControlsTimer = setTimeout(hideControls, 3000);
         }
-        function handleMouseMoveFs() { showControlsFs(); resetHideTimerFs(); }
-        function handleInteractionFs() { showControlsFs(); resetHideTimerFs(); }
         
-        function chiudiFullscreen() {
+        function chiudiPlayer() {
             if (hideControlsTimer) clearTimeout(hideControlsTimer);
             const playerModal = document.getElementById('playerModal');
-            playerModal.removeEventListener('mousemove', handleMouseMoveFs);
-            playerModal.removeEventListener('click', handleInteractionFs);
-            playerModal.removeEventListener('keydown', handleInteractionFs);
-            if (fullscreenHls) { fullscreenHls.destroy(); fullscreenHls = null; }
+            playerModal.removeEventListener('mousemove', handleMouseMove);
+            playerModal.removeEventListener('click', handleInteraction);
+            playerModal.removeEventListener('keydown', handleInteraction);
+            if (currentHls) { currentHls.destroy(); currentHls = null; }
             const video = document.getElementById('playerVideo'); video.pause(); video.src = '';
             playerModal.classList.remove('active', 'show-cursor');
             document.getElementById('playerTopbar').classList.remove('visible');
