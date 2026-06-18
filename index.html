@@ -48,7 +48,7 @@
         .categorie-grid { display: flex; flex-direction: column; gap: 14px; }
         .categoria-card { background: #0e0e14; border-radius: 18px; padding: 20px; border: 1px solid rgba(255,255,255,0.03); animation: fadeInUp 0.5s ease forwards; opacity: 0; }
         @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        .categoria-card:nth-child(1){animation-delay:0.05s} .categoria-card:nth-child(2){animation-delay:0.15s} .categoria-card:nth-child(3){animation-delay:0.25s} .categoria-card:nth-child(4){animation-delay:0.35s} .categoria-card:nth-child(5){animation-delay:0.45s}
+        .categoria-card:nth-child(1){animation-delay:0.05s} .categoria-card:nth-child(2){animation-delay:0.15s} .categoria-card:nth-child(3){animation-delay:0.25s} .categoria-card:nth-child(4){animation-delay:0.35s} .categoria-card:nth-child(5){animation-delay:0.45s} .categoria-card:nth-child(6){animation-delay:0.55s}
         .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; padding-bottom: 14px; cursor: pointer; user-select: none; }
         .card-header h2 { font-size: 1.1rem; font-weight: 700; flex: 1; }
         .card-icon-wrapper { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
@@ -140,7 +140,7 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v29.1 • Fullscreen Fix</p></div>
+            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v29.2 • Cartoni & Fullscreen Fix</p></div>
         </footer>
     </div>
 
@@ -174,9 +174,23 @@
         window.db = db; window.refFunc = ref; window.pushFunc = push;
         window.removeFunc = remove; window.getFunc = get; window.updateFunc = update;
         
-        const colori = { 'live-tv': '#E50914', sport: '#ff6b6b', film: '#4ecdc4', 'serie-tv': '#a855f7', anime: '#f97316' };
-        const ordine = ['live-tv', 'sport', 'film', 'serie-tv', 'anime'];
+        const colori = { 'live-tv': '#E50914', sport: '#ff6b6b', film: '#4ecdc4', 'serie-tv': '#a855f7', cartoni: '#00bcd4', anime: '#f97316' };
+        const ordine = ['live-tv', 'sport', 'film', 'serie-tv', 'cartoni', 'anime'];
         
+        // Crea la categoria cartoni se non esiste
+        async function initCartoni() {
+            const snap = await get(ref(db, 'categorie/cartoni'));
+            if (!snap.exists()) {
+                await update(ref(db, 'categorie/cartoni'), {
+                    icona: '🐱',
+                    nome: 'Cartoni animati',
+                    colore: '#00bcd4',
+                    link: [{ titolo: 'Loonex', url: 'https://loonex.eu/cartoni/index.php', icona: '🐱' }]
+                });
+            }
+        }
+        initCartoni();
+
         window.togglePreferito = function(url, titolo, icona, type) {
             let pref = JSON.parse(localStorage.getItem('ilregno_preferiti') || '[]');
             const index = pref.findIndex(p => p.url === url);
@@ -292,13 +306,23 @@
         }
         
         function toggleFullscreen() {
-            const container = document.getElementById('playerModal');
-            if (container.requestFullscreen) {
-                container.requestFullscreen().catch(() => {});
-            } else if (container.webkitRequestFullscreen) {
-                container.webkitRequestFullscreen();
-            } else if (container.msRequestFullscreen) {
-                container.msRequestFullscreen();
+            const video = document.getElementById('playerVideo');
+            if (video.requestFullscreen) {
+                video.requestFullscreen().catch(() => {
+                    // Fallback al contenitore
+                    const container = document.getElementById('playerModal');
+                    if (container.requestFullscreen) container.requestFullscreen().catch(()=>{});
+                });
+            } else if (video.webkitRequestFullscreen) {
+                video.webkitRequestFullscreen();
+            } else if (video.msRequestFullscreen) {
+                video.msRequestFullscreen();
+            } else {
+                // Ultimo fallback
+                const container = document.getElementById('playerModal');
+                if (container.requestFullscreen) container.requestFullscreen().catch(()=>{});
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+                else if (container.msRequestFullscreen) container.msRequestFullscreen();
             }
         }
 
@@ -347,7 +371,7 @@
             if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
             document.getElementById('modalOverlay')?.remove(); immagineBase64 = ''; modificaId = null;
             const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'modalOverlay';
-            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>➕ Aggiungi Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv">📺 LIVE TV</option><option value="sport">🏅 Sport</option><option value="film">🎬 Film</option><option value="serie-tv">📺 Serie TV</option><option value="anime">🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" placeholder="es. Rai 1"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" placeholder="https://..."></div><div class="form-group"><label>Icona (emoji)</label><input type="text" id="iconaInput" placeholder="📺" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Clicca per caricare</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img"></div><button class="btn-submit" onclick="salvaLink()">✨ Aggiungi</button></div>`;
+            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>➕ Aggiungi Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv">📺 LIVE TV</option><option value="sport">🏅 Sport</option><option value="film">🎬 Film</option><option value="serie-tv">📺 Serie TV</option><option value="cartoni">🐱 Cartoni animati</option><option value="anime">🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" placeholder="es. Rai 1"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" placeholder="https://..."></div><div class="form-group"><label>Icona (emoji)</label><input type="text" id="iconaInput" placeholder="📺" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Clicca per caricare</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img"></div><button class="btn-submit" onclick="salvaLink()">✨ Aggiungi</button></div>`;
             overlay.addEventListener('click', e => { if(e.target===overlay) chiudiModale(); });
             document.body.appendChild(overlay);
         }
@@ -383,9 +407,9 @@
             try {
                 const snapshot = await window.getFunc(window.refFunc(window.db, 'categorie'));
                 const dati = snapshot.val(); if(!dati) return alert('Nessun link.');
-                const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', anime:'#f97316' };
+                const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', cartoni:'#00bcd4', anime:'#f97316' };
                 let html = '<div class="modal"><div class="modal-header"><h2>✏️ Modifica Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
-                ['live-tv','sport','film','serie-tv','anime'].forEach(key => {
+                ordine.forEach(key => {
                     const cat = dati[key]; if(!cat||!cat.link) return;
                     const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link).filter(([id,l])=>l&&l.titolo);
                     if(!links.length) return;
@@ -405,9 +429,9 @@
             try {
                 const snapshot = await window.getFunc(window.refFunc(window.db,'categorie'));
                 const dati = snapshot.val(); if(!dati) return alert('Nessun link.');
-                const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', anime:'#f97316' };
+                const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', cartoni:'#00bcd4', anime:'#f97316' };
                 let html = '<div class="modal"><div class="modal-header"><h2>🗑️ Elimina Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
-                ['live-tv','sport','film','serie-tv','anime'].forEach(key => {
+                ordine.forEach(key => {
                     const cat = dati[key]; if(!cat||!cat.link) return;
                     const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link).filter(([id,l])=>l&&l.titolo);
                     if(!links.length) return;
@@ -428,7 +452,7 @@
                 const link = snapshot.val(); if(!link) return alert('Non trovato.');
                 chiudiModale(); immagineBase64 = link.immagine || ''; modificaId = id;
                 const overlay = document.createElement('div'); overlay.className='modal-overlay'; overlay.id='modalOverlay';
-                overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>✏️ Modifica</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv" ${categoria==='live-tv'?'selected':''}>📺 LIVE TV</option><option value="sport" ${categoria==='sport'?'selected':''}>🏅 Sport</option><option value="film" ${categoria==='film'?'selected':''}>🎬 Film</option><option value="serie-tv" ${categoria==='serie-tv'?'selected':''}>📺 Serie TV</option><option value="anime" ${categoria==='anime'?'selected':''}>🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" value="${link.titolo||''}"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" value="${link.url||''}"></div><div class="form-group"><label>Icona</label><input type="text" id="iconaInput" value="${link.icona||''}" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Cambia</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img" style="${link.immagine?'display:block':''}" src="${link.immagine||''}"></div><button class="btn-submit" onclick="salvaLink()">💾 Salva</button></div>`;
+                overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>✏️ Modifica</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv" ${categoria==='live-tv'?'selected':''}>📺 LIVE TV</option><option value="sport" ${categoria==='sport'?'selected':''}>🏅 Sport</option><option value="film" ${categoria==='film'?'selected':''}>🎬 Film</option><option value="serie-tv" ${categoria==='serie-tv'?'selected':''}>📺 Serie TV</option><option value="cartoni" ${categoria==='cartoni'?'selected':''}>🐱 Cartoni animati</option><option value="anime" ${categoria==='anime'?'selected':''}>🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" value="${link.titolo||''}"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" value="${link.url||''}"></div><div class="form-group"><label>Icona</label><input type="text" id="iconaInput" value="${link.icona||''}" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Cambia</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img" style="${link.immagine?'display:block':''}" src="${link.immagine||''}"></div><button class="btn-submit" onclick="salvaLink()">💾 Salva</button></div>`;
                 overlay.addEventListener('click',e=>{if(e.target===overlay)chiudiModale();});
                 document.body.appendChild(overlay);
             } catch(e) { alert('❌ Errore: '+e.message); }
