@@ -27,7 +27,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
     <style>
-        /* TUTTO LO STILE PRECEDENTE (identico alla versione stabile) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #060609; color: #fff; min-height: 100vh; background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(240,192,64,0.04), transparent), radial-gradient(ellipse 50% 30% at 50% 110%, rgba(168,85,247,0.03), transparent); }
@@ -103,7 +102,16 @@
         .adblock-btn { display: block; width: 100%; padding: 11px; border-radius: 10px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; text-align: center; }
         .adblock-btn.brave { background: #fb542b; color: #fff; } .adblock-btn.ublock { background: #4285f4; color: #fff; }
         
-        /* PLAYER FULLSCREEN */
+        /* PLAYER INLINE NELLA CARD */
+        .live-player-container { display: none; margin-bottom: 10px; position: relative; background: #000; border-radius: 12px; overflow: hidden; }
+        .live-player-container.active { display: block; }
+        .live-player-container video { width: 100%; display: block; max-height: 250px; background: #000; }
+        .player-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%); padding: 16px 12px 12px; display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity 0.3s; }
+        .live-player-container:hover .player-overlay { opacity: 1; }
+        .player-overlay button { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 4px; }
+        .player-overlay .canale-titolo { flex: 1; font-size: 0.85rem; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+        
+        /* PLAYER FULLSCREEN (per schermo intero) */
         .player-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: none; cursor: none; }
         .player-modal.active { display: flex; }
         .player-modal.show-cursor { cursor: default; }
@@ -114,16 +122,6 @@
         .player-topbar .fs-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; }
         .player-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; }
         .player-wrapper video { width: 100%; height: 100%; }
-        
-        /* MINI PLAYER */
-        .mini-player { position: fixed; bottom: 0; left: 0; right: 0; background: #0a0a0f; z-index: 500; display: none; padding: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .mini-player.active { display: flex; align-items: center; gap: 8px; }
-        .mini-player video { width: 120px; height: 68px; background: #000; border-radius: 6px; }
-        .mini-player .mini-info { flex: 1; }
-        .mini-player .mini-title { font-size: 0.8rem; font-weight: 600; }
-        .mini-player .mini-channel { font-size: 0.7rem; color: #9898a8; }
-        .mini-player .mini-close { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; }
-        .mini-player .mini-fullscreen { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
         
         /* PREFERITI */
         .preferiti-card { background: linear-gradient(135deg, #2a2410, #1a1a10); border: 1px solid rgba(240,192,64,0.3); }
@@ -155,25 +153,14 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v27.2 • Player Fix</p></div>
+            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v28.0 • Player Inline</p></div>
         </footer>
     </div>
 
-    <!-- MINI PLAYER -->
-    <div class="mini-player" id="miniPlayer">
-        <video id="miniVideo" muted autoplay playsinline></video>
-        <div class="mini-info">
-            <div class="mini-title" id="miniTitle">Canale</div>
-            <div class="mini-channel" id="miniChannel">LIVE TV</div>
-        </div>
-        <button class="mini-fullscreen" onclick="apriFullscreenFromMini()">⛶</button>
-        <button class="mini-close" onclick="chiudiMiniPlayer()">✕</button>
-    </div>
-
-    <!-- PLAYER FULLSCREEN (senza barra inferiore) -->
+    <!-- PLAYER FULLSCREEN (per schermo intero) -->
     <div class="player-modal" id="playerModal">
         <div class="player-topbar" id="playerTopbar">
-            <button class="back-btn" onclick="chiudiPlayer()">← Indietro</button>
+            <button class="back-btn" onclick="chiudiFullscreen()">← Indietro</button>
             <span class="canale-nome" id="canaleNome">Canale</span>
             <button class="fs-btn" onclick="toggleFullscreen()">⛶</button>
         </div>
@@ -181,7 +168,7 @@
     </div>
 
     <script>
-        // Variabili globali necessarie a entrambi gli script
+        // Variabili globali
         window.PROXY_URL = 'https://ilregno-proxy.kenneygantkennethwygant.workers.dev/?url=';
     </script>
 
@@ -205,7 +192,6 @@
         const colori = { 'live-tv': '#E50914', sport: '#ff6b6b', film: '#4ecdc4', 'serie-tv': '#a855f7', anime: '#f97316' };
         const ordine = ['live-tv', 'sport', 'film', 'serie-tv', 'anime'];
         
-        // Funzioni globali per Preferiti e Proxy
         window.togglePreferito = function(url, titolo, icona, type) {
             let pref = JSON.parse(localStorage.getItem('ilregno_preferiti') || '[]');
             const index = pref.findIndex(p => p.url === url);
@@ -236,7 +222,7 @@
             let html = '<div class="categoria-card preferiti-card"><div class="card-header" onclick="this.nextElementSibling.classList.toggle(\'open\'); this.querySelector(\'.card-toggle\').classList.toggle(\'open\')"><div class="card-icon-wrapper" style="background:#f0c04020;color:#f0c040"><span>⭐</span></div><h2>Preferiti</h2><span class="card-badge" style="background:#f0c04020;color:#f0c040">'+pref.length+'</span><span class="card-toggle">▶</span></div><div class="card-body"><div class="link-list">';
             pref.forEach(p => {
                 if (p.type === 'live') {
-                    html += `<div class="link-item live-link" onclick="event.stopPropagation(); apriMiniPlayer('${p.url.replace(/'/g,"\\'")}','${p.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${p.icona||'📺'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">▶</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','live')">⭐</button></div>`;
+                    html += `<div class="link-item live-link" onclick="event.stopPropagation(); playChannelInline('${p.url.replace(/'/g,"\\'")}','${p.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${p.icona||'📺'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">▶</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','live')">⭐</button></div>`;
                 } else {
                     html += `<a href="${getProxiedUrl(p.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${p.icona||'🔗'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">→</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','link')">⭐</button></a>`;
                 }
@@ -277,11 +263,23 @@
                         <span class="card-toggle">▶</span>
                     </div>
                     <div class="card-body">
-                        ${isLive ? '<input type="text" class="search-input" placeholder="Cerca canale..." oninput="filtraCanali(this)">' : ''}
+                        ${isLive ? `
+                        <div class="live-player-container" id="livePlayerContainer">
+                            <video id="liveVideo" autoplay playsinline></video>
+                            <div class="player-overlay" id="playerOverlay">
+                                <span class="canale-titolo" id="liveTitolo">Canale</span>
+                                <button onclick="togglePlayPause()" id="btnPlayPause">⏯️</button>
+                                <button onclick="nextChannel()">⏭️</button>
+                                <button onclick="exitLivePlayer()">✕</button>
+                                <button onclick="openFullscreen()">⛶</button>
+                            </div>
+                        </div>
+                        <input type="text" class="search-input" placeholder="Cerca canale..." oninput="filtraCanali(this)">
+                        ` : ''}
                         <div class="link-list">
-                            ${links.map(l => {
+                            ${links.map((l, index) => {
                                 if (isLive) {
-                                    return `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" onclick="event.stopPropagation(); apriMiniPlayer('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'📺'}','live')">⭐</button></div>`;
+                                    return `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" data-url="${l.url.replace(/"/g, '&quot;')}" data-titolo-orig="${l.titolo}" data-icona="${l.icona||'📺'}" data-index="${index}" onclick="event.stopPropagation(); playChannelInline('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}', ${index})"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'📺'}','live')">⭐</button></div>`;
                                 } else {
                                     return `<a href="${getProxiedUrl(l.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${l.icona||'🔗'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">→</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'🔗'}','link')">⭐</button></a>`;
                                 }
@@ -290,13 +288,154 @@
                     </div>`;
                 grid.appendChild(card);
             });
+
+            // Dopo aver generato la card LIVE TV, inizializza il player inline
+            if (document.getElementById('livePlayerContainer')) {
+                window.liveLinks = links; // salva i link per la navigazione
+                window.currentLiveIndex = -1;
+                window.liveHls = null;
+                window.liveVideo = document.getElementById('liveVideo');
+                window.livePlayerContainer = document.getElementById('livePlayerContainer');
+                window.liveTitolo = document.getElementById('liveTitolo');
+            }
         });
     </script>
 
     <script>
+        // Funzioni globali per il player inline
         let immagineBase64 = '', modificaId = null, currentHls = null, hideControlsTimer = null;
-        let miniHls = null, currentMiniUrl = '', currentMiniTitle = '';
+        let fullscreenHls = null;
         const PASSWORD = 'regno2024', STORAGE_KEY = 'ilregno_admin_logged';
+        window.liveLinks = [];
+        window.currentLiveIndex = -1;
+        window.liveHls = null;
+        window.liveVideo = null;
+        window.livePlayerContainer = null;
+        window.liveTitolo = null;
+
+        // ==================== PLAYER INLINE ====================
+        function playChannelInline(url, titolo, index) {
+            if (!window.liveVideo || !window.livePlayerContainer) return;
+            window.currentLiveIndex = index;
+            window.livePlayerContainer.classList.add('active');
+            window.liveTitolo.textContent = titolo;
+            
+            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
+            const video = window.liveVideo;
+            
+            if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+                window.liveHls = new Hls({ maxBufferLength: 30 });
+                window.liveHls.loadSource(url);
+                window.liveHls.attachMedia(video);
+                window.liveHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
+            } else {
+                video.src = url;
+                video.play().catch(() => {});
+            }
+        }
+
+        function exitLivePlayer() {
+            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
+            const video = window.liveVideo;
+            if (video) {
+                video.pause();
+                video.src = '';
+            }
+            if (window.livePlayerContainer) {
+                window.livePlayerContainer.classList.remove('active');
+            }
+            window.currentLiveIndex = -1;
+        }
+
+        function togglePlayPause() {
+            const video = window.liveVideo;
+            if (!video) return;
+            if (video.paused) {
+                video.play().catch(()=>{});
+            } else {
+                video.pause();
+            }
+        }
+
+        function nextChannel() {
+            if (window.currentLiveIndex < 0 || !window.liveLinks.length) return;
+            const nextIndex = (window.currentLiveIndex + 1) % window.liveLinks.length;
+            const nextLink = window.liveLinks[nextIndex];
+            if (nextLink) {
+                playChannelInline(nextLink.url, nextLink.titolo, nextIndex);
+            }
+        }
+
+        function openFullscreen() {
+            // Prende l'URL corrente dal video inline e apre il modale fullscreen
+            const video = window.liveVideo;
+            const url = video.src || (window.liveHls ? window.liveHls.url : '');
+            const titolo = window.liveTitolo ? window.liveTitolo.textContent : 'Canale';
+            if (!url) return;
+            // Ferma il player inline
+            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
+            video.pause();
+            video.src = '';
+            window.livePlayerContainer.classList.remove('active');
+            
+            // Avvia il fullscreen
+            document.getElementById('mainApp').style.display = 'none';
+            const playerModal = document.getElementById('playerModal');
+            playerModal.classList.add('active');
+            document.getElementById('canaleNome').textContent = titolo;
+            
+            const fsVideo = document.getElementById('playerVideo');
+            if (fullscreenHls) { fullscreenHls.destroy(); fullscreenHls = null; }
+            if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+                fullscreenHls = new Hls({ maxBufferLength: 30 });
+                fullscreenHls.loadSource(url);
+                fullscreenHls.attachMedia(fsVideo);
+                fullscreenHls.on(Hls.Events.MANIFEST_PARSED, () => fsVideo.play().catch(()=>{}));
+            } else {
+                fsVideo.src = url;
+                fsVideo.play().catch(()=>{});
+            }
+            showControlsFs();
+            resetHideTimerFs();
+            playerModal.addEventListener('mousemove', handleMouseMoveFs);
+            playerModal.addEventListener('click', handleInteractionFs);
+            playerModal.addEventListener('keydown', handleInteractionFs);
+        }
+
+        // Funzioni per il modale fullscreen (copiate dalla versione precedente)
+        function showControlsFs() {
+            document.getElementById('playerTopbar').classList.add('visible');
+            document.getElementById('playerModal').classList.add('show-cursor');
+        }
+        function hideControlsFs() {
+            document.getElementById('playerTopbar').classList.remove('visible');
+            document.getElementById('playerModal').classList.remove('show-cursor');
+        }
+        function resetHideTimerFs() {
+            if (hideControlsTimer) clearTimeout(hideControlsTimer);
+            hideControlsTimer = setTimeout(hideControlsFs, 3000);
+        }
+        function handleMouseMoveFs() { showControlsFs(); resetHideTimerFs(); }
+        function handleInteractionFs() { showControlsFs(); resetHideTimerFs(); }
+        
+        function chiudiFullscreen() {
+            if (hideControlsTimer) clearTimeout(hideControlsTimer);
+            const playerModal = document.getElementById('playerModal');
+            playerModal.removeEventListener('mousemove', handleMouseMoveFs);
+            playerModal.removeEventListener('click', handleInteractionFs);
+            playerModal.removeEventListener('keydown', handleInteractionFs);
+            if (fullscreenHls) { fullscreenHls.destroy(); fullscreenHls = null; }
+            const video = document.getElementById('playerVideo'); video.pause(); video.src = '';
+            playerModal.classList.remove('active', 'show-cursor');
+            document.getElementById('playerTopbar').classList.remove('visible');
+            document.getElementById('mainApp').style.display = 'block';
+        }
+        
+        function toggleFullscreen() {
+            const p = document.getElementById('playerModal');
+            if (!document.fullscreenElement) p.requestFullscreen().catch(()=>{});
+            else document.exitFullscreen();
+        }
 
         // ==================== BLOCCO ANNUNCI GLOBALE ====================
         function toggleAdblock() {
@@ -311,40 +450,6 @@
             document.getElementById('btnAdblock').classList.add('active');
         }
 
-        // ==================== MINI PLAYER ====================
-        function apriMiniPlayer(url, titolo) {
-            if (miniHls) { miniHls.destroy(); miniHls = null; }
-            currentMiniUrl = url;
-            currentMiniTitle = titolo;
-            const video = document.getElementById('miniVideo');
-            document.getElementById('miniTitle').textContent = titolo;
-            document.getElementById('miniChannel').textContent = 'LIVE TV';
-            document.getElementById('miniPlayer').classList.add('active');
-            
-            if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-                miniHls = new Hls({ maxBufferLength: 30 });
-                miniHls.loadSource(url);
-                miniHls.attachMedia(video);
-                miniHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
-            } else {
-                video.src = url;
-                video.play().catch(() => {});
-            }
-        }
-
-        function chiudiMiniPlayer() {
-            if (miniHls) { miniHls.destroy(); miniHls = null; }
-            const video = document.getElementById('miniVideo');
-            video.pause();
-            video.src = '';
-            document.getElementById('miniPlayer').classList.remove('active');
-        }
-
-        function apriFullscreenFromMini() {
-            chiudiMiniPlayer();
-            apriPlayer(currentMiniUrl, currentMiniTitle);
-        }
-
         // ==================== FILTRO CANALI ====================
         window.filtraCanali = function(input) {
             const filter = input.value.toLowerCase();
@@ -355,68 +460,6 @@
                 item.style.display = titolo.includes(filter) ? '' : 'none';
             });
         };
-
-        // ==================== PLAYER FULLSCREEN ====================
-        function apriPlayer(url, titolo) {
-            document.getElementById('mainApp').style.display = 'none';
-            const playerModal = document.getElementById('playerModal');
-            playerModal.classList.add('active');
-            document.getElementById('canaleNome').textContent = titolo;
-            
-            showControls();
-            resetHideTimer();
-            
-            playerModal.addEventListener('mousemove', handleMouseMove);
-            playerModal.addEventListener('click', handleInteraction);
-            playerModal.addEventListener('keydown', handleInteraction);
-            
-            const video = document.getElementById('playerVideo');
-            if (currentHls) { currentHls.destroy(); currentHls = null; }
-            if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-                currentHls = new Hls({ maxBufferLength: 30 });
-                currentHls.loadSource(url);
-                currentHls.attachMedia(video);
-                currentHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
-                currentHls.on(Hls.Events.ERROR, () => { video.src = url; video.play().catch(()=>{}); });
-            } else {
-                video.src = url;
-                video.play().catch(() => alert('⚠️ Flusso non disponibile.'));
-            }
-        }
-        
-        function handleMouseMove() { showControls(); resetHideTimer(); }
-        function handleInteraction() { showControls(); resetHideTimer(); }
-        function showControls() {
-            document.getElementById('playerTopbar').classList.add('visible');
-            document.getElementById('playerModal').classList.add('show-cursor');
-        }
-        function hideControls() {
-            document.getElementById('playerTopbar').classList.remove('visible');
-            document.getElementById('playerModal').classList.remove('show-cursor');
-        }
-        function resetHideTimer() {
-            if (hideControlsTimer) clearTimeout(hideControlsTimer);
-            hideControlsTimer = setTimeout(hideControls, 3000);
-        }
-        
-        function chiudiPlayer() {
-            if (hideControlsTimer) clearTimeout(hideControlsTimer);
-            const playerModal = document.getElementById('playerModal');
-            playerModal.removeEventListener('mousemove', handleMouseMove);
-            playerModal.removeEventListener('click', handleInteraction);
-            playerModal.removeEventListener('keydown', handleInteraction);
-            if (currentHls) { currentHls.destroy(); currentHls = null; }
-            const video = document.getElementById('playerVideo'); video.pause(); video.src = '';
-            playerModal.classList.remove('active', 'show-cursor');
-            document.getElementById('playerTopbar').classList.remove('visible');
-            document.getElementById('mainApp').style.display = 'block';
-        }
-        
-        function toggleFullscreen() {
-            const p = document.getElementById('playerModal');
-            if (!document.fullscreenElement) p.requestFullscreen().catch(()=>{});
-            else document.exitFullscreen();
-        }
 
         // ==================== ANTI-PUBBLICITÀ (Guida) ====================
         function mostraAdBlock() {
