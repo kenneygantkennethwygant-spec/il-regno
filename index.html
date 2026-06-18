@@ -27,6 +27,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
     <style>
+        /* TUTTO LO STILE PRECEDENTE (identico alla versione stabile) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #060609; color: #fff; min-height: 100vh; background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(240,192,64,0.04), transparent), radial-gradient(ellipse 50% 30% at 50% 110%, rgba(168,85,247,0.03), transparent); }
@@ -153,7 +154,7 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v28.0 • Player Inline</p></div>
+            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v28.1 • Player Fixato</p></div>
         </footer>
     </div>
 
@@ -168,7 +169,6 @@
     </div>
 
     <script>
-        // Variabili globali
         window.PROXY_URL = 'https://ilregno-proxy.kenneygantkennethwygant.workers.dev/?url=';
     </script>
 
@@ -237,7 +237,6 @@
             if (!categorie) { grid.innerHTML = '<div class="empty-state"><p>Nessun dato.</p></div>'; return; }
             grid.innerHTML = '';
             
-            // Card Preferiti
             const prefCard = creaCardPreferiti();
             if (prefCard) {
                 const tempDiv = document.createElement('div');
@@ -268,7 +267,7 @@
                             <video id="liveVideo" autoplay playsinline></video>
                             <div class="player-overlay" id="playerOverlay">
                                 <span class="canale-titolo" id="liveTitolo">Canale</span>
-                                <button onclick="togglePlayPause()" id="btnPlayPause">⏯️</button>
+                                <button onclick="togglePlayPause()">⏯️</button>
                                 <button onclick="nextChannel()">⏭️</button>
                                 <button onclick="exitLivePlayer()">✕</button>
                                 <button onclick="openFullscreen()">⛶</button>
@@ -289,39 +288,31 @@
                 grid.appendChild(card);
             });
 
-            // Dopo aver generato la card LIVE TV, inizializza il player inline
-            if (document.getElementById('livePlayerContainer')) {
-                window.liveLinks = links; // salva i link per la navigazione
-                window.currentLiveIndex = -1;
-                window.liveHls = null;
-                window.liveVideo = document.getElementById('liveVideo');
-                window.livePlayerContainer = document.getElementById('livePlayerContainer');
-                window.liveTitolo = document.getElementById('liveTitolo');
-            }
+            // Salva i link globalmente per la navigazione
+            if (typeof links !== 'undefined') window.liveLinks = links;
         });
     </script>
 
     <script>
-        // Funzioni globali per il player inline
-        let immagineBase64 = '', modificaId = null, currentHls = null, hideControlsTimer = null;
-        let fullscreenHls = null;
+        let immagineBase64 = '', modificaId = null, fullscreenHls = null, hideControlsTimer = null;
         const PASSWORD = 'regno2024', STORAGE_KEY = 'ilregno_admin_logged';
         window.liveLinks = [];
         window.currentLiveIndex = -1;
         window.liveHls = null;
-        window.liveVideo = null;
-        window.livePlayerContainer = null;
-        window.liveTitolo = null;
 
         // ==================== PLAYER INLINE ====================
         function playChannelInline(url, titolo, index) {
-            if (!window.liveVideo || !window.livePlayerContainer) return;
+            const container = document.getElementById('livePlayerContainer');
+            const video = document.getElementById('liveVideo');
+            const titoloEl = document.getElementById('liveTitolo');
+            
+            if (!container || !video || !titoloEl) return;
+            
             window.currentLiveIndex = index;
-            window.livePlayerContainer.classList.add('active');
-            window.liveTitolo.textContent = titolo;
+            container.classList.add('active');
+            titoloEl.textContent = titolo;
             
             if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
-            const video = window.liveVideo;
             
             if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
                 window.liveHls = new Hls({ maxBufferLength: 30 });
@@ -335,50 +326,42 @@
         }
 
         function exitLivePlayer() {
+            const container = document.getElementById('livePlayerContainer');
+            const video = document.getElementById('liveVideo');
             if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
-            const video = window.liveVideo;
             if (video) {
                 video.pause();
                 video.src = '';
             }
-            if (window.livePlayerContainer) {
-                window.livePlayerContainer.classList.remove('active');
-            }
+            if (container) container.classList.remove('active');
             window.currentLiveIndex = -1;
         }
 
         function togglePlayPause() {
-            const video = window.liveVideo;
+            const video = document.getElementById('liveVideo');
             if (!video) return;
-            if (video.paused) {
-                video.play().catch(()=>{});
-            } else {
-                video.pause();
-            }
+            if (video.paused) video.play().catch(()=>{});
+            else video.pause();
         }
 
         function nextChannel() {
-            if (window.currentLiveIndex < 0 || !window.liveLinks.length) return;
+            if (window.currentLiveIndex < 0 || !window.liveLinks || !window.liveLinks.length) return;
             const nextIndex = (window.currentLiveIndex + 1) % window.liveLinks.length;
             const nextLink = window.liveLinks[nextIndex];
-            if (nextLink) {
-                playChannelInline(nextLink.url, nextLink.titolo, nextIndex);
-            }
+            if (nextLink) playChannelInline(nextLink.url, nextLink.titolo, nextIndex);
         }
 
         function openFullscreen() {
-            // Prende l'URL corrente dal video inline e apre il modale fullscreen
-            const video = window.liveVideo;
-            const url = video.src || (window.liveHls ? window.liveHls.url : '');
-            const titolo = window.liveTitolo ? window.liveTitolo.textContent : 'Canale';
+            const video = document.getElementById('liveVideo');
+            const url = video ? video.src || (window.liveHls ? window.liveHls.url : '') : '';
+            const titolo = document.getElementById('liveTitolo') ? document.getElementById('liveTitolo').textContent : 'Canale';
             if (!url) return;
-            // Ferma il player inline
-            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
-            video.pause();
-            video.src = '';
-            window.livePlayerContainer.classList.remove('active');
             
-            // Avvia il fullscreen
+            if (window.liveHls) { window.liveHls.destroy(); window.liveHls = null; }
+            if (video) { video.pause(); video.src = ''; }
+            const container = document.getElementById('livePlayerContainer');
+            if (container) container.classList.remove('active');
+            
             document.getElementById('mainApp').style.display = 'none';
             const playerModal = document.getElementById('playerModal');
             playerModal.classList.add('active');
@@ -402,7 +385,6 @@
             playerModal.addEventListener('keydown', handleInteractionFs);
         }
 
-        // Funzioni per il modale fullscreen (copiate dalla versione precedente)
         function showControlsFs() {
             document.getElementById('playerTopbar').classList.add('visible');
             document.getElementById('playerModal').classList.add('show-cursor');
@@ -437,7 +419,7 @@
             else document.exitFullscreen();
         }
 
-        // ==================== BLOCCO ANNUNCI GLOBALE ====================
+        // ==================== BLOCCO ANNUNCI ====================
         function toggleAdblock() {
             const current = localStorage.getItem('ilregno_adblock') === 'true';
             const newState = !current;
@@ -450,7 +432,6 @@
             document.getElementById('btnAdblock').classList.add('active');
         }
 
-        // ==================== FILTRO CANALI ====================
         window.filtraCanali = function(input) {
             const filter = input.value.toLowerCase();
             const cardBody = input.closest('.card-body');
@@ -461,7 +442,6 @@
             });
         };
 
-        // ==================== ANTI-PUBBLICITÀ (Guida) ====================
         function mostraAdBlock() {
             document.getElementById('modalOverlay')?.remove();
             const overlay = document.createElement('div');
