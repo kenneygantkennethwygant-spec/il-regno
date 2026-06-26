@@ -140,7 +140,7 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v29.2 • Cartoni & Fullscreen Fix</p></div>
+            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v30.0 • Link Aggiornati</p></div>
         </footer>
     </div>
 
@@ -174,23 +174,19 @@
         window.db = db; window.refFunc = ref; window.pushFunc = push;
         window.removeFunc = remove; window.getFunc = get; window.updateFunc = update;
         
+        // Colori e ordine delle categorie (aggiunta cartoni)
         const colori = { 'live-tv': '#E50914', sport: '#ff6b6b', film: '#4ecdc4', 'serie-tv': '#a855f7', cartoni: '#00bcd4', anime: '#f97316' };
         const ordine = ['live-tv', 'sport', 'film', 'serie-tv', 'cartoni', 'anime'];
-        
-        // Crea la categoria cartoni se non esiste
-        async function initCartoni() {
-            const snap = await get(ref(db, 'categorie/cartoni'));
-            if (!snap.exists()) {
-                await update(ref(db, 'categorie/cartoni'), {
-                    icona: '🐱',
-                    nome: 'Cartoni animati',
-                    colore: '#00bcd4',
-                    link: [{ titolo: 'Loonex', url: 'https://loonex.eu/cartoni/index.php', icona: '🐱' }]
-                });
-            }
-        }
-        initCartoni();
 
+        // Link predefiniti aggiornati per tutte le categorie (tranne live-tv che usa i canali IPTV)
+        const defaultLinks = {
+            sport: [{ titolo: 'FCTV33HD', url: 'https://www.fctv33hd.mom/it', icona: '⚽' }],
+            film: [{ titolo: 'StreamingCommunity Film', url: 'https://streamingcommunityz.tech/', icona: '🎬' }],
+            'serie-tv': [{ titolo: 'StreamingCommunity Serie TV', url: 'https://streamingcommunityz.tech/it/tv-shows', icona: '📺' }],
+            cartoni: [{ titolo: 'Loonex Cartoni', url: 'https://loonex.eu/cartoni/', icona: '🐱' }],
+            anime: [{ titolo: 'AnimeWorld', url: 'https://www.animeworld.ac/', icona: '🐉' }]
+        };
+        
         window.togglePreferito = function(url, titolo, icona, type) {
             let pref = JSON.parse(localStorage.getItem('ilregno_preferiti') || '[]');
             const index = pref.findIndex(p => p.url === url);
@@ -222,26 +218,34 @@
         }
 
         onValue(ref(db, 'categorie'), (snapshot) => {
-            const categorie = snapshot.val();
+            const categorie = snapshot.val() || {};
             const grid = document.getElementById('categorieGrid');
-            if (!categorie) { grid.innerHTML = '<div class="empty-state"><p>Nessun dato.</p></div>'; return; }
             grid.innerHTML = '';
             const prefCard = creaCardPreferiti();
             if (prefCard) { const tempDiv = document.createElement('div'); tempDiv.innerHTML = prefCard; grid.appendChild(tempDiv.firstElementChild); }
             
             ordine.forEach(key => {
-                const cat = categorie[key];
-                if (!cat || !cat.link) return;
-                const links = Array.isArray(cat.link) ? cat.link.filter(l => l && l.titolo && l.url) : Object.values(cat.link).filter(l => l && l.titolo && l.url);
+                // Preleva i link dal database Firebase, oppure usa quelli predefiniti
+                let links = [];
+                if (categorie[key] && categorie[key].link) {
+                    links = Array.isArray(categorie[key].link) 
+                        ? categorie[key].link.filter(l => l && l.titolo && l.url)
+                        : Object.values(categorie[key].link).filter(l => l && l.titolo && l.url);
+                }
+                // Se non ci sono link validi nel database, usa i link predefiniti aggiornati
+                if (links.length === 0 && defaultLinks[key]) {
+                    links = defaultLinks[key];
+                }
                 if (links.length === 0) return;
+                
                 const c = colori[key] || '#f0c040';
                 const isLive = key === 'live-tv';
                 const card = document.createElement('div');
                 card.className = 'categoria-card';
                 card.innerHTML = `
                     <div class="card-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.card-toggle').classList.toggle('open')">
-                        <div class="card-icon-wrapper" style="background:${c}20;color:${c}"><span>${cat.icona||'📌'}</span></div>
-                        <h2>${cat.nome||key}${isLive?' <span class="live-badge">LIVE</span>':''}</h2>
+                        <div class="card-icon-wrapper" style="background:${c}20;color:${c}"><span>${categorie[key]?.icona || '📌'}</span></div>
+                        <h2>${categorie[key]?.nome || key}${isLive?' <span class="live-badge">LIVE</span>':''}</h2>
                         <span class="card-badge" style="background:${c}20;color:${c}">${links.length}</span>
                         <span class="card-toggle">▶</span>
                     </div>
@@ -256,6 +260,9 @@
                     </div>`;
                 grid.appendChild(card);
             });
+            if (grid.children.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><p>Nessun link configurato. Accedi come admin per aggiungerli.</p></div>';
+            }
         });
     </script>
 
@@ -274,12 +281,11 @@
             playerModal.addEventListener('keydown', handleInteraction);
             const video = document.getElementById('playerVideo');
             if (currentHls) { currentHls.destroy(); currentHls = null; }
-            if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+            if (url.includes('.m3u8') && Hls.isSupported()) {
                 currentHls = new Hls({ maxBufferLength: 30 });
                 currentHls.loadSource(url);
                 currentHls.attachMedia(video);
                 currentHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
-                currentHls.on(Hls.Events.ERROR, () => { video.src = url; video.play().catch(()=>{}); });
             } else {
                 video.src = url;
                 video.play().catch(() => alert('⚠️ Flusso non disponibile.'));
@@ -307,23 +313,8 @@
         
         function toggleFullscreen() {
             const video = document.getElementById('playerVideo');
-            if (video.requestFullscreen) {
-                video.requestFullscreen().catch(() => {
-                    // Fallback al contenitore
-                    const container = document.getElementById('playerModal');
-                    if (container.requestFullscreen) container.requestFullscreen().catch(()=>{});
-                });
-            } else if (video.webkitRequestFullscreen) {
-                video.webkitRequestFullscreen();
-            } else if (video.msRequestFullscreen) {
-                video.msRequestFullscreen();
-            } else {
-                // Ultimo fallback
-                const container = document.getElementById('playerModal');
-                if (container.requestFullscreen) container.requestFullscreen().catch(()=>{});
-                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-                else if (container.msRequestFullscreen) container.msRequestFullscreen();
-            }
+            if (video.requestFullscreen) video.requestFullscreen().catch(()=>{});
+            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
         }
 
         function toggleAdblock() {
@@ -406,12 +397,12 @@
             if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
             try {
                 const snapshot = await window.getFunc(window.refFunc(window.db, 'categorie'));
-                const dati = snapshot.val(); if(!dati) return alert('Nessun link.');
+                const dati = snapshot.val() || {};
                 const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', cartoni:'#00bcd4', anime:'#f97316' };
                 let html = '<div class="modal"><div class="modal-header"><h2>✏️ Modifica Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
                 ordine.forEach(key => {
-                    const cat = dati[key]; if(!cat||!cat.link) return;
-                    const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link).filter(([id,l])=>l&&l.titolo);
+                    const cat = dati[key] || {};
+                    const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link || {}).filter(([id,l])=>l&&l.titolo);
                     if(!links.length) return;
                     html += `<div class="gestione-cat" style="border-left-color:${colori[key]||'#f0c040'}"><strong style="color:${colori[key]||'#f0c040'}">${cat.icona||''} ${cat.nome||key}</strong>`;
                     links.forEach(([id,l]) => html += `<div class="gestione-item"><span>${l.icona||'🔗'} ${l.titolo}</span><button class="btn-edit" onclick="modificaLink('${key}','${id}')">✏️</button><button class="btn-delete" onclick="eliminaLink('${key}','${id}')">🗑️</button></div>`);
@@ -428,12 +419,12 @@
             if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
             try {
                 const snapshot = await window.getFunc(window.refFunc(window.db,'categorie'));
-                const dati = snapshot.val(); if(!dati) return alert('Nessun link.');
+                const dati = snapshot.val() || {};
                 const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', cartoni:'#00bcd4', anime:'#f97316' };
                 let html = '<div class="modal"><div class="modal-header"><h2>🗑️ Elimina Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
                 ordine.forEach(key => {
-                    const cat = dati[key]; if(!cat||!cat.link) return;
-                    const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link).filter(([id,l])=>l&&l.titolo);
+                    const cat = dati[key] || {};
+                    const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link || {}).filter(([id,l])=>l&&l.titolo);
                     if(!links.length) return;
                     html += `<div class="gestione-cat" style="border-left-color:${colori[key]||'#f0c040'}"><strong style="color:${colori[key]||'#f0c040'}">${cat.icona||''} ${cat.nome||key}</strong>`;
                     links.forEach(([id,l]) => html += `<div class="gestione-item"><span>${l.icona||'🔗'} ${l.titolo}</span><button class="btn-delete" onclick="eliminaLink('${key}','${id}')">🗑️</button></div>`);
