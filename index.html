@@ -110,11 +110,6 @@
         .player-topbar .fs-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; }
         .player-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; }
         .player-wrapper video { width: 100%; height: 100%; }
-        
-        .preferiti-card { background: linear-gradient(135deg, #2a2410, #1a1a10); border: 1px solid rgba(240,192,64,0.3); }
-        .star-btn { background: none; border: none; color: #5a5a6e; cursor: pointer; font-size: 1.2rem; padding: 0 4px; transition: 0.2s; }
-        .star-btn.active { color: #f0c040; }
-        .search-input { width: 100%; padding: 8px 12px; background: #16161f; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; margin-bottom: 8px; font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body>
@@ -140,7 +135,7 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v30.0 • Link Aggiornati</p></div>
+            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v31.0 • Admin Fix</p></div>
         </footer>
     </div>
 
@@ -159,7 +154,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, get, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, get, remove, update, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
         const firebaseConfig = {
             apiKey: "AIzaSyByxULPVAzJObzhfDweMDw0Qtx1OumR_Bo",
             authDomain: "il-regno-app.firebaseapp.com",
@@ -173,12 +168,12 @@
         const db = getDatabase(app);
         window.db = db; window.refFunc = ref; window.pushFunc = push;
         window.removeFunc = remove; window.getFunc = get; window.updateFunc = update;
+        window.setFunc = set;
         
-        // Colori e ordine delle categorie (aggiunta cartoni)
         const colori = { 'live-tv': '#E50914', sport: '#ff6b6b', film: '#4ecdc4', 'serie-tv': '#a855f7', cartoni: '#00bcd4', anime: '#f97316' };
         const ordine = ['live-tv', 'sport', 'film', 'serie-tv', 'cartoni', 'anime'];
 
-        // Link predefiniti aggiornati per tutte le categorie (tranne live-tv che usa i canali IPTV)
+        // Link predefiniti che verranno scritti nel database se mancanti
         const defaultLinks = {
             sport: [{ titolo: 'FCTV33HD', url: 'https://www.fctv33hd.mom/it', icona: '⚽' }],
             film: [{ titolo: 'StreamingCommunity Film', url: 'https://streamingcommunityz.tech/', icona: '🎬' }],
@@ -186,57 +181,68 @@
             cartoni: [{ titolo: 'Loonex Cartoni', url: 'https://loonex.eu/cartoni/', icona: '🐱' }],
             anime: [{ titolo: 'AnimeWorld', url: 'https://www.animeworld.ac/', icona: '🐉' }]
         };
-        
-        window.togglePreferito = function(url, titolo, icona, type) {
-            let pref = JSON.parse(localStorage.getItem('ilregno_preferiti') || '[]');
-            const index = pref.findIndex(p => p.url === url);
-            if (index > -1) pref.splice(index, 1);
-            else pref.push({ url, titolo, icona: icona || '🔗', type });
-            localStorage.setItem('ilregno_preferiti', JSON.stringify(pref));
-            location.reload();
-        };
 
-        function isPreferito(url) {
-            const pref = JSON.parse(localStorage.getItem('ilregno_preferiti') || '[]');
-            return pref.some(p => p.url === url);
+        // Inizializza il database con i link predefiniti se mancanti
+        async function initDatabase() {
+            const categorieRef = ref(db, 'categorie');
+            const snap = await get(categorieRef);
+            let data = snap.val() || {};
+            let updated = false;
+            
+            // Assicura che tutte le categorie esistano con la struttura di base
+            const baseCats = {
+                'live-tv': { icona: '📺', nome: 'LIVE TV', colore: '#E50914' },
+                sport: { icona: '🏅', nome: 'Sport', colore: '#ff6b6b' },
+                film: { icona: '🎬', nome: 'Film', colore: '#4ecdc4' },
+                'serie-tv': { icona: '📺', nome: 'Serie TV', colore: '#a855f7' },
+                cartoni: { icona: '🐱', nome: 'Cartoni animati', colore: '#00bcd4' },
+                anime: { icona: '🐉', nome: 'Anime', colore: '#f97316' }
+            };
+
+            for (const key of ordine) {
+                if (!data[key]) {
+                    data[key] = { ...baseCats[key], link: defaultLinks[key] || [] };
+                    updated = true;
+                } else {
+                    // Assicura che nome e icona siano corretti
+                    if (!data[key].nome) data[key].nome = baseCats[key]?.nome || key;
+                    if (!data[key].icona) data[key].icona = baseCats[key]?.icona || '📌';
+                    // Se non ci sono link e ci sono default, usa i default
+                    if ((!data[key].link || (Array.isArray(data[key].link) && data[key].link.length === 0) || (typeof data[key].link === 'object' && Object.keys(data[key].link).length === 0)) && defaultLinks[key]) {
+                        data[key].link = defaultLinks[key];
+                        updated = true;
+                    }
+                }
+            }
+            
+            if (updated) {
+                await set(categorieRef, data);
+            }
+            return data;
         }
 
         function getProxiedUrl(url) {
             return localStorage.getItem('ilregno_adblock') === 'true' ? window.PROXY_URL + encodeURIComponent(url) : url;
         }
 
-        function creaCardPreferiti() {
-            const pref = JSON.parse(localStorage.getItem('ilregno_preferiti') || '[]');
-            if (pref.length === 0) return '';
-            let html = '<div class="categoria-card preferiti-card"><div class="card-header" onclick="this.nextElementSibling.classList.toggle(\'open\'); this.querySelector(\'.card-toggle\').classList.toggle(\'open\')"><div class="card-icon-wrapper" style="background:#f0c04020;color:#f0c040"><span>⭐</span></div><h2>Preferiti</h2><span class="card-badge" style="background:#f0c04020;color:#f0c040">'+pref.length+'</span><span class="card-toggle">▶</span></div><div class="card-body"><div class="link-list">';
-            pref.forEach(p => {
-                if (p.type === 'live') html += `<div class="link-item live-link" onclick="event.stopPropagation(); apriPlayer('${p.url.replace(/'/g,"\\'")}','${p.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${p.icona||'📺'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">▶</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','live')">⭐</button></div>`;
-                else html += `<a href="${getProxiedUrl(p.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${p.icona||'🔗'}</span><span class="link-titolo">${p.titolo}</span><span class="link-arrow">→</span><button class="star-btn active" onclick="event.stopPropagation(); togglePreferito('${p.url}','${p.titolo}','${p.icona}','link')">⭐</button></a>`;
-            });
-            html += '</div></div></div>';
-            return html;
-        }
+        // Carica i dati dopo l'inizializzazione
+        initDatabase().then((categorie) => {
+            renderCategories(categorie);
+        });
 
-        onValue(ref(db, 'categorie'), (snapshot) => {
-            const categorie = snapshot.val() || {};
+        function renderCategories(categorie) {
             const grid = document.getElementById('categorieGrid');
             grid.innerHTML = '';
-            const prefCard = creaCardPreferiti();
-            if (prefCard) { const tempDiv = document.createElement('div'); tempDiv.innerHTML = prefCard; grid.appendChild(tempDiv.firstElementChild); }
+            let foundAny = false;
             
             ordine.forEach(key => {
-                // Preleva i link dal database Firebase, oppure usa quelli predefiniti
-                let links = [];
-                if (categorie[key] && categorie[key].link) {
-                    links = Array.isArray(categorie[key].link) 
-                        ? categorie[key].link.filter(l => l && l.titolo && l.url)
-                        : Object.values(categorie[key].link).filter(l => l && l.titolo && l.url);
-                }
-                // Se non ci sono link validi nel database, usa i link predefiniti aggiornati
-                if (links.length === 0 && defaultLinks[key]) {
-                    links = defaultLinks[key];
-                }
+                const cat = categorie[key];
+                if (!cat || !cat.link) return;
+                const links = Array.isArray(cat.link) 
+                    ? cat.link.filter(l => l && l.titolo && l.url)
+                    : Object.values(cat.link).filter(l => l && l.titolo && l.url);
                 if (links.length === 0) return;
+                foundAny = true;
                 
                 const c = colori[key] || '#f0c040';
                 const isLive = key === 'live-tv';
@@ -244,8 +250,8 @@
                 card.className = 'categoria-card';
                 card.innerHTML = `
                     <div class="card-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.card-toggle').classList.toggle('open')">
-                        <div class="card-icon-wrapper" style="background:${c}20;color:${c}"><span>${categorie[key]?.icona || '📌'}</span></div>
-                        <h2>${categorie[key]?.nome || key}${isLive?' <span class="live-badge">LIVE</span>':''}</h2>
+                        <div class="card-icon-wrapper" style="background:${c}20;color:${c}"><span>${cat.icona||'📌'}</span></div>
+                        <h2>${cat.nome||key}${isLive?' <span class="live-badge">LIVE</span>':''}</h2>
                         <span class="card-badge" style="background:${c}20;color:${c}">${links.length}</span>
                         <span class="card-toggle">▶</span>
                     </div>
@@ -253,15 +259,23 @@
                         ${isLive ? '<input type="text" class="search-input" placeholder="Cerca canale..." oninput="filtraCanali(this)">' : ''}
                         <div class="link-list">
                             ${links.map(l => isLive
-                                ? `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" onclick="event.stopPropagation(); apriPlayer('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'📺'}','live')">⭐</button></div>`
-                                : `<a href="${getProxiedUrl(l.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${l.icona||'🔗'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">→</span><button class="star-btn ${isPreferito(l.url)?'active':''}" onclick="event.stopPropagation(); togglePreferito('${l.url}','${l.titolo}','${l.icona||'🔗'}','link')">⭐</button></a>`
+                                ? `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" onclick="event.stopPropagation(); apriPlayer('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span></div>`
+                                : `<a href="${getProxiedUrl(l.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${l.icona||'🔗'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">→</span></a>`
                             ).join('')}
                         </div>
                     </div>`;
                 grid.appendChild(card);
             });
-            if (grid.children.length === 0) {
-                grid.innerHTML = '<div class="empty-state"><p>Nessun link configurato. Accedi come admin per aggiungerli.</p></div>';
+            if (!foundAny) {
+                grid.innerHTML = '<div class="empty-state"><p>Nessun link. Accedi come admin per aggiungerli.</p></div>';
+            }
+        }
+
+        // Ascolta cambiamenti in tempo reale
+        onValue(ref(db, 'categorie'), (snapshot) => {
+            const categorie = snapshot.val();
+            if (categorie) {
+                renderCategories(categorie);
             }
         });
     </script>
