@@ -2,472 +2,2110 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>IL REGNO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IL REGNO - Streaming Hub</title>
+    <meta name="description" content="Hub di streaming tutto-in-uno: TV live, film, serie TV, sport, cartoni e anime">
+    <meta name="theme-color" content="#141414">
     
-    <script>
-        const manifest = {
-            name: "IL REGNO", short_name: "REGNO", start_url: ".", display: "standalone",
-            background_color: "#060609", theme_color: "#060609",
-            icons: [{ src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👑</text></svg>", sizes: "512x512", type: "image/svg+xml" }]
-        };
-        const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(blob);
-        const link = document.createElement('link'); link.rel = 'manifest'; link.href = manifestURL;
-        document.head.appendChild(link);
-    </script>
+    <!-- PWA Manifest inline -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIklMIFJFR05PIiwKICAic2hvcnRfbmFtZSI6ICJSZWdubyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTQxNDE0IiwKICAidGhlbWVfY29sb3IiOiAiIzE0MTQxNCIsCiAgImljb25zIjogW3sKICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHRleHQgeT0nLjllbScgZm9udC1zaXplPSc5MCc+8J+RjTwvdGV4dD48L3N2Zz4iLAogICAgInNpemVzIjogIjE5MngxOTIiLAogICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICB9XQp9">
     
-    <meta name="theme-color" content="#060609">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <!-- Favicon emoji -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👑</text></svg>">
     
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- HLS.js per streaming IPTV -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #060609; color: #fff; min-height: 100vh; background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(240,192,64,0.04), transparent), radial-gradient(ellipse 50% 30% at 50% 110%, rgba(168,85,247,0.03), transparent); }
-        .app-container { max-width: 460px; margin: 0 auto; padding: 24px 16px 40px; }
-        .header { text-align: center; padding: 40px 20px 24px; position: relative; }
-        .crown { display: block; font-size: 3.2rem; margin-bottom: 8px; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        .header h1 { font-size: 2.6rem; font-weight: 900; letter-spacing: -1px; background: linear-gradient(180deg, #fff 0%, #e0e0e0 50%, #b0b0b0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
-        .subtitle { color: #5a5a6e; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; }
-        .logout-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #5a5a6e; padding: 6px 14px; border-radius: 20px; font-size: 0.7rem; cursor: pointer; font-family: 'Inter', sans-serif; display: none; }
-        .logout-btn.visible { display: block; }
-        .admin-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
-        .btn-admin { background: #16161f; border: 1px solid rgba(255,255,255,0.06); color: #9898a8; padding: 10px 18px; border-radius: 50px; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.3s; font-family: 'Inter', sans-serif; display: none; }
-        .btn-admin.visible { display: block; }
-        .btn-admin:hover { background: #1e1e2a; color: #f0c040; }
-        .btn-admin.danger:hover { background: #3a1010; color: #ff6b6b; }
-        .login-btn { background: linear-gradient(135deg, #f0c040, #c89d20); border: none; color: #000; padding: 12px 28px; border-radius: 50px; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
-        .btn-adblock { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); color: #a855f7; padding: 10px 18px; border-radius: 50px; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; }
-        .btn-adblock:hover { background: rgba(168,85,247,0.2); }
-        .btn-adblock.active { background: #a855f7; color: #fff; }
-        .categorie-grid { display: flex; flex-direction: column; gap: 14px; }
-        .categoria-card { background: #0e0e14; border-radius: 18px; padding: 20px; border: 1px solid rgba(255,255,255,0.03); animation: fadeInUp 0.5s ease forwards; opacity: 0; }
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        .categoria-card:nth-child(1){animation-delay:0.05s} .categoria-card:nth-child(2){animation-delay:0.15s} .categoria-card:nth-child(3){animation-delay:0.25s} .categoria-card:nth-child(4){animation-delay:0.35s} .categoria-card:nth-child(5){animation-delay:0.45s} .categoria-card:nth-child(6){animation-delay:0.55s}
-        .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; padding-bottom: 14px; cursor: pointer; user-select: none; }
-        .card-header h2 { font-size: 1.1rem; font-weight: 700; flex: 1; }
-        .card-icon-wrapper { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
-        .card-badge { font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 50px; flex-shrink: 0; }
-        .card-toggle { font-size: 0.8rem; color: #5a5a6e; transition: transform 0.3s; flex-shrink: 0; }
-        .card-toggle.open { transform: rotate(90deg); }
-        .card-body { display: none; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.04); }
-        .card-body.open { display: block; }
-        .link-list { display: flex; flex-direction: column; gap: 5px; }
-        .link-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #16161f; border-radius: 12px; text-decoration: none; color: #fff; transition: all 0.2s; border: 2px solid transparent; cursor: pointer; }
-        .link-item:hover,.link-item:active { background: #1e1e2a; transform: translateX(4px); }
-        .link-item.live-link { border-left: 3px solid #E50914; }
-        .link-img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
-        .link-icon { font-size: 1.3rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(255,255,255,0.03); border-radius: 8px; }
-        .link-titolo { flex: 1; font-size: 0.9rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .link-arrow { color: #5a5a6e; transition: all 0.2s; flex-shrink: 0; }
-        .link-item:hover .link-arrow { transform: translateX(4px); color: #f0c040; }
-        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #E50914; animation: pulse 1.5s infinite; flex-shrink: 0; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .live-badge { display: inline-block; background: #E50914; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; }
-        .empty-state { text-align: center; padding: 50px 20px; color: #5a5a6e; }
-        .footer { text-align: center; margin-top: 36px; }
-        .footer-content { background: #0e0e14; border-radius: 18px; padding: 20px; border: 1px solid rgba(255,255,255,0.03); }
-        .footer p { color: #9898a8; font-size: 0.8rem; }
-        .footer-version { margin-top: 10px; font-size: 0.7rem; color: #5a5a6e; opacity: 0.5; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .modal { background: #0e0e14; border-radius: 20px; padding: 24px; width: 100%; max-width: 460px; border: 1px solid rgba(255,255,255,0.06); max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-header h2 { font-size: 1.2rem; font-weight: 700; }
-        .modal-close { background: rgba(255,255,255,0.06); border: none; color: #9898a8; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 0.9rem; }
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: #9898a8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
-        .form-group input, .form-group select { width: 100%; padding: 12px 14px; background: #16161f; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #fff; font-size: 0.95rem; font-family: 'Inter', sans-serif; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #f0c040; }
-        .file-upload { display: block; width: 100%; padding: 14px; background: #16161f; border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; color: #9898a8; cursor: pointer; text-align: center; }
-        .preview-img { width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; margin-top: 8px; display: none; }
-        .btn-submit { width: 100%; padding: 14px; background: linear-gradient(135deg, #f0c040, #c89d20); border: none; border-radius: 12px; color: #000; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; margin-top: 8px; }
-        .btn-delete { background: #ff4444 !important; color: #fff !important; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-family: 'Inter', sans-serif; }
-        .btn-edit { background: #f0c040 !important; color: #000 !important; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-family: 'Inter', sans-serif; margin-right: 6px; }
-        .gestione-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-        .gestione-item span { flex: 1; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .gestione-cat { margin-bottom: 16px; padding: 12px; background: #16161f; border-radius: 12px; border-left: 3px solid #f0c040; }
-        .gestione-cat strong { font-size: 0.9rem; display: block; margin-bottom: 6px; }
-        .adblock-section { margin-bottom: 16px; padding: 14px; background: #16161f; border-radius: 14px; border-left: 3px solid #a855f7; }
-        .adblock-section h3 { font-size: 0.9rem; margin-bottom: 6px; }
-        .adblock-section p { font-size: 0.78rem; color: #9898a8; line-height: 1.4; margin-bottom: 8px; }
-        .adblock-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
-        .badge-android { background: #4ecdc420; color: #4ecdc4; } .badge-ios { background: #99999920; color: #ccc; } .badge-chrome { background: #4285f420; color: #4285f4; }
-        .adblock-btn { display: block; width: 100%; padding: 11px; border-radius: 10px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; text-align: center; }
-        .adblock-btn.brave { background: #fb542b; color: #fff; } .adblock-btn.ublock { background: #4285f4; color: #fff; }
+        /* ============================================
+           CONFIGURAZIONE STILI
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
-        .player-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: none; cursor: none; }
-        .player-modal.active { display: flex; }
-        .player-modal.show-cursor { cursor: default; }
-        .player-topbar { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; padding: 12px 16px; background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%); gap: 12px; z-index: 10; opacity: 0; transition: opacity 0.4s ease; }
-        .player-topbar.visible { opacity: 1; }
-        .player-topbar .back-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
-        .player-topbar .canale-nome { flex: 1; font-size: 1rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .player-topbar .fs-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; }
-        .player-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; }
-        .player-wrapper video { width: 100%; height: 100%; }
+        :root {
+            --bg-primary: #141414;
+            --bg-secondary: #1f1f1f;
+            --bg-card: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent-red: #e50914;
+            --accent-gold: #ffd700;
+            --accent-green: #46d369;
+            --shadow: 0 4px 20px rgba(0,0,0,0.5);
+            --transition: all 0.3s ease;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        /* ============================================
+           NAVBAR
+           ============================================ */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(20,20,20,0.95) 0%, rgba(20,20,20,0.8) 100%);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .navbar-brand {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-red);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+        
+        .navbar-menu li {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        
+        .navbar-menu li:hover,
+        .navbar-menu li.active {
+            background: var(--accent-red);
+            transform: translateY(-2px);
+        }
+        
+        .navbar-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        
+        .btn-icon:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.1);
+        }
+        
+        .btn-icon.active {
+            color: var(--accent-gold);
+        }
+        
+        /* ============================================
+           HERO BANNER
+           ============================================ */
+        .hero {
+            margin-top: 70px;
+            height: 400px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.7) 100%);
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        }
+        
+        .hero p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+        
+        /* ============================================
+           CONTENUTO PRINCIPALE
+           ============================================ */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .category {
+            margin-bottom: 50px;
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+        
+        .category-title {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .category-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .category-toggle:hover {
+            color: var(--text-primary);
+            transform: scale(1.2);
+        }
+        
+        .category-content {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-red) var(--bg-secondary);
+        }
+        
+        .category-content::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .category-content::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+        
+        .category-content::-webkit-scrollbar-thumb {
+            background: var(--accent-red);
+            border-radius: 10px;
+        }
+        
+        /* ============================================
+           CARD CATEGORIE (orizzontali grandi)
+           ============================================ */
+        .categories-row {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 10px 0 20px;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-red) var(--bg-secondary);
+        }
+        
+        .categories-row::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .categories-row::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+        
+        .categories-row::-webkit-scrollbar-thumb {
+            background: var(--accent-red);
+            border-radius: 10px;
+        }
+        
+        .category-card {
+            flex: 0 0 220px;
+            height: 140px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+        }
+        
+        .category-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-red) 0%, transparent 100%);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            border-color: var(--accent-red);
+            box-shadow: 0 10px 30px rgba(229, 9, 20, 0.3);
+        }
+        
+        .category-card:hover::before {
+            opacity: 0.15;
+        }
+        
+        .category-card.active {
+            border-color: var(--accent-red);
+            background: linear-gradient(135deg, #3a1a1a 0%, #1a1a1a 100%);
+        }
+        
+        .category-card-icon {
+            font-size: 50px;
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+        }
+        
+        .category-card-name {
+            font-size: 16px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+        
+        .category-card-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--accent-red);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 1;
+        }
+        
+        /* ============================================
+           CARD CONTENUTI
+           ============================================ */
+        .card {
+            flex: 0 0 200px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+        
+        .card-image {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            position: relative;
+        }
+        
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .card-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--accent-red);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .card-badge.live::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .card-info {
+            padding: 15px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .card-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-favorite {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+        
+        .card-favorite:hover {
+            background: var(--accent-gold);
+            transform: scale(1.1);
+        }
+        
+        .card-favorite.active {
+            color: var(--accent-gold);
+        }
+        
+        /* Card preferiti speciale */
+        .favorites-section .category-title {
+            color: var(--accent-gold);
+        }
+        
+        .favorites-section .card {
+            border: 2px solid var(--accent-gold);
+        }
+        
+        /* ============================================
+           PLAYER MODAL
+           ============================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 10;
+            transition: var(--transition);
+        }
+        
+        .modal-close:hover {
+            background: var(--accent-red);
+            transform: rotate(90deg);
+        }
+        
+        .player-container {
+            position: relative;
+            width: 100%;
+            background: black;
+            aspect-ratio: 16/9;
+        }
+        
+        .player-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .player-controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .player-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        
+        .player-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+        
+        .player-title {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        /* Mini-player */
+        .mini-player {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            height: 180px;
+            background: black;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            z-index: 1500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: none;
+        }
+        
+        .mini-player.active {
+            display: block;
+        }
+        
+        .mini-player:hover {
+            transform: scale(1.05);
+        }
+        
+        .mini-player video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .mini-player-close {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.7);
+            border: none;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        /* ============================================
+           ADMIN PANEL
+           ============================================ */
+        .admin-panel {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: 3000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .admin-panel.active {
+            display: block;
+        }
+        
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+        
+        .admin-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-red);
+        }
+        
+        .admin-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .admin-section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .admin-item {
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .admin-item input,
+        .admin-item select {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            background: var(--bg-primary);
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .admin-item input:focus {
+            outline: none;
+            border-color: var(--accent-red);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: var(--accent-red);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #f40612;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #444;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #555;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-success {
+            background: var(--accent-green);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #3bc25a;
+        }
+        
+        /* ============================================
+           LOGIN MODAL
+           ============================================ */
+        .login-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 4000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-modal.active {
+            display: flex;
+        }
+        
+        .login-box {
+            background: var(--bg-secondary);
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: var(--accent-red);
+        }
+        
+        .login-box input {
+            width: 100%;
+            padding: 15px;
+            background: var(--bg-primary);
+            border: 2px solid #444;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .login-box input:focus {
+            outline: none;
+            border-color: var(--accent-red);
+        }
+        
+        /* ============================================
+           TMDB DETAIL MODAL
+           ============================================ */
+        .tmdb-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 2500;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .tmdb-modal.active {
+            display: block;
+        }
+        
+        .tmdb-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .tmdb-backdrop {
+            width: 100%;
+            height: 400px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .tmdb-backdrop::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, var(--bg-secondary) 0%, transparent 100%);
+        }
+        
+        .tmdb-info {
+            padding: 30px;
+            position: relative;
+            margin-top: -100px;
+            z-index: 1;
+        }
+        
+        .tmdb-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .tmdb-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+        
+        .tmdb-rating {
+            color: var(--accent-gold);
+            font-weight: 700;
+        }
+        
+        .tmdb-overview {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+        
+        .tmdb-services {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .service-btn {
+            padding: 12px 24px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .service-btn:hover {
+            border-color: var(--accent-red);
+            transform: translateY(-2px);
+        }
+        
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 10px 15px;
+            }
+            
+            .navbar-brand {
+                font-size: 20px;
+            }
+            
+            .navbar-menu {
+                display: none;
+            }
+            
+            .hero {
+                height: 280px;
+            }
+            
+            .hero h1 {
+                font-size: 32px;
+            }
+            
+            .hero p {
+                font-size: 16px;
+            }
+            
+            .category-card {
+                flex: 0 0 170px;
+                height: 115px;
+            }
+            
+            .category-card-icon {
+                font-size: 40px;
+            }
+            
+            .category-card-name {
+                font-size: 14px;
+            }
+            
+            .card {
+                flex: 0 0 150px;
+            }
+            
+            .card-image {
+                height: 225px;
+            }
+            
+            .category-title {
+                font-size: 22px;
+            }
+            
+            .mini-player {
+                width: 200px;
+                height: 112px;
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            .tmdb-title {
+                font-size: 28px;
+            }
+            
+            .tmdb-backdrop {
+                height: 250px;
+            }
+        }
+        
+        @media (max-width: 460px) {
+            .hero {
+                height: 220px;
+            }
+            
+            .hero h1 {
+                font-size: 24px;
+            }
+            
+            .category-card {
+                flex: 0 0 140px;
+                height: 100px;
+            }
+            
+            .category-card-icon {
+                font-size: 32px;
+            }
+            
+            .category-card-name {
+                font-size: 12px;
+            }
+            
+            .card {
+                flex: 0 0 120px;
+            }
+            
+            .card-image {
+                height: 180px;
+                font-size: 40px;
+            }
+            
+            .card-title {
+                font-size: 14px;
+            }
+        }
+        
+        /* Focus per Fire TV Stick */
+        *:focus {
+            outline: 3px solid var(--accent-red);
+            outline-offset: 2px;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            z-index: 5000;
+            transition: transform 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .toast.success {
+            border-left: 4px solid var(--accent-green);
+        }
+        
+        .toast.error {
+            border-left: 4px solid var(--accent-red);
+        }
+        
+        /* Messaggio categoria vuota */
+        .empty-message {
+            padding: 30px;
+            text-align: center;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
-    <div class="app-container" id="mainApp">
-        <header class="header">
-            <button class="logout-btn" id="logoutBtn" onclick="logout()">🚪 Esci</button>
-            <span class="crown">👑</span>
-            <h1>IL REGNO</h1>
-            <p class="subtitle">I tuoi link, sempre aggiornati</p>
-        </header>
-
-        <div class="admin-bar">
-            <button class="btn-admin" id="btnAggiungi" onclick="apriAdmin()">➕ Aggiungi</button>
-            <button class="btn-admin" id="btnModifica" onclick="apriGestione()">✏️ Modifica</button>
-            <button class="btn-admin danger" id="btnElimina" onclick="apriElimina()">🗑️ Elimina</button>
-            <button class="btn-adblock" id="btnAdblock" onclick="toggleAdblock()">🛡️ Blocca Annunci</button>
-            <button class="btn-adblock" onclick="mostraAdBlock()">📖 Guida</button>
-            <button class="login-btn" id="btnLogin" onclick="login()">🔐 Accedi come Admin</button>
+    <!-- ============================================
+         NAVBAR
+         ============================================ -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <span>👑</span>
+            <span>IL REGNO</span>
         </div>
-
-        <div class="categorie-grid" id="categorieGrid">
-            <div class="empty-state"><p>Caricamento...</p></div>
+        
+        <ul class="navbar-menu" id="navbarMenu">
+            <li class="active" data-category="all">Home</li>
+            <li data-category="film">🎬 Film</li>
+            <li data-category="serie-tv">📺 Serie TV</li>
+            <li data-category="sport">🏅 Sport</li>
+            <li data-category="cartoni">🐱 Cartoni</li>
+            <li data-category="anime">🐉 Anime</li>
+            <li data-category="live-tv">📡 LIVE TV</li>
+        </ul>
+        
+        <div class="navbar-actions">
+            <button class="btn-icon" id="btnAdBlock" title="Blocco annunci">🛡️</button>
+            <button class="btn-icon" id="btnAdmin" title="Admin">⚙️</button>
         </div>
-
-        <footer class="footer">
-            <div class="footer-content"><p>IL REGNO</p><p class="footer-version">v31.0 • Admin Fix</p></div>
-        </footer>
+    </nav>
+    
+    <!-- ============================================
+         HERO BANNER
+         ============================================ -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>👑 IL REGNO</h1>
+            <p>Il tuo hub di streaming tutto-in-uno</p>
+        </div>
+    </section>
+    
+    <!-- ============================================
+         CONTENUTO PRINCIPALE
+         ============================================ -->
+    <div class="container" id="mainContainer">
+        <div style="text-align: center; padding: 50px;">
+            <div class="loading"></div>
+            <p style="margin-top: 20px; color: var(--text-secondary);">Caricamento in corso...</p>
+        </div>
     </div>
-
-    <div class="player-modal" id="playerModal">
-        <div class="player-topbar" id="playerTopbar">
-            <button class="back-btn" onclick="chiudiPlayer()">← Indietro</button>
-            <span class="canale-nome" id="canaleNome">Canale</span>
-            <button class="fs-btn" onclick="toggleFullscreen()">⛶</button>
+    
+    <!-- ============================================
+         PLAYER MODAL
+         ============================================ -->
+    <div class="modal" id="playerModal">
+        <div class="modal-content">
+            <button class="modal-close" id="playerClose">✕</button>
+            <div class="player-container" id="playerContainer">
+                <video id="videoPlayer" controls playsinline></video>
+                <div class="player-controls" id="playerControls">
+                    <button class="player-btn" id="btnPrevChannel" title="Canale precedente">⏮️</button>
+                    <button class="player-btn" id="btnPlayPause" title="Play/Pausa">⏸️</button>
+                    <button class="player-btn" id="btnNextChannel" title="Canale successivo">⏭️</button>
+                    <span class="player-title" id="playerTitle">Nessun canale selezionato</span>
+                    <button class="player-btn" id="btnFullscreen" title="Schermo intero">⛶</button>
+                </div>
+            </div>
         </div>
-        <div class="player-wrapper"><video id="playerVideo" controls playsinline style="width:100%;height:100%"></video></div>
     </div>
-
+    
+    <!-- ============================================
+         MINI-PLAYER
+         ============================================ -->
+    <div class="mini-player" id="miniPlayer">
+        <video id="miniVideo" muted></video>
+        <button class="mini-player-close" id="miniPlayerClose">✕</button>
+    </div>
+    
+    <!-- ============================================
+         ADMIN LOGIN MODAL
+         ============================================ -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-box">
+            <h2>🔐 Accesso Admin</h2>
+            <input type="password" id="adminPassword" placeholder="Password">
+            <button class="btn btn-primary" id="btnLogin" style="width: 100%;">Accedi</button>
+            <button class="btn btn-secondary" id="btnLoginCancel" style="width: 100%; margin-top: 10px;">Annulla</button>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         ADMIN PANEL
+         ============================================ -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-header">
+            <h1 class="admin-title">⚙️ Pannello Admin</h1>
+            <div>
+                <button class="btn btn-secondary" id="btnAdminClose">Chiudi</button>
+                <button class="btn btn-danger" id="btnLogout">Logout</button>
+            </div>
+        </div>
+        
+        <div id="adminContent"></div>
+        
+        <button class="btn btn-success" id="btnAddCategory" style="margin-top: 20px; width: 100%;">
+            ➕ Aggiungi Nuova Categoria
+        </button>
+    </div>
+    
+    <!-- ============================================
+         TMDB DETAIL MODAL
+         ============================================ -->
+    <div class="tmdb-modal" id="tmdbModal">
+        <div class="tmdb-content">
+            <button class="modal-close" id="tmdbClose">✕</button>
+            <div class="tmdb-backdrop" id="tmdbBackdrop"></div>
+            <div class="tmdb-info">
+                <h1 class="tmdb-title" id="tmdbTitle"></h1>
+                <div class="tmdb-meta">
+                    <span class="tmdb-rating" id="tmdbRating"></span>
+                    <span id="tmdbYear"></span>
+                    <span id="tmdbType"></span>
+                </div>
+                <p class="tmdb-overview" id="tmdbOverview"></p>
+                <div class="tmdb-services" id="tmdbServices"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============================================
+         TOAST NOTIFICATION
+         ============================================ -->
+    <div class="toast" id="toast"></div>
+    
     <script>
-        window.PROXY_URL = 'https://ilregno-proxy.kenneygantkennethwygant.workers.dev/?url=';
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, get, remove, update, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        /* ============================================
+           CONFIGURAZIONE
+           ============================================ */
+        
+        // Configurazione Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyByxULPVAzJObzhfDweMDw0Qtx1OumR_Bo",
-            authDomain: "il-regno-app.firebaseapp.com",
             databaseURL: "https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "il-regno-app",
-            storageBucket: "il-regno-app.firebasestorage.app",
-            messagingSenderId: "816047392926",
             appId: "1:816047392926:web:9de485468d75d7b4d8538f"
         };
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        window.db = db; window.refFunc = ref; window.pushFunc = push;
-        window.removeFunc = remove; window.getFunc = get; window.updateFunc = update;
-        window.setFunc = set;
         
-        const colori = { 'live-tv': '#E50914', sport: '#ff6b6b', film: '#4ecdc4', 'serie-tv': '#a855f7', cartoni: '#00bcd4', anime: '#f97316' };
-        const ordine = ['live-tv', 'sport', 'film', 'serie-tv', 'cartoni', 'anime'];
-
-        // Link predefiniti che verranno scritti nel database se mancanti
-        const defaultLinks = {
-            sport: [{ titolo: 'FCTV33HD', url: 'https://www.fctv33hd.mom/it', icona: '⚽' }],
-            film: [{ titolo: 'StreamingCommunity Film', url: 'https://streamingcommunityz.tech/', icona: '🎬' }],
-            'serie-tv': [{ titolo: 'StreamingCommunity Serie TV', url: 'https://streamingcommunityz.tech/it/tv-shows', icona: '📺' }],
-            cartoni: [{ titolo: 'Loonex Cartoni', url: 'https://loonex.eu/cartoni/', icona: '🐱' }],
-            anime: [{ titolo: 'AnimeWorld', url: 'https://www.animeworld.ac/', icona: '🐉' }]
+        // TMDB API Key (da sostituire con la propria)
+        const TMDB_API_KEY = 'LA_TUA_API_KEY';
+        const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+        const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+        
+        // Proxy Cloudflare per blocco annunci
+        const PROXY_URL = 'https://ilregno-proxy.kenneygantkennethwygant.workers.dev/?url=';
+        
+        // Password admin
+        const ADMIN_PASSWORD = 'regno2024';
+        
+        // Inizializza Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        
+        /* ============================================
+           DATI PREDEFINITI
+           ============================================ */
+        
+        const DEFAULT_DATA = {
+            'live-tv': [
+                { name: 'Rai 1', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7', icon: '📺', type: 'live' },
+                { name: 'Rai 2', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308718&output=7', icon: '📺', type: 'live' },
+                { name: 'Rai 3', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308709&output=7', icon: '📺', type: 'live' },
+                { name: 'Rete 4', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-r4/r4-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Canale 5', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-c5/c5-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Italia 1', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-i1/i1-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'La7', url: 'https://d1chghleocc9sm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-evfku205gqrtf/Live.m3u8', icon: '📺', type: 'live' },
+                { name: 'TV8', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11223/tv8web/master.m3u8', icon: '📺', type: 'live' },
+                { name: 'Nove', url: 'https://d31mw7o1gs0dap.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-y5pbi2sq9r609/NOVE_IT.m3u8', icon: '📺', type: 'live' },
+                { name: '20 Mediaset', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-lb/lb-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Rai 4', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746966&output=7', icon: '📺', type: 'live' },
+                { name: 'Iris', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-ki/ki-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Rai 5', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=395276&output=7', icon: '📺', type: 'live' },
+                { name: 'Rai Movie', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747002&output=7', icon: '🎬', type: 'live' },
+                { name: 'Rai Premium', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746992&output=7', icon: '📺', type: 'live' },
+                { name: 'Cielo', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11219/cieloweb/master.m3u8', icon: '📺', type: 'live' },
+                { name: 'TV2000', url: 'https://hls-live-tv2000.akamaized.net/hls/live/2028510/tv2000/master.m3u8', icon: '📺', type: 'live' },
+                { name: 'La5', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-ka/ka-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Real Time', url: 'https://d3562mgijzx0zq.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-kizqtzpvvl3i8/Realtime_IT.m3u8', icon: '📺', type: 'live' },
+                { name: 'Cine34', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-b6/b6-clr.isml/index.m3u8', icon: '🎬', type: 'live' },
+                { name: 'Focus', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-fu/fu-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Top Crime', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-lt/lt-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Boing', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kb/kb-clr.isml/index.m3u8', icon: '🧒', type: 'live' },
+                { name: 'K2', url: 'https://d1pmpe0hs35ka5.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-39hsskpppgf72/K2_IT.m3u8', icon: '🧒', type: 'live' },
+                { name: 'Rai Gulp', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746953&output=7', icon: '🧒', type: 'live' },
+                { name: 'Rai YoYo', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7', icon: '🧒', type: 'live' },
+                { name: 'Cartoonito', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-la/la-clr.isml/index.m3u8', icon: '🧒', type: 'live' },
+                { name: 'Rai News 24', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=1&output=7', icon: '📰', type: 'live' },
+                { name: 'Sky TG24', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/12221/web/master.m3u8', icon: '📰', type: 'live' },
+                { name: 'TGCOM 24', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kf/kf-clr.isml/index.m3u8', icon: '📰', type: 'live' },
+                { name: 'DMAX', url: 'https://d2j2nqgg7bzth.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-02k1gv1j0ufwn/DMAX_IT.m3u8', icon: '📺', type: 'live' },
+                { name: 'Italia 2', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-i2/i2-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Rai Storia', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746990&output=7', icon: '📺', type: 'live' },
+                { name: 'Mediaset Extra', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kq/kq-clr.isml/index.m3u8', icon: '📺', type: 'live' },
+                { name: 'Rai Sport', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=358025&output=7', icon: '⚽', type: 'live' },
+                { name: 'Sportitalia', url: 'https://sportsitalia-samsungitaly.amagi.tv/playlist.m3u8', icon: '⚽', type: 'live' },
+                { name: 'SuperTennis', url: 'https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/outgest/aa3673f1-e178-44a9-a947-ef41db73211a/manifest.m3u8', icon: '🎾', type: 'live' },
+                { name: 'Radio 105', url: 'https://live02-seg.msr.cdn.mediaset.net/live/ch-ec/ec-clr.isml/index.m3u8', icon: '🎵', type: 'live' },
+                { name: 'R101 TV', url: 'https://live02-seg.msr.cdn.mediaset.net/live/ch-er/er-clr.isml/index.m3u8', icon: '🎵', type: 'live' },
+                { name: 'Deejay TV', url: 'https://4c4b867c89244861ac216426883d1ad0.msvdn.net/live/S85984808/sMO0tz9Sr2Rk/playlist.m3u8', icon: '🎵', type: 'live' },
+                { name: 'Radio Italia TV', url: 'https://radioitaliatv.akamaized.net/hls/live/2093117/RadioitaliaTV/master.m3u8', icon: '🎵', type: 'live' },
+                { name: 'RDS Social TV', url: 'https://stream.rdstv.radio/index.m3u8', icon: '🎵', type: 'live' },
+                { name: 'RTL 102.5', url: 'https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/playlist.m3u8', icon: '🎵', type: 'live' },
+                { name: 'Food Network', url: 'https://dk3okdd5036kz.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-o4pw0nc02sthz/Foodnetwork_IT.m3u8', icon: '🍳', type: 'live' },
+                { name: 'HGTV', url: 'https://d1tidto9vz737l.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-joaw4f4kh2en1/HGTV_IT.m3u8', icon: '🏠', type: 'live' },
+                { name: 'Motor Trend', url: 'https://d205m6k582pec4.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-asg5puyzdtnqu/Motortrend_IT.m3u8', icon: '🏎️', type: 'live' },
+                { name: 'Giallo', url: 'https://d9fqo6nfqlv2h.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ulukbrgm1n3yb/Giallo_IT.m3u8', icon: '🔍', type: 'live' },
+                { name: 'Radio TV Serie A', url: 'https://stream.radioseriea.com/50773f0d0070476a8612d9984c6059d8/index.m3u8', icon: '⚽', type: 'live' },
+                { name: 'Gambero Rosso', url: 'https://2018f6355a15442ebb37007fa4f6c064.msvdn.net/live/S7530969/XWerenuxbSdW/playlist.m3u8', icon: '🍳', type: 'live' }
+            ],
+            'film': [
+                { name: 'StreamingCommunity', url: 'https://streamingcommunityz.tech/', icon: '🎬', type: 'link' }
+            ],
+            'serie-tv': [
+                { name: 'StreamingCommunity', url: 'https://streamingcommunityz.tech/it/tv-shows', icon: '📺', type: 'link' }
+            ],
+            'sport': [
+                { name: 'FCTV33HD', url: 'https://www.fctv33hd.mom/it', icon: '⚽', type: 'link' }
+            ],
+            'cartoni': [
+                { name: 'Loonex', url: 'https://loonex.eu/cartoni/', icon: '🐱', type: 'link' }
+            ],
+            'anime': [
+                { name: 'AnimeWorld', url: 'https://www.animeworld.ac/', icon: '🐉', type: 'link' }
+            ]
         };
-
-        // Inizializza il database con i link predefiniti se mancanti
-        async function initDatabase() {
-            const categorieRef = ref(db, 'categorie');
-            const snap = await get(categorieRef);
-            let data = snap.val() || {};
-            let updated = false;
+        
+        const CATEGORY_NAMES = {
+            'favorites': '⭐ Preferiti',
+            'live-tv': '📡 LIVE TV',
+            'film': '🎬 Film',
+            'serie-tv': '📺 Serie TV',
+            'sport': '🏅 Sport',
+            'cartoni': '🐱 Cartoni animati',
+            'anime': '🐉 Anime'
+        };
+        
+        const CATEGORY_ICONS = {
+            'live-tv': '📡',
+            'film': '🎬',
+            'serie-tv': '📺',
+            'sport': '🏅',
+            'cartoni': '🐱',
+            'anime': '🐉'
+        };
+        
+        /* ============================================
+           STATO APPLICAZIONE
+           ============================================ */
+        
+        let appData = {};
+        let currentCategory = 'all';
+        let currentChannelIndex = -1;
+        let hls = null;
+        let miniHls = null;
+        let isAdmin = localStorage.getItem('adminAuth') === 'true';
+        let adBlockEnabled = localStorage.getItem('adBlock') === 'true';
+        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let controlsTimeout = null;
+        
+        /* ============================================
+           UTILITÀ
+           ============================================ */
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        function applyProxy(url) {
+            if (adBlockEnabled && !url.startsWith(PROXY_URL)) {
+                return PROXY_URL + encodeURIComponent(url);
+            }
+            return url;
+        }
+        
+        function isFavorite(item) {
+            return favorites.some(f => f.url === item.url);
+        }
+        
+        function toggleFavorite(item) {
+            if (isFavorite(item)) {
+                favorites = favorites.filter(f => f.url !== item.url);
+                showToast('Rimosso dai preferiti');
+            } else {
+                favorites.push(item);
+                showToast('Aggiunto ai preferiti');
+            }
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            renderCategories();
+        }
+        
+        /* ============================================
+           FIREBASE - INIZIALIZZAZIONE DATABASE
+           ============================================ */
+        
+        async function initializeDatabase() {
+            try {
+                const snapshot = await db.ref().once('value');
+                const data = snapshot.val();
+                
+                // Se il database è vuoto o mancano categorie, inizializza
+                if (!data || !data['live-tv'] || data['live-tv'].length === 0) {
+                    console.log('Inizializzazione database con dati predefiniti...');
+                    await db.ref().set(DEFAULT_DATA);
+                    showToast('Database inizializzato con successo!', 'success');
+                }
+                
+                // Listener per aggiornamenti in tempo reale
+                db.ref().on('value', (snapshot) => {
+                    appData = snapshot.val() || {};
+                    renderCategories();
+                });
+            } catch (error) {
+                console.error('Errore inizializzazione database:', error);
+                showToast('Errore caricamento database', 'error');
+            }
+        }
+        
+        /* ============================================
+           RENDERING PRINCIPALE
+           ============================================ */
+        
+        function renderCategories() {
+            const container = document.getElementById('mainContainer');
+            container.innerHTML = '';
             
-            // Assicura che tutte le categorie esistano con la struttura di base
-            const baseCats = {
-                'live-tv': { icona: '📺', nome: 'LIVE TV', colore: '#E50914' },
-                sport: { icona: '🏅', nome: 'Sport', colore: '#ff6b6b' },
-                film: { icona: '🎬', nome: 'Film', colore: '#4ecdc4' },
-                'serie-tv': { icona: '📺', nome: 'Serie TV', colore: '#a855f7' },
-                cartoni: { icona: '🐱', nome: 'Cartoni animati', colore: '#00bcd4' },
-                anime: { icona: '🐉', nome: 'Anime', colore: '#f97316' }
-            };
-
-            for (const key of ordine) {
-                if (!data[key]) {
-                    data[key] = { ...baseCats[key], link: defaultLinks[key] || [] };
-                    updated = true;
+            // 1. SEZIONE PREFERITI (se presenti)
+            if (favorites.length > 0 && (currentCategory === 'all' || currentCategory === 'favorites')) {
+                container.appendChild(createCategorySection('favorites', favorites, true));
+            }
+            
+            // 2. SEZIONE LIVE TV (sempre in alto, come prima)
+            if (currentCategory === 'all' || currentCategory === 'live-tv') {
+                const liveTvItems = appData['live-tv'] || [];
+                if (liveTvItems.length > 0) {
+                    container.appendChild(createCategorySection('live-tv', liveTvItems));
+                }
+            }
+            
+            // 3. SEZIONE CATEGORIE (orizzontale scrollabile) - SOLO se non siamo in una categoria specifica
+            if (currentCategory === 'all') {
+                container.appendChild(createCategoriesRow());
+                
+                // 4. TMDB Section (se API key presente)
+                if (TMDB_API_KEY && TMDB_API_KEY !== 'LA_TUA_API_KEY') {
+                    loadTMDBContent('movie', container);
+                    loadTMDBContent('tv', container);
                 } else {
-                    // Assicura che nome e icona siano corretti
-                    if (!data[key].nome) data[key].nome = baseCats[key]?.nome || key;
-                    if (!data[key].icona) data[key].icona = baseCats[key]?.icona || '📌';
-                    // Se non ci sono link e ci sono default, usa i default
-                    if ((!data[key].link || (Array.isArray(data[key].link) && data[key].link.length === 0) || (typeof data[key].link === 'object' && Object.keys(data[key].link).length === 0)) && defaultLinks[key]) {
-                        data[key].link = defaultLinks[key];
-                        updated = true;
+                    const notice = document.createElement('div');
+                    notice.className = 'category';
+                    notice.innerHTML = `
+                        <div class="category-header">
+                            <h2 class="category-title">🎬 Catalogo TMDB</h2>
+                        </div>
+                        <div style="padding: 20px; background: var(--bg-secondary); border-radius: 8px; text-align: center;">
+                            <p style="color: var(--text-secondary);">Inserisci la tua API key TMDB nel codice per visualizzare il catalogo film e serie TV</p>
+                        </div>
+                    `;
+                    container.appendChild(notice);
+                }
+            } else if (currentCategory !== 'live-tv' && currentCategory !== 'favorites') {
+                // Siamo in una categoria specifica (film, serie-tv, sport, cartoni, anime)
+                const items = appData[currentCategory] || [];
+                if (items.length > 0) {
+                    container.appendChild(createCategorySection(currentCategory, items));
+                } else {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-message';
+                    empty.innerHTML = `<h3>${CATEGORY_NAMES[currentCategory] || currentCategory}</h3><p style="margin-top:10px;">Nessun contenuto disponibile.</p>`;
+                    container.appendChild(empty);
+                }
+                
+                // TMDB per film e serie TV
+                if (TMDB_API_KEY && TMDB_API_KEY !== 'LA_TUA_API_KEY') {
+                    if (currentCategory === 'film') loadTMDBContent('movie', container);
+                    if (currentCategory === 'serie-tv') loadTMDBContent('tv', container);
+                }
+            }
+        }
+        
+        /* ============================================
+           RIGA ORIZZONTALE CATEGORIE
+           ============================================ */
+        
+        function createCategoriesRow() {
+            const section = document.createElement('div');
+            section.className = 'category';
+            
+            section.innerHTML = `
+                <div class="category-header">
+                    <h2 class="category-title">📂 Esplora per Categoria</h2>
+                </div>
+                <div class="categories-row" id="categoriesRow"></div>
+            `;
+            
+            const row = section.querySelector('.categories-row');
+            
+            // Categorie da mostrare (escludo live-tv perché già in alto)
+            const categoriesToShow = ['film', 'serie-tv', 'sport', 'cartoni', 'anime'];
+            
+            // Aggiungo anche eventuali categorie personalizzate
+            Object.keys(appData).forEach(key => {
+                if (!['live-tv', 'film', 'serie-tv', 'sport', 'cartoni', 'anime'].includes(key)) {
+                    categoriesToShow.push(key);
+                }
+            });
+            
+            categoriesToShow.forEach(categoryKey => {
+                const items = appData[categoryKey] || [];
+                const icon = CATEGORY_ICONS[categoryKey] || '📁';
+                const name = CATEGORY_NAMES[categoryKey] || categoryKey;
+                
+                const card = document.createElement('div');
+                card.className = 'category-card';
+                card.setAttribute('tabindex', '0');
+                
+                card.innerHTML = `
+                    <span class="category-card-count">${items.length}</span>
+                    <span class="category-card-icon">${icon}</span>
+                    <span class="category-card-name">${name.replace(/^[^\s]+\s/, '')}</span>
+                `;
+                
+                card.addEventListener('click', () => {
+                    currentCategory = categoryKey;
+                    // Aggiorno navbar
+                    document.querySelectorAll('.navbar-menu li').forEach(li => {
+                        li.classList.toggle('active', li.dataset.category === categoryKey);
+                    });
+                    renderCategories();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') card.click();
+                });
+                
+                row.appendChild(card);
+            });
+            
+            return section;
+        }
+        
+        /* ============================================
+           SEZIONE CATEGORIA CON CARD
+           ============================================ */
+        
+        function createCategorySection(categoryKey, items, isFavorites = false) {
+            const section = document.createElement('div');
+            section.className = `category ${isFavorites ? 'favorites-section' : ''}`;
+            
+            const title = CATEGORY_NAMES[categoryKey] || categoryKey;
+            
+            section.innerHTML = `
+                <div class="category-header">
+                    <h2 class="category-title">${title}</h2>
+                    <button class="category-toggle" data-category="${categoryKey}">➖</button>
+                </div>
+                <div class="category-content" id="content-${categoryKey}"></div>
+            `;
+            
+            const content = section.querySelector('.category-content');
+            
+            items.forEach((item, index) => {
+                const card = createCard(item, categoryKey, index);
+                content.appendChild(card);
+            });
+            
+            // Toggle categoria
+            section.querySelector('.category-toggle').addEventListener('click', (e) => {
+                const btn = e.target;
+                const content = section.querySelector('.category-content');
+                if (content.style.display === 'none') {
+                    content.style.display = 'flex';
+                    btn.textContent = '➖';
+                } else {
+                    content.style.display = 'none';
+                    btn.textContent = '➕';
+                }
+            });
+            
+            return section;
+        }
+        
+        function createCard(item, categoryKey, index) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('tabindex', '0');
+            
+            const isLive = item.type === 'live';
+            const isFav = isFavorite(item);
+            
+            card.innerHTML = `
+                <div class="card-image">
+                    ${isLive ? `<div class="card-badge live">LIVE</div>` : ''}
+                    <span>${item.icon || '📺'}</span>
+                    <button class="card-favorite ${isFav ? 'active' : ''}" data-index="${index}">
+                        ${isFav ? '⭐' : '☆'}
+                    </button>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${item.name}</div>
+                    <div class="card-meta">
+                        ${isLive ? '🔴 Diretta' : '🔗 Link esterno'}
+                    </div>
+                </div>
+            `;
+            
+            // Click sulla card
+            card.addEventListener('click', (e) => {
+                if (e.target.classList.contains('card-favorite')) return;
+                
+                if (isLive) {
+                    openPlayer(item, categoryKey, index);
+                } else {
+                    window.open(applyProxy(item.url), '_blank');
+                }
+            });
+            
+            // Click su preferito
+            card.querySelector('.card-favorite').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleFavorite(item);
+            });
+            
+            // Keyboard navigation
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') card.click();
+            });
+            
+            return card;
+        }
+        
+        /* ============================================
+           PLAYER IPTV
+           ============================================ */
+        
+        function openPlayer(item, categoryKey, index) {
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('videoPlayer');
+            const title = document.getElementById('playerTitle');
+            
+            modal.classList.add('active');
+            title.textContent = item.name;
+            currentChannelIndex = index;
+            
+            // Nascondi mini-player
+            document.getElementById('miniPlayer').classList.remove('active');
+            
+            playStream(video, item.url);
+            setupPlayerControls(categoryKey);
+        }
+        
+        function playStream(videoElement, url, isMini = false) {
+            // Ferma stream precedente
+            if (isMini && miniHls) {
+                miniHls.destroy();
+                miniHls = null;
+            } else if (!isMini && hls) {
+                hls.destroy();
+                hls = null;
+            }
+            
+            const proxiedUrl = applyProxy(url);
+            
+            // Controlla se è un flusso HLS
+            if (url.includes('.m3u8')) {
+                if (Hls.isSupported()) {
+                    const hlsInstance = new Hls();
+                    hlsInstance.loadSource(proxiedUrl);
+                    hlsInstance.attachMedia(videoElement);
+                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                        videoElement.play().catch(e => console.log('Autoplay bloccato:', e));
+                    });
+                    
+                    if (isMini) {
+                        miniHls = hlsInstance;
+                    } else {
+                        hls = hlsInstance;
+                    }
+                } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoElement.src = proxiedUrl;
+                    videoElement.play().catch(e => console.log('Autoplay bloccato:', e));
+                }
+            } else {
+                videoElement.src = proxiedUrl;
+                videoElement.play().catch(e => console.log('Autoplay bloccato:', e));
+            }
+        }
+        
+        function setupPlayerControls(categoryKey) {
+            const video = document.getElementById('videoPlayer');
+            const controls = document.getElementById('playerControls');
+            const container = document.getElementById('playerContainer');
+            
+            // Play/Pause
+            document.getElementById('btnPlayPause').onclick = () => {
+                if (video.paused) {
+                    video.play();
+                    document.getElementById('btnPlayPause').textContent = '⏸️';
+                } else {
+                    video.pause();
+                    document.getElementById('btnPlayPause').textContent = '▶️';
+                }
+            };
+            
+            // Fullscreen
+            document.getElementById('btnFullscreen').onclick = () => {
+                toggleFullscreen(container);
+            };
+            
+            // Canale precedente/successivo
+            const channels = appData[categoryKey] || [];
+            
+            document.getElementById('btnPrevChannel').onclick = () => {
+                if (currentChannelIndex > 0) {
+                    currentChannelIndex--;
+                    const prevChannel = channels[currentChannelIndex];
+                    document.getElementById('playerTitle').textContent = prevChannel.name;
+                    playStream(video, prevChannel.url);
+                }
+            };
+            
+            document.getElementById('btnNextChannel').onclick = () => {
+                if (currentChannelIndex < channels.length - 1) {
+                    currentChannelIndex++;
+                    const nextChannel = channels[currentChannelIndex];
+                    document.getElementById('playerTitle').textContent = nextChannel.name;
+                    playStream(video, nextChannel.url);
+                }
+            };
+            
+            // Auto-hide controls
+            const hideControls = () => {
+                clearTimeout(controlsTimeout);
+                controlsTimeout = setTimeout(() => {
+                    if (!video.paused) {
+                        controls.classList.add('hidden');
+                    }
+                }, 3000);
+            };
+            
+            container.addEventListener('mousemove', () => {
+                controls.classList.remove('hidden');
+                hideControls();
+            });
+            
+            container.addEventListener('touchstart', () => {
+                controls.classList.remove('hidden');
+                hideControls();
+            });
+            
+            hideControls();
+        }
+        
+        // FUNZIONE FULLSCREEN ROBUSTA
+        function toggleFullscreen(element) {
+            const doc = document;
+            
+            const isFullscreen = !!(
+                doc.fullscreenElement ||
+                doc.webkitFullscreenElement ||
+                doc.mozFullScreenElement ||
+                doc.msFullscreenElement
+            );
+            
+            if (isFullscreen) {
+                if (doc.exitFullscreen) {
+                    doc.exitFullscreen();
+                } else if (doc.webkitExitFullscreen) {
+                    doc.webkitExitFullscreen();
+                } else if (doc.mozCancelFullScreen) {
+                    doc.mozCancelFullScreen();
+                } else if (doc.msExitFullscreen) {
+                    doc.msExitFullscreen();
+                }
+            } else {
+                if (element.requestFullscreen) {
+                    element.requestFullscreen().catch(err => console.log('Fullscreen error:', err));
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen();
+                } else if (element.mozRequestFullScreen) {
+                    element.mozRequestFullScreen();
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen();
+                } else if (element.webkitEnterFullscreen) {
+                    const video = element.querySelector('video');
+                    if (video && video.webkitEnterFullscreen) {
+                        video.webkitEnterFullscreen();
                     }
                 }
             }
+        }
+        
+        // Chiudi player
+        document.getElementById('playerClose').addEventListener('click', () => {
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('videoPlayer');
             
-            if (updated) {
-                await set(categorieRef, data);
+            modal.classList.remove('active');
+            video.pause();
+            
+            if (hls) {
+                hls.destroy();
+                hls = null;
             }
-            return data;
-        }
-
-        function getProxiedUrl(url) {
-            return localStorage.getItem('ilregno_adblock') === 'true' ? window.PROXY_URL + encodeURIComponent(url) : url;
-        }
-
-        // Carica i dati dopo l'inizializzazione
-        initDatabase().then((categorie) => {
-            renderCategories(categorie);
-        });
-
-        function renderCategories(categorie) {
-            const grid = document.getElementById('categorieGrid');
-            grid.innerHTML = '';
-            let foundAny = false;
             
-            ordine.forEach(key => {
-                const cat = categorie[key];
-                if (!cat || !cat.link) return;
-                const links = Array.isArray(cat.link) 
-                    ? cat.link.filter(l => l && l.titolo && l.url)
-                    : Object.values(cat.link).filter(l => l && l.titolo && l.url);
-                if (links.length === 0) return;
-                foundAny = true;
+            if (video.src) {
+                showMiniPlayer();
+            }
+        });
+        
+        /* ============================================
+           MINI-PLAYER
+           ============================================ */
+        
+        function showMiniPlayer() {
+            const miniPlayer = document.getElementById('miniPlayer');
+            const miniVideo = document.getElementById('miniVideo');
+            
+            miniPlayer.classList.add('active');
+            miniVideo.play().catch(e => console.log('Mini-player autoplay bloccato'));
+        }
+        
+        document.getElementById('miniPlayer').addEventListener('click', (e) => {
+            if (e.target.id === 'miniPlayerClose') return;
+            
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('videoPlayer');
+            const miniVideo = document.getElementById('miniVideo');
+            
+            modal.classList.add('active');
+            document.getElementById('miniPlayer').classList.remove('active');
+            
+            video.src = miniVideo.src;
+            video.play();
+        });
+        
+        document.getElementById('miniPlayerClose').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('miniPlayer').classList.remove('active');
+            const miniVideo = document.getElementById('miniVideo');
+            miniVideo.pause();
+            
+            if (miniHls) {
+                miniHls.destroy();
+                miniHls = null;
+            }
+        });
+        
+        /* ============================================
+           TMDB API
+           ============================================ */
+        
+        async function loadTMDBContent(type, container) {
+            try {
+                const response = await fetch(
+                    `${TMDB_BASE_URL}/${type}/popular?api_key=${TMDB_API_KEY}&language=it-IT&page=1`
+                );
+                const data = await response.json();
                 
-                const c = colori[key] || '#f0c040';
-                const isLive = key === 'live-tv';
-                const card = document.createElement('div');
-                card.className = 'categoria-card';
-                card.innerHTML = `
-                    <div class="card-header" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.card-toggle').classList.toggle('open')">
-                        <div class="card-icon-wrapper" style="background:${c}20;color:${c}"><span>${cat.icona||'📌'}</span></div>
-                        <h2>${cat.nome||key}${isLive?' <span class="live-badge">LIVE</span>':''}</h2>
-                        <span class="card-badge" style="background:${c}20;color:${c}">${links.length}</span>
-                        <span class="card-toggle">▶</span>
+                const section = document.createElement('div');
+                section.className = 'category';
+                
+                const title = type === 'movie' ? '🎬 Film Popolari (TMDB)' : '📺 Serie TV Popolari (TMDB)';
+                
+                section.innerHTML = `
+                    <div class="category-header">
+                        <h2 class="category-title">${title}</h2>
                     </div>
-                    <div class="card-body">
-                        ${isLive ? '<input type="text" class="search-input" placeholder="Cerca canale..." oninput="filtraCanali(this)">' : ''}
-                        <div class="link-list">
-                            ${links.map(l => isLive
-                                ? `<div class="link-item live-link" data-titolo="${l.titolo.toLowerCase()}" onclick="event.stopPropagation(); apriPlayer('${l.url.replace(/'/g,"\\'")}','${l.titolo.replace(/'/g,"\\'")}')"><span class="live-dot"></span><span class="link-icon">${l.icona||'📺'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">▶</span></div>`
-                                : `<a href="${getProxiedUrl(l.url)}" target="_blank" class="link-item" onclick="event.stopPropagation()"><span class="link-icon">${l.icona||'🔗'}</span><span class="link-titolo">${l.titolo}</span><span class="link-arrow">→</span></a>`
-                            ).join('')}
+                    <div class="category-content"></div>
+                `;
+                
+                const content = section.querySelector('.category-content');
+                
+                data.results.slice(0, 20).forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.setAttribute('tabindex', '0');
+                    
+                    const posterUrl = item.poster_path 
+                        ? `${TMDB_IMAGE_BASE}${item.poster_path}`
+                        : '';
+                    
+                    card.innerHTML = `
+                        <div class="card-image">
+                            ${posterUrl ? `<img src="${posterUrl}" alt="${item.title || item.name}" loading="lazy">` : '🎬'}
                         </div>
-                    </div>`;
-                grid.appendChild(card);
-            });
-            if (!foundAny) {
-                grid.innerHTML = '<div class="empty-state"><p>Nessun link. Accedi come admin per aggiungerli.</p></div>';
+                        <div class="card-info">
+                            <div class="card-title">${item.title || item.name}</div>
+                            <div class="card-meta">
+                                ⭐ ${item.vote_average.toFixed(1)} | ${(item.release_date || item.first_air_date || '').substring(0, 4)}
+                            </div>
+                        </div>
+                    `;
+                    
+                    card.addEventListener('click', () => {
+                        openTMDBDetail(item, type);
+                    });
+                    
+                    content.appendChild(card);
+                });
+                
+                container.appendChild(section);
+            } catch (error) {
+                console.error('Errore caricamento TMDB:', error);
             }
         }
-
-        // Ascolta cambiamenti in tempo reale
-        onValue(ref(db, 'categorie'), (snapshot) => {
-            const categorie = snapshot.val();
-            if (categorie) {
-                renderCategories(categorie);
+        
+        function openTMDBDetail(item, type) {
+            const modal = document.getElementById('tmdbModal');
+            const backdrop = document.getElementById('tmdbBackdrop');
+            const title = document.getElementById('tmdbTitle');
+            const rating = document.getElementById('tmdbRating');
+            const year = document.getElementById('tmdbYear');
+            const tmdbType = document.getElementById('tmdbType');
+            const overview = document.getElementById('tmdbOverview');
+            const services = document.getElementById('tmdbServices');
+            
+            const backdropUrl = item.backdrop_path 
+                ? `https://image.tmdb.org/t/p/original${item.backdrop_path}`
+                : '';
+            
+            backdrop.style.backgroundImage = backdropUrl ? `url(${backdropUrl})` : 'none';
+            title.textContent = item.title || item.name;
+            rating.textContent = `⭐ ${item.vote_average.toFixed(1)}`;
+            year.textContent = (item.release_date || item.first_air_date || '').substring(0, 4);
+            tmdbType.textContent = type === 'movie' ? 'Film' : 'Serie TV';
+            overview.textContent = item.overview || 'Nessuna descrizione disponibile.';
+            
+            const query = encodeURIComponent(item.title || item.name);
+            services.innerHTML = `
+                <a href="https://www.netflix.com/search?q=${query}" target="_blank" class="service-btn">🎬 Netflix</a>
+                <a href="https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${query}" target="_blank" class="service-btn">📦 Amazon Prime</a>
+                <a href="https://www.disneyplus.com/search?q=${query}" target="_blank" class="service-btn">✨ Disney+</a>
+                <a href="https://www.youtube.com/results?search_query=${query}+trailer" target="_blank" class="service-btn">▶️ YouTube</a>
+                <a href="https://www.justwatch.com/it/search?q=${query}" target="_blank" class="service-btn">🔍 JustWatch</a>
+            `;
+            
+            modal.classList.add('active');
+        }
+        
+        document.getElementById('tmdbClose').addEventListener('click', () => {
+            document.getElementById('tmdbModal').classList.remove('active');
+        });
+        
+        /* ============================================
+           ADMIN PANEL
+           ============================================ */
+        
+        document.getElementById('btnAdmin').addEventListener('click', () => {
+            if (isAdmin) {
+                openAdminPanel();
+            } else {
+                document.getElementById('loginModal').classList.add('active');
             }
         });
-    </script>
-
-    <script>
-        let immagineBase64 = '', modificaId = null, currentHls = null, hideControlsTimer = null;
-        const PASSWORD = 'regno2024', STORAGE_KEY = 'ilregno_admin_logged';
-
-        function apriPlayer(url, titolo) {
-            document.getElementById('mainApp').style.display = 'none';
-            const playerModal = document.getElementById('playerModal');
-            playerModal.classList.add('active');
-            document.getElementById('canaleNome').textContent = titolo;
-            showControls(); resetHideTimer();
-            playerModal.addEventListener('mousemove', handleMouseMove);
-            playerModal.addEventListener('click', handleInteraction);
-            playerModal.addEventListener('keydown', handleInteraction);
-            const video = document.getElementById('playerVideo');
-            if (currentHls) { currentHls.destroy(); currentHls = null; }
-            if (url.includes('.m3u8') && Hls.isSupported()) {
-                currentHls = new Hls({ maxBufferLength: 30 });
-                currentHls.loadSource(url);
-                currentHls.attachMedia(video);
-                currentHls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
+        
+        document.getElementById('btnLogin').addEventListener('click', () => {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                localStorage.setItem('adminAuth', 'true');
+                document.getElementById('loginModal').classList.remove('active');
+                document.getElementById('adminPassword').value = '';
+                openAdminPanel();
+                showToast('Accesso admin effettuato!', 'success');
             } else {
-                video.src = url;
-                video.play().catch(() => alert('⚠️ Flusso non disponibile.'));
+                showToast('Password errata!', 'error');
+            }
+        });
+        
+        document.getElementById('btnLoginCancel').addEventListener('click', () => {
+            document.getElementById('loginModal').classList.remove('active');
+            document.getElementById('adminPassword').value = '';
+        });
+        
+        function openAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            const content = document.getElementById('adminContent');
+            
+            panel.classList.add('active');
+            content.innerHTML = '';
+            
+            Object.keys(appData).forEach(categoryKey => {
+                const section = createAdminSection(categoryKey);
+                content.appendChild(section);
+            });
+        }
+        
+        function createAdminSection(categoryKey) {
+            const section = document.createElement('div');
+            section.className = 'admin-section';
+            
+            const title = CATEGORY_NAMES[categoryKey] || categoryKey;
+            const items = appData[categoryKey] || [];
+            
+            section.innerHTML = `
+                <div class="admin-section-title">
+                    <span>${title}</span>
+                    <button class="btn btn-primary" data-action="add" data-category="${categoryKey}">➕ Aggiungi</button>
+                </div>
+                <div class="admin-items" id="admin-items-${categoryKey}"></div>
+            `;
+            
+            const itemsContainer = section.querySelector('.admin-items');
+            
+            items.forEach((item, index) => {
+                const itemEl = createAdminItem(item, categoryKey, index);
+                itemsContainer.appendChild(itemEl);
+            });
+            
+            section.querySelector('[data-action="add"]').addEventListener('click', () => {
+                const newItem = { name: 'Nuovo elemento', url: 'https://', icon: '📺', type: 'link' };
+                items.push(newItem);
+                saveCategoryToFirebase(categoryKey, items);
+                const itemEl = createAdminItem(newItem, categoryKey, items.length - 1);
+                itemsContainer.appendChild(itemEl);
+            });
+            
+            return section;
+        }
+        
+        function createAdminItem(item, categoryKey, index) {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'admin-item';
+            
+            itemEl.innerHTML = `
+                <input type="text" value="${item.icon || ''}" placeholder="Icona" style="max-width: 60px;" data-field="icon">
+                <input type="text" value="${item.name || ''}" placeholder="Nome" data-field="name">
+                <input type="text" value="${item.url || ''}" placeholder="URL" data-field="url">
+                <select data-field="type">
+                    <option value="live" ${item.type === 'live' ? 'selected' : ''}>LIVE TV</option>
+                    <option value="link" ${item.type === 'link' ? 'selected' : ''}>Link esterno</option>
+                </select>
+                <button class="btn btn-success" data-action="save">💾</button>
+                <button class="btn btn-danger" data-action="delete">🗑️</button>
+            `;
+            
+            itemEl.querySelector('[data-action="save"]').addEventListener('click', () => {
+                const inputs = itemEl.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    const field = input.dataset.field;
+                    item[field] = input.value;
+                });
+                
+                const items = appData[categoryKey] || [];
+                items[index] = item;
+                saveCategoryToFirebase(categoryKey, items);
+                showToast('Elemento salvato!', 'success');
+            });
+            
+            itemEl.querySelector('[data-action="delete"]').addEventListener('click', () => {
+                if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
+                    const items = appData[categoryKey] || [];
+                    items.splice(index, 1);
+                    saveCategoryToFirebase(categoryKey, items);
+                    itemEl.remove();
+                    showToast('Elemento eliminato!', 'success');
+                }
+            });
+            
+            return itemEl;
+        }
+        
+        async function saveCategoryToFirebase(categoryKey, items) {
+            try {
+                await db.ref(categoryKey).set(items);
+            } catch (error) {
+                console.error('Errore salvataggio Firebase:', error);
+                showToast('Errore salvataggio su Firebase', 'error');
             }
         }
         
-        function handleMouseMove() { showControls(); resetHideTimer(); }
-        function handleInteraction() { showControls(); resetHideTimer(); }
-        function showControls() { document.getElementById('playerTopbar').classList.add('visible'); document.getElementById('playerModal').classList.add('show-cursor'); }
-        function hideControls() { document.getElementById('playerTopbar').classList.remove('visible'); document.getElementById('playerModal').classList.remove('show-cursor'); }
-        function resetHideTimer() { if (hideControlsTimer) clearTimeout(hideControlsTimer); hideControlsTimer = setTimeout(hideControls, 3000); }
-        
-        function chiudiPlayer() {
-            if (hideControlsTimer) clearTimeout(hideControlsTimer);
-            const playerModal = document.getElementById('playerModal');
-            playerModal.removeEventListener('mousemove', handleMouseMove);
-            playerModal.removeEventListener('click', handleInteraction);
-            playerModal.removeEventListener('keydown', handleInteraction);
-            if (currentHls) { currentHls.destroy(); currentHls = null; }
-            const video = document.getElementById('playerVideo'); video.pause(); video.src = '';
-            playerModal.classList.remove('active', 'show-cursor');
-            document.getElementById('playerTopbar').classList.remove('visible');
-            document.getElementById('mainApp').style.display = 'block';
-        }
-        
-        function toggleFullscreen() {
-            const video = document.getElementById('playerVideo');
-            if (video.requestFullscreen) video.requestFullscreen().catch(()=>{});
-            else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-        }
-
-        function toggleAdblock() {
-            const current = localStorage.getItem('ilregno_adblock') === 'true';
-            localStorage.setItem('ilregno_adblock', current ? 'false' : 'true');
-            document.getElementById('btnAdblock').classList.toggle('active', !current);
-            alert('Blocco annunci ' + (!current ? 'ATTIVO' : 'DISATTIVO') + '. Ricarica la pagina per applicare.');
-            location.reload();
-        }
-        if (localStorage.getItem('ilregno_adblock') === 'true') document.getElementById('btnAdblock').classList.add('active');
-
-        window.filtraCanali = function(input) {
-            const filter = input.value.toLowerCase();
-            const cardBody = input.closest('.card-body');
-            cardBody.querySelectorAll('.link-item').forEach(item => {
-                item.style.display = (item.getAttribute('data-titolo') || '').includes(filter) ? '' : 'none';
-            });
-        };
-
-        function mostraAdBlock() {
-            document.getElementById('modalOverlay')?.remove();
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay'; overlay.id = 'modalOverlay';
-            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>🛡️ Naviga senza Pubblicità</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><p style="color:#9898a8;font-size:0.85rem;margin-bottom:16px;line-height:1.5">Per navigare senza pop-up e annunci fastidiosi:</p><div class="adblock-section"><h3>🤖 <span class="adblock-badge badge-android">ANDROID</span></h3><p>Usa <strong>Brave Browser</strong> con blocco annunci aggressivo.</p><button class="adblock-btn brave" onclick="window.open('https://play.google.com/store/apps/details?id=com.brave.browser','_blank')">📥 Scarica Brave</button></div><div class="adblock-section"><h3>🍎 <span class="adblock-badge badge-ios">IPHONE / IPAD</span></h3><p>Usa <strong>Brave Browser</strong> con blocco aggressivo.</p><button class="adblock-btn brave" onclick="window.open('https://apps.apple.com/app/brave-browser/id1052879175','_blank')">📥 Scarica Brave</button></div><div class="adblock-section"><h3>💻 <span class="adblock-badge badge-chrome">CHROME / PC</span></h3><p>Installa <strong>uBlock Origin Lite</strong>.</p><button class="adblock-btn ublock" onclick="window.open('https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh','_blank')">📥 Installa uBlock</button></div><button class="btn-submit" style="background:#333;color:#fff;margin-top:12px" onclick="chiudiModale()">✕ Chiudi</button></div>`;
-            overlay.addEventListener('click', e => { if(e.target===overlay) chiudiModale(); });
-            document.body.appendChild(overlay);
-        }
-
-        function checkLogin() { (localStorage.getItem(STORAGE_KEY)==='true' ? mostraBottoniAdmin : nascondiBottoniAdmin)(); }
-        function login() { const pwd = prompt('🔐 Password admin:'); if(pwd===PASSWORD){localStorage.setItem(STORAGE_KEY,'true');mostraBottoniAdmin();}else if(pwd!==null) alert('❌ Password errata!'); }
-        function logout() { if(confirm('🚪 Uscire?')){localStorage.removeItem(STORAGE_KEY);nascondiBottoniAdmin();chiudiModale();} }
-        function mostraBottoniAdmin() { 
-            document.getElementById('btnAggiungi').classList.add('visible'); document.getElementById('btnModifica').classList.add('visible');
-            document.getElementById('btnElimina').classList.add('visible'); document.getElementById('btnLogin').style.display='none';
-            document.getElementById('logoutBtn').classList.add('visible');
-        }
-        function nascondiBottoniAdmin() { 
-            document.getElementById('btnAggiungi').classList.remove('visible'); document.getElementById('btnModifica').classList.remove('visible');
-            document.getElementById('btnElimina').classList.remove('visible'); document.getElementById('btnLogin').style.display='block';
-            document.getElementById('logoutBtn').classList.remove('visible');
-        }
-        function chiudiModale() { document.getElementById('modalOverlay')?.remove(); modificaId = null; }
-
-        function apriAdmin() {
-            if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
-            document.getElementById('modalOverlay')?.remove(); immagineBase64 = ''; modificaId = null;
-            const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'modalOverlay';
-            overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>➕ Aggiungi Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv">📺 LIVE TV</option><option value="sport">🏅 Sport</option><option value="film">🎬 Film</option><option value="serie-tv">📺 Serie TV</option><option value="cartoni">🐱 Cartoni animati</option><option value="anime">🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" placeholder="es. Rai 1"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" placeholder="https://..."></div><div class="form-group"><label>Icona (emoji)</label><input type="text" id="iconaInput" placeholder="📺" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Clicca per caricare</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img"></div><button class="btn-submit" onclick="salvaLink()">✨ Aggiungi</button></div>`;
-            overlay.addEventListener('click', e => { if(e.target===overlay) chiudiModale(); });
-            document.body.appendChild(overlay);
-        }
-        function caricaImmagine(event) {
-            const file = event.target.files[0]; if(!file) return;
-            if(file.size > 500000) return alert('⚠️ Max 500KB');
-            const reader = new FileReader();
-            reader.onload = function(e) { immagineBase64 = e.target.result; const p = document.getElementById('previewImg'); if(p){p.src=immagineBase64;p.style.display='block';} };
-            reader.readAsDataURL(file);
-        }
-        async function salvaLink() {
-            const cat = document.getElementById('catSelect').value;
-            const titolo = document.getElementById('titoloInput').value.trim();
-            const url = document.getElementById('urlInput').value.trim();
-            const icona = document.getElementById('iconaInput').value.trim() || '🔗';
-            if(!titolo||!url) return alert('⚠️ Compila Titolo e URL!');
-            try {
-                const linkData = { titolo, url, icona };
-                if (immagineBase64) linkData.immagine = immagineBase64;
-                if (modificaId) {
-                    await window.updateFunc(window.refFunc(window.db, `categorie/${cat}/link/${modificaId}`), linkData);
-                    alert('✅ Modificato!');
+        document.getElementById('btnAddCategory').addEventListener('click', () => {
+            const categoryName = prompt('Nome della nuova categoria (es: "documentari"):');
+            if (categoryName) {
+                const categoryKey = categoryName.toLowerCase().replace(/\s+/g, '-');
+                if (!appData[categoryKey]) {
+                    appData[categoryKey] = [];
+                    saveCategoryToFirebase(categoryKey, []);
+                    CATEGORY_NAMES[categoryKey] = categoryName;
+                    openAdminPanel();
+                    showToast('Categoria aggiunta!', 'success');
                 } else {
-                    await window.pushFunc(window.refFunc(window.db, `categorie/${cat}/link`), linkData);
-                    alert('✅ Aggiunto!');
+                    showToast('Categoria già esistente!', 'error');
                 }
-                chiudiModale();
-            } catch(e) { alert('❌ Errore: ' + e.message); }
+            }
+        });
+        
+        document.getElementById('btnAdminClose').addEventListener('click', () => {
+            document.getElementById('adminPanel').classList.remove('active');
+        });
+        
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            isAdmin = false;
+            localStorage.removeItem('adminAuth');
+            document.getElementById('adminPanel').classList.remove('active');
+            showToast('Logout effettuato', 'success');
+        });
+        
+        /* ============================================
+           NAVBAR E FILTRI
+           ============================================ */
+        
+        document.querySelectorAll('.navbar-menu li').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.navbar-menu li').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                currentCategory = item.dataset.category;
+                renderCategories();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+        
+        /* ============================================
+           BLOCCO ANNUNCI
+           ============================================ */
+        
+        document.getElementById('btnAdBlock').addEventListener('click', () => {
+            adBlockEnabled = !adBlockEnabled;
+            localStorage.setItem('adBlock', adBlockEnabled);
+            
+            const btn = document.getElementById('btnAdBlock');
+            btn.classList.toggle('active', adBlockEnabled);
+            
+            showToast(
+                adBlockEnabled ? 'Blocco annunci attivato 🛡️' : 'Blocco annunci disattivato',
+                'success'
+            );
+        });
+        
+        if (adBlockEnabled) {
+            document.getElementById('btnAdBlock').classList.add('active');
         }
-
-        async function apriGestione() {
-            if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
-            try {
-                const snapshot = await window.getFunc(window.refFunc(window.db, 'categorie'));
-                const dati = snapshot.val() || {};
-                const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', cartoni:'#00bcd4', anime:'#f97316' };
-                let html = '<div class="modal"><div class="modal-header"><h2>✏️ Modifica Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
-                ordine.forEach(key => {
-                    const cat = dati[key] || {};
-                    const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link || {}).filter(([id,l])=>l&&l.titolo);
-                    if(!links.length) return;
-                    html += `<div class="gestione-cat" style="border-left-color:${colori[key]||'#f0c040'}"><strong style="color:${colori[key]||'#f0c040'}">${cat.icona||''} ${cat.nome||key}</strong>`;
-                    links.forEach(([id,l]) => html += `<div class="gestione-item"><span>${l.icona||'🔗'} ${l.titolo}</span><button class="btn-edit" onclick="modificaLink('${key}','${id}')">✏️</button><button class="btn-delete" onclick="eliminaLink('${key}','${id}')">🗑️</button></div>`);
-                    html += '</div>';
-                });
-                html += '</div>';
-                document.getElementById('modalOverlay')?.remove();
-                const overlay = document.createElement('div'); overlay.className='modal-overlay'; overlay.id='modalOverlay'; overlay.innerHTML=html;
-                overlay.addEventListener('click',e=>{if(e.target===overlay)chiudiModale();});
-                document.body.appendChild(overlay);
-            } catch(e) { alert('❌ Errore: '+e.message); }
+        
+        /* ============================================
+           INIZIALIZZAZIONE
+           ============================================ */
+        
+        initializeDatabase();
+        
+        // Service Worker per PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript,' + encodeURIComponent(`
+                self.addEventListener('install', e => self.skipWaiting());
+                self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+                self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Offline'))));
+            `)).catch(err => console.log('SW registration failed:', err));
         }
-        async function apriElimina() {
-            if(!localStorage.getItem(STORAGE_KEY)) return alert('🔐 Accedi prima!');
-            try {
-                const snapshot = await window.getFunc(window.refFunc(window.db,'categorie'));
-                const dati = snapshot.val() || {};
-                const colori = { 'live-tv':'#E50914', sport:'#ff6b6b', film:'#4ecdc4', 'serie-tv':'#a855f7', cartoni:'#00bcd4', anime:'#f97316' };
-                let html = '<div class="modal"><div class="modal-header"><h2>🗑️ Elimina Link</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div>';
-                ordine.forEach(key => {
-                    const cat = dati[key] || {};
-                    const links = Array.isArray(cat.link) ? cat.link.map((l,i) => [i,l]).filter(([id,l])=>l&&l.titolo) : Object.entries(cat.link || {}).filter(([id,l])=>l&&l.titolo);
-                    if(!links.length) return;
-                    html += `<div class="gestione-cat" style="border-left-color:${colori[key]||'#f0c040'}"><strong style="color:${colori[key]||'#f0c040'}">${cat.icona||''} ${cat.nome||key}</strong>`;
-                    links.forEach(([id,l]) => html += `<div class="gestione-item"><span>${l.icona||'🔗'} ${l.titolo}</span><button class="btn-delete" onclick="eliminaLink('${key}','${id}')">🗑️</button></div>`);
-                    html += '</div>';
-                });
-                html += '</div>';
-                document.getElementById('modalOverlay')?.remove();
-                const overlay = document.createElement('div'); overlay.className='modal-overlay'; overlay.id='modalOverlay'; overlay.innerHTML=html;
-                overlay.addEventListener('click',e=>{if(e.target===overlay)chiudiModale();});
-                document.body.appendChild(overlay);
-            } catch(e) { alert('❌ Errore: '+e.message); }
-        }
-        async function modificaLink(categoria, id) {
-            try {
-                const snapshot = await window.getFunc(window.refFunc(window.db, `categorie/${categoria}/link/${id}`));
-                const link = snapshot.val(); if(!link) return alert('Non trovato.');
-                chiudiModale(); immagineBase64 = link.immagine || ''; modificaId = id;
-                const overlay = document.createElement('div'); overlay.className='modal-overlay'; overlay.id='modalOverlay';
-                overlay.innerHTML = `<div class="modal"><div class="modal-header"><h2>✏️ Modifica</h2><button class="modal-close" onclick="chiudiModale()">✕</button></div><div class="form-group"><label>Categoria</label><select id="catSelect"><option value="live-tv" ${categoria==='live-tv'?'selected':''}>📺 LIVE TV</option><option value="sport" ${categoria==='sport'?'selected':''}>🏅 Sport</option><option value="film" ${categoria==='film'?'selected':''}>🎬 Film</option><option value="serie-tv" ${categoria==='serie-tv'?'selected':''}>📺 Serie TV</option><option value="cartoni" ${categoria==='cartoni'?'selected':''}>🐱 Cartoni animati</option><option value="anime" ${categoria==='anime'?'selected':''}>🐉 Anime</option></select></div><div class="form-group"><label>Titolo</label><input type="text" id="titoloInput" value="${link.titolo||''}"></div><div class="form-group"><label>URL</label><input type="url" id="urlInput" value="${link.url||''}"></div><div class="form-group"><label>Icona</label><input type="text" id="iconaInput" value="${link.icona||''}" maxlength="2"></div><div class="form-group"><label>Immagine</label><label class="file-upload" for="fileInput">📁 Cambia</label><input type="file" id="fileInput" accept="image/*" style="display:none" onchange="caricaImmagine(event)"><img id="previewImg" class="preview-img" style="${link.immagine?'display:block':''}" src="${link.immagine||''}"></div><button class="btn-submit" onclick="salvaLink()">💾 Salva</button></div>`;
-                overlay.addEventListener('click',e=>{if(e.target===overlay)chiudiModale();});
-                document.body.appendChild(overlay);
-            } catch(e) { alert('❌ Errore: '+e.message); }
-        }
-        async function eliminaLink(categoria, id) {
-            if(!confirm('🗑️ Eliminare?')) return;
-            try { await window.removeFunc(window.refFunc(window.db,`categorie/${categoria}/link/${id}`)); alert('✅ Eliminato!'); chiudiModale(); } catch(e) { alert('❌ Errore: '+e.message); }
-        }
-
-        checkLogin();
+        
+        console.log('👑 IL REGNO - Inizializzato con successo!');
     </script>
 </body>
 </html>
