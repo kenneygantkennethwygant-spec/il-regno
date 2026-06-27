@@ -428,7 +428,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         
-        // Dati predefiniti completi
         const DEFAULT_DATA = {
             'live-tv': [
                 { name: 'Rai 1', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7', icon: '📺', type: 'live' },
@@ -547,7 +546,6 @@
             renderCategories();
         }
         
-        // Forza l'esistenza di tutte le categorie predefinite nel database
         async function ensureDefaultCategories(existingData) {
             const updates = {};
             let needed = false;
@@ -803,18 +801,15 @@
             if (miniHls) { miniHls.destroy(); miniHls = null; }
         });
         
-        /* ========== ADMIN (corretto) ========== */
+        /* ========== ADMIN ========== */
         function openAdminPanel() {
             const panel = document.getElementById('adminPanel');
             panel.classList.add('active');
             document.body.style.overflow = 'hidden';
-            // Attendi che appData sia popolato (se vuoto, forza un refresh)
             if (Object.keys(appData).length === 0) {
                 db.ref().once('value').then(snap => {
                     appData = snap.val() || {};
-                    ensureDefaultCategories(appData).then(() => {
-                        refreshAdminContent();
-                    });
+                    ensureDefaultCategories(appData).then(() => refreshAdminContent());
                 });
             } else {
                 refreshAdminContent();
@@ -827,9 +822,27 @@
         function refreshAdminContent() {
             const content = document.getElementById('adminContent');
             content.innerHTML = '';
-            // Mostra TUTTE le categorie predefinite anche se non presenti in appData, come vuote
-            const allCategoryKeys = new Set([...Object.keys(DEFAULT_DATA), ...Object.keys(appData)]);
-            allCategoryKeys.forEach(catKey => {
+            // Ordine desiderato: sport, film, serie-tv, cartoni, anime, poi altre categorie personalizzate, infine live-tv
+            const priorityOrder = ['sport', 'film', 'serie-tv', 'cartoni', 'anime'];
+            // Set di tutte le chiavi presenti (default + eventuali personalizzate da appData)
+            const allKeys = new Set([...Object.keys(DEFAULT_DATA), ...Object.keys(appData)]);
+            const orderedKeys = [];
+            // Aggiungi prima le categorie predefinite nell'ordine priorityOrder
+            priorityOrder.forEach(key => {
+                if (allKeys.has(key)) {
+                    orderedKeys.push(key);
+                    allKeys.delete(key);
+                }
+            });
+            // Aggiungi eventuali altre categorie (personalizzate) in ordine alfabetico
+            const remaining = Array.from(allKeys).filter(k => k !== 'live-tv').sort();
+            orderedKeys.push(...remaining);
+            // Infine, se esiste live-tv, mettilo in fondo
+            if (allKeys.has('live-tv') || DEFAULT_DATA['live-tv']) {
+                orderedKeys.push('live-tv');
+            }
+            // Genera le sezioni
+            orderedKeys.forEach(catKey => {
                 content.appendChild(createAdminSection(catKey));
             });
         }
@@ -864,7 +877,6 @@
             const section = document.createElement('div');
             section.className = 'admin-section';
             const title = CATEGORY_NAMES[catKey] || catKey;
-            // Prendi gli elementi da appData, oppure array vuoto
             const items = appData[catKey] || [];
             section.innerHTML = `
                 <div class="admin-section-title">
