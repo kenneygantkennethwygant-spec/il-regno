@@ -1,989 +1,3687 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>IL REGNO - Streaming Hub</title>
-    <meta name="description" content="Hub di streaming tutto-in-uno: TV live, film, serie TV, sport, cartoni e anime">
-    <meta name="theme-color" content="#141414">
-    
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIklMIFJFR05PIiwKICAic2hvcnRfbmFtZSI6ICJSZWdubyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTQxNDE0IiwKICAidGhlbWVfY29sb3IiOiAiIzE0MTQxNCIsCiAgImljb25zIjogW3sKICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLDxzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PHRleHQgeT0nLjllbScgZm9udC1zaXplPSc5MCc+8J+RjTwvdGV4dD48L3N2Zz4iLAogICAgInNpemVzIjogIjE5MngxOTIiLAogICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICB9XQp9">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👑</text></svg>">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        :root {
-            --bg-primary: #141414;
-            --bg-secondary: #1f1f1f;
-            --bg-card: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #b3b3b3;
-            --accent-red: #e50914;
-            --accent-gold: #ffd700;
-            --accent-green: #46d369;
-            --shadow: 0 4px 20px rgba(0,0,0,0.5);
-            --transition: all 0.3s ease;
-        }
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-        .navbar {
-            position: fixed;
-            top:0; left:0; right:0;
-            background: linear-gradient(180deg, rgba(20,20,20,0.95) 0%, rgba(20,20,20,0.8) 100%);
-            backdrop-filter: blur(10px);
-            padding: 15px 30px;
-            display: flex; align-items: center; justify-content: space-between;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-        .navbar-brand {
-            font-size: 28px; font-weight: 700; color: var(--accent-red);
-            display: flex; align-items: center; gap: 10px;
-        }
-        .navbar-menu { display: flex; gap: 20px; list-style: none; }
-        .navbar-menu li {
-            cursor: pointer; padding: 8px 16px; border-radius: 4px;
-            transition: var(--transition); font-weight: 500;
-        }
-        .navbar-menu li:hover, .navbar-menu li.active {
-            background: var(--accent-red); transform: translateY(-2px);
-        }
-        .navbar-actions { display: flex; gap: 15px; align-items: center; }
-        .btn-icon {
-            background: transparent; border: none; color: var(--text-primary);
-            font-size: 24px; cursor: pointer; padding: 8px; border-radius: 50%;
-            transition: var(--transition);
-        }
-        .btn-icon:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
-        .btn-icon.active { color: var(--accent-gold); }
-        
-        .hero {
-            margin-top: 70px; height: 150px;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            display: flex; align-items: center; justify-content: center;
-            position: relative; overflow: hidden;
-        }
-        .hero::before {
-            content: ''; position: absolute; inset:0;
-            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.7) 100%);
-        }
-        .hero-content { position: relative; z-index:1; text-align: center; padding: 10px 20px; }
-        .hero h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
-        .hero p { font-size: 16px; color: var(--text-secondary); margin-bottom: 0; }
-        
-        .container { max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
-        .category { margin-bottom: 50px; }
-        .category-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 20px; padding: 0 10px;
-        }
-        .category-title { font-size: 28px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .category-toggle {
-            background: transparent; border: none; color: var(--text-secondary);
-            font-size: 24px; cursor: pointer; transition: var(--transition);
-        }
-        .category-toggle:hover { color: var(--text-primary); transform: scale(1.2); }
-        .category-content {
-            display: flex; gap: 15px; overflow-x: auto; padding: 10px 0;
-            scroll-behavior: smooth; scrollbar-width: thin;
-            scrollbar-color: var(--accent-red) var(--bg-secondary);
-        }
-        .category-content::-webkit-scrollbar { height: 8px; }
-        .category-content::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 10px; }
-        .category-content::-webkit-scrollbar-thumb { background: var(--accent-red); border-radius: 10px; }
-        
-        .categories-row {
-            display: flex; gap: 20px; overflow-x: auto; padding: 10px 0 20px;
-            scroll-behavior: smooth; scrollbar-width: thin;
-            scrollbar-color: var(--accent-red) var(--bg-secondary);
-        }
-        .categories-row::-webkit-scrollbar { height: 8px; }
-        .categories-row::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 10px; }
-        .categories-row::-webkit-scrollbar-thumb { background: var(--accent-red); border-radius: 10px; }
-        
-        .category-card {
-            flex: 0 0 220px; height: 140px;
-            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-            border-radius: 12px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 12px;
-            cursor: pointer; transition: var(--transition); position: relative;
-            overflow: hidden; border: 2px solid transparent;
-        }
-        .category-card::before {
-            content: ''; position: absolute; inset:0;
-            background: linear-gradient(135deg, var(--accent-red) 0%, transparent 100%);
-            opacity: 0; transition: var(--transition);
-        }
-        .category-card:hover {
-            transform: translateY(-5px) scale(1.03);
-            border-color: var(--accent-red);
-            box-shadow: 0 10px 30px rgba(229,9,20,0.3);
-        }
-        .category-card:hover::before { opacity: 0.15; }
-        .category-card.active {
-            border-color: var(--accent-red);
-            background: linear-gradient(135deg, #3a1a1a 0%, #1a1a1a 100%);
-        }
-        .category-card-icon { font-size: 50px; position: relative; z-index:1; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
-        .category-card-name { font-size: 16px; font-weight: 600; position: relative; z-index:1; text-align: center; padding: 0 10px; }
-        .category-card-count {
-            position: absolute; top: 10px; right: 10px;
-            background: var(--accent-red); color: white; padding: 3px 10px;
-            border-radius: 12px; font-size: 12px; font-weight: 700; z-index:1;
-        }
-        
-        .card {
-            flex: 0 0 200px; background: var(--bg-card); border-radius: 8px;
-            overflow: hidden; cursor: pointer; transition: var(--transition); position: relative;
-        }
-        .card:hover { transform: scale(1.05); box-shadow: var(--shadow); z-index:10; }
-        .card-image {
-            width:100%; height:300px;
-            background: linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 60px; position: relative;
-        }
-        .card-image img { width:100%; height:100%; object-fit: cover; }
-        .card-badge {
-            position: absolute; top:10px; left:10px;
-            background: var(--accent-red); color: white; padding: 4px 10px;
-            border-radius: 4px; font-size: 12px; font-weight: 700;
-            display: flex; align-items: center; gap: 5px;
-        }
-        .card-badge.live::before {
-            content: ''; width:8px; height:8px; background: white;
-            border-radius: 50%; animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
-        .card-info { padding: 15px; }
-        .card-title { font-size:16px; font-weight:500; margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .card-meta { font-size:13px; color:var(--text-secondary); display:flex; align-items:center; gap:10px; }
-        .card-favorite {
-            position: absolute; top:10px; right:10px;
-            background: rgba(0,0,0,0.7); border:none; color:white;
-            width:35px; height:35px; border-radius:50%; cursor:pointer;
-            font-size:18px; transition:var(--transition);
-            display:flex; align-items:center; justify-content:center; z-index:5;
-        }
-        .card-favorite:hover { background: var(--accent-gold); transform: scale(1.1); }
-        .card-favorite.active { color: var(--accent-gold); }
-        .favorites-section .category-title { color: var(--accent-gold); }
-        .favorites-section .card { border: 2px solid var(--accent-gold); }
-        
-        .modal {
-            display:none; position:fixed; inset:0; background: rgba(0,0,0,0.95);
-            z-index:2000; align-items:center; justify-content:center; padding:20px;
-        }
-        .modal.active { display:flex; }
-        .modal-content {
-            background: var(--bg-secondary); border-radius:12px; max-width:1200px;
-            width:100%; max-height:90vh; overflow:hidden; position:relative;
-            animation: modalSlideIn 0.3s ease;
-        }
-        @keyframes modalSlideIn { from{opacity:0; transform:translateY(-50px);} to{opacity:1; transform:translateY(0);} }
-        .modal-close {
-            position:absolute; top:15px; right:15px;
-            background: rgba(0,0,0,0.7); border:none; color:white;
-            width:40px; height:40px; border-radius:50%; cursor:pointer;
-            font-size:24px; z-index:10; transition:var(--transition);
-        }
-        .modal-close:hover { background: var(--accent-red); transform: rotate(90deg); }
-        .player-container { position:relative; width:100%; background:black; aspect-ratio:16/9; }
-        .player-container video { width:100%; height:100%; object-fit:contain; }
-        .player-controls {
-            position:absolute; bottom:0; left:0; right:0;
-            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
-            padding:20px; display:flex; align-items:center; gap:15px;
-            transition: opacity 0.3s ease;
-        }
-        .player-controls.hidden { opacity:0; pointer-events:none; }
-        .player-btn {
-            background:transparent; border:none; color:white; font-size:24px;
-            cursor:pointer; padding:8px; border-radius:50%; transition:var(--transition);
-        }
-        .player-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
-        .player-title { flex:1; font-size:18px; font-weight:500; }
-        
-        .mini-player {
-            position:fixed; bottom:20px; right:20px; width:320px; height:180px;
-            background:black; border-radius:12px; overflow:hidden;
-            box-shadow:0 10px 40px rgba(0,0,0,0.8); z-index:1500;
-            cursor:pointer; transition:var(--transition); display:none;
-        }
-        .mini-player.active { display:block; }
-        .mini-player:hover { transform:scale(1.05); }
-        .mini-player video { width:100%; height:100%; object-fit:cover; }
-        .mini-player-close {
-            position:absolute; top:5px; right:5px;
-            background:rgba(0,0,0,0.7); border:none; color:white;
-            width:25px; height:25px; border-radius:50%; cursor:pointer; font-size:16px;
-        }
-        
-        .admin-panel {
-            display:none; position:fixed; inset:0; background: var(--bg-primary);
-            z-index:3000; overflow-y:auto; padding:20px;
-        }
-        .admin-panel.active { display:block; }
-        .admin-header {
-            display:flex; align-items:center; justify-content:space-between;
-            margin-bottom:30px; padding:20px; background:var(--bg-secondary); border-radius:12px;
-        }
-        .admin-title { font-size:32px; font-weight:700; color: var(--accent-red); }
-        .admin-section {
-            background: var(--bg-secondary); border-radius:12px;
-            padding:20px; margin-bottom:20px;
-        }
-        .admin-section-title {
-            font-size:24px; font-weight:700; margin-bottom:20px;
-            display:flex; align-items:center; justify-content:space-between;
-        }
-        .admin-item {
-            background: var(--bg-card); padding:15px; border-radius:8px;
-            margin-bottom:10px; display:flex; align-items:center; gap:15px; flex-wrap:wrap;
-        }
-        .admin-item input, .admin-item select {
-            flex:1; min-width:120px; padding:10px; background: var(--bg-primary);
-            border:1px solid #444; border-radius:6px; color:var(--text-primary); font-size:14px;
-        }
-        .admin-item input:focus { outline:none; border-color:var(--accent-red); }
-        .btn {
-            padding:10px 20px; border:none; border-radius:6px; cursor:pointer;
-            font-weight:500; transition:var(--transition); font-size:14px;
-        }
-        .btn-primary { background:var(--accent-red); color:white; }
-        .btn-primary:hover { background:#f40612; transform:translateY(-2px); }
-        .btn-secondary { background:#444; color:white; }
-        .btn-secondary:hover { background:#555; }
-        .btn-danger { background:#dc3545; color:white; }
-        .btn-danger:hover { background:#c82333; }
-        .btn-success { background:var(--accent-green); color:white; }
-        .btn-success:hover { background:#3bc25a; }
-        
-        .login-modal {
-            display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9);
-            z-index:4000; align-items:center; justify-content:center;
-        }
-        .login-modal.active { display:flex; }
-        .login-box {
-            background:var(--bg-secondary); padding:40px; border-radius:12px;
-            max-width:400px; width:100%; text-align:center;
-        }
-        .login-box h2 { margin-bottom:20px; color:var(--accent-red); }
-        .login-box input {
-            width:100%; padding:15px; background:var(--bg-primary);
-            border:2px solid #444; border-radius:8px; color:var(--text-primary);
-            font-size:16px; margin-bottom:20px;
-        }
-        .login-box input:focus { outline:none; border-color:var(--accent-red); }
-        
-        @media (max-width:768px) {
-            .navbar { padding:10px 15px; }
-            .navbar-brand { font-size:20px; }
-            .navbar-menu { display:none; }
-            .hero { height:120px; }
-            .hero h1 { font-size:24px; }
-            .hero p { font-size:14px; }
-            .category-card { flex:0 0 170px; height:115px; }
-            .category-card-icon { font-size:40px; }
-            .category-card-name { font-size:14px; }
-            .card { flex:0 0 150px; }
-            .card-image { height:225px; }
-            .category-title { font-size:22px; }
-            .mini-player { width:200px; height:112px; bottom:10px; right:10px; }
-        }
-        @media (max-width:460px) {
-            .hero { height:100px; }
-            .hero h1 { font-size:20px; }
-            .category-card { flex:0 0 140px; height:100px; }
-            .category-card-icon { font-size:32px; }
-            .category-card-name { font-size:12px; }
-            .card { flex:0 0 120px; }
-            .card-image { height:180px; font-size:40px; }
-            .card-title { font-size:14px; }
-        }
-        *:focus { outline:3px solid var(--accent-red); outline-offset:2px; }
-        .loading {
-            display:inline-block; width:40px; height:40px;
-            border:4px solid rgba(255,255,255,0.1); border-top-color:var(--accent-red);
-            border-radius:50%; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to{ transform:rotate(360deg); } }
-        .toast {
-            position:fixed; bottom:30px; left:50%;
-            transform:translateX(-50%) translateY(100px);
-            background:var(--bg-secondary); color:var(--text-primary);
-            padding:15px 30px; border-radius:8px; box-shadow:var(--shadow);
-            z-index:5000; transition: transform 0.3s ease;
-        }
-        .toast.show { transform:translateX(-50%) translateY(0); }
-        .toast.success { border-left:4px solid var(--accent-green); }
-        .toast.error { border-left:4px solid var(--accent-red); }
-        .empty-message {
-            padding:30px; text-align:center; color:var(--text-secondary);
-            background:var(--bg-secondary); border-radius:8px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#090909">
+
+<title>IL REGNO</title>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+:root{
+    --black:#070707;
+    --dark:#101010;
+    --dark2:#171717;
+    --card:#1c1c1c;
+    --card2:#242424;
+    --red:#e50914;
+    --red2:#ff1822;
+    --white:#fff;
+    --gray:#aaa;
+    --green:#46d369;
+    --gold:#ffd700;
+    --border:#303030;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    background:
+        radial-gradient(circle at top,#171717 0,#070707 45%);
+    color:var(--white);
+    font-family:Arial,Helvetica,sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header{
+    position:sticky;
+    top:0;
+    z-index:1000;
+    height:72px;
+
+    display:flex;
+    align-items:center;
+    gap:25px;
+
+    padding:0 28px;
+
+    background:rgba(7,7,7,.94);
+    backdrop-filter:blur(15px);
+
+    border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:9px;
+
+    font-size:25px;
+    font-weight:900;
+    color:var(--red);
+
+    white-space:nowrap;
+}
+
+.logo span{
+    font-size:25px;
+}
+
+.header-spacer{
+    flex:1;
+}
+
+.header-button{
+    width:42px;
+    height:42px;
+
+    border:none;
+    border-radius:50%;
+
+    background:#1c1c1c;
+    color:white;
+
+    font-size:20px;
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.header-button:hover{
+    background:var(--red);
+    transform:scale(1.08);
+}
+
+.header-button.active{
+    background:var(--red);
+}
+
+/* =========================
+   MAIN
+========================= */
+
+.main{
+    max-width:1500px;
+    margin:auto;
+    padding:25px 25px 60px;
+}
+
+/* =========================
+   CATEGORY NAV
+========================= */
+
+.category-nav-wrapper{
+    margin-bottom:28px;
+}
+
+.category-nav{
+    display:flex;
+    gap:14px;
+
+    overflow-x:auto;
+    padding:5px 3px 14px;
+
+    scrollbar-width:thin;
+    scrollbar-color:var(--red) #171717;
+}
+
+.category-nav::-webkit-scrollbar{
+    height:7px;
+}
+
+.category-nav::-webkit-scrollbar-track{
+    background:#171717;
+    border-radius:20px;
+}
+
+.category-nav::-webkit-scrollbar-thumb{
+    background:var(--red);
+    border-radius:20px;
+}
+
+.category-pill{
+    flex:0 0 auto;
+
+    min-width:145px;
+    height:68px;
+
+    border:1px solid #333;
+    border-radius:14px;
+
+    background:
+        linear-gradient(145deg,#242424,#111);
+
+    color:white;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+
+    font-size:17px;
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.category-pill:hover{
+    border-color:var(--red);
+    transform:translateY(-2px);
+    box-shadow:0 8px 25px rgba(229,9,20,.18);
+}
+
+.category-pill.active{
+    background:
+        linear-gradient(145deg,#e50914,#a90009);
+
+    border-color:var(--red);
+    box-shadow:0 8px 25px rgba(229,9,20,.25);
+}
+
+.category-icon{
+    font-size:25px;
+}
+
+/* =========================
+   SECTION
+========================= */
+
+.section{
+    margin-top:30px;
+}
+
+.section-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    margin-bottom:15px;
+}
+
+.section-title{
+    font-size:26px;
+    font-weight:800;
+}
+
+.section-title span{
+    color:var(--red);
+}
+
+.section-count{
+    color:var(--gray);
+    font-size:14px;
+}
+
+/* =========================
+   LIVE GRID
+========================= */
+
+.live-grid{
+    display:grid;
+
+    grid-template-columns:
+        repeat(auto-fill,minmax(220px,1fr));
+
+    gap:18px;
+}
+
+/* =========================
+   LIVE CARD
+========================= */
+
+.live-card{
+    position:relative;
+
+    background:
+        linear-gradient(145deg,#202020,#111);
+
+    border:1px solid #292929;
+    border-radius:15px;
+
+    overflow:hidden;
+
+    cursor:pointer;
+
+    transition:.25s;
+}
+
+.live-card:hover{
+    transform:translateY(-5px);
+    border-color:var(--red);
+
+    box-shadow:
+        0 15px 40px rgba(0,0,0,.55),
+        0 0 20px rgba(229,9,20,.12);
+}
+
+.live-preview{
+    position:relative;
+
+    aspect-ratio:16/9;
+
+    background:
+        radial-gradient(circle,#292929,#0b0b0b);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    overflow:hidden;
+}
+
+.live-preview img{
+    width:100%;
+    height:100%;
+
+    object-fit:contain;
+
+    padding:18px;
+
+    transition:.3s;
+}
+
+.live-card:hover .live-preview img{
+    transform:scale(1.05);
+}
+
+.live-placeholder{
+    font-size:55px;
+    opacity:.75;
+}
+
+.live-badge{
+    position:absolute;
+
+    top:10px;
+    left:10px;
+
+    background:var(--red);
+
+    padding:5px 9px;
+
+    border-radius:6px;
+
+    font-size:11px;
+    font-weight:900;
+
+    display:flex;
+    align-items:center;
+    gap:5px;
+
+    z-index:2;
+}
+
+.live-badge::before{
+    content:"";
+
+    width:7px;
+    height:7px;
+
+    background:white;
+
+    border-radius:50%;
+
+    animation:pulse 1.3s infinite;
+}
+
+@keyframes pulse{
+    0%,100%{
+        opacity:1;
+    }
+
+    50%{
+        opacity:.25;
+    }
+}
+
+.live-info{
+    padding:13px 15px 15px;
+}
+
+.live-name{
+    font-size:17px;
+    font-weight:700;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.live-subtitle{
+    margin-top:5px;
+
+    color:#888;
+
+    font-size:13px;
+}
+
+/* =========================
+   CONTENT GRID
+========================= */
+
+.content-grid{
+    display:grid;
+
+    grid-template-columns:
+        repeat(auto-fill,minmax(180px,1fr));
+
+    gap:17px;
+}
+
+.content-card{
+    background:#1a1a1a;
+
+    border-radius:12px;
+
+    overflow:hidden;
+
+    cursor:pointer;
+
+    border:1px solid #282828;
+
+    transition:.2s;
+}
+
+.content-card:hover{
+    transform:translateY(-4px);
+    border-color:var(--red);
+}
+
+.content-image{
+    aspect-ratio:2/3;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:
+        linear-gradient(145deg,#292929,#111);
+
+    font-size:50px;
+
+    overflow:hidden;
+}
+
+.content-image img{
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+}
+
+.content-info{
+    padding:12px;
+}
+
+.content-name{
+    font-size:15px;
+    font-weight:700;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.content-type{
+    margin-top:5px;
+
+    color:#888;
+    font-size:12px;
+}
+
+/* =========================
+   EMPTY
+========================= */
+
+.empty{
+    width:100%;
+
+    padding:45px 20px;
+
+    background:#111;
+
+    border:1px dashed #333;
+
+    border-radius:14px;
+
+    text-align:center;
+
+    color:#888;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.loading{
+    width:45px;
+    height:45px;
+
+    margin:50px auto;
+
+    border:4px solid #252525;
+    border-top-color:var(--red);
+
+    border-radius:50%;
+
+    animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+/* =========================
+   SEARCH
+========================= */
+
+.search-overlay{
+    position:fixed;
+    inset:0;
+
+    z-index:2500;
+
+    background:rgba(0,0,0,.96);
+
+    display:none;
+
+    padding:35px;
+}
+
+.search-overlay.active{
+    display:block;
+}
+
+.search-box{
+    max-width:900px;
+    margin:40px auto;
+}
+
+.search-top{
+    display:flex;
+    gap:12px;
+}
+
+.search-input{
+    flex:1;
+
+    height:58px;
+
+    padding:0 20px;
+
+    background:#181818;
+
+    border:1px solid #333;
+    border-radius:10px;
+
+    color:white;
+
+    font-size:18px;
+}
+
+.search-input:focus{
+    outline:none;
+    border-color:var(--red);
+}
+
+.close-search{
+    width:58px;
+
+    border:none;
+    border-radius:10px;
+
+    background:var(--red);
+    color:white;
+
+    font-size:22px;
+
+    cursor:pointer;
+}
+
+.search-results{
+    margin-top:30px;
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(auto-fill,minmax(180px,1fr));
+
+    gap:15px;
+}
+
+/* =========================
+   PLAYER
+========================= */
+
+.player-modal{
+    position:fixed;
+    inset:0;
+
+    z-index:5000;
+
+    display:none;
+    align-items:center;
+    justify-content:center;
+
+    background:rgba(0,0,0,.96);
+
+    padding:20px;
+}
+
+.player-modal.active{
+    display:flex;
+}
+
+.player-window{
+    width:min(1200px,100%);
+
+    background:#101010;
+
+    border-radius:14px;
+
+    overflow:hidden;
+
+    box-shadow:0 20px 70px rgba(0,0,0,.8);
+}
+
+.player-top{
+    height:55px;
+
+    display:flex;
+    align-items:center;
+
+    padding:0 15px;
+
+    background:#171717;
+
+    border-bottom:1px solid #292929;
+}
+
+.player-title{
+    flex:1;
+
+    font-size:17px;
+    font-weight:700;
+}
+
+.player-close{
+    width:38px;
+    height:38px;
+
+    border:none;
+    border-radius:50%;
+
+    background:#292929;
+    color:white;
+
+    cursor:pointer;
+
+    font-size:18px;
+}
+
+.player-close:hover{
+    background:var(--red);
+}
+
+.video-container{
+    position:relative;
+
+    width:100%;
+
+    background:black;
+
+    aspect-ratio:16/9;
+}
+
+.video-container video{
+    width:100%;
+    height:100%;
+
+    object-fit:contain;
+}
+
+.player-bottom{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    gap:12px;
+
+    padding:12px;
+
+    background:#151515;
+}
+
+.player-btn{
+    border:none;
+
+    background:#292929;
+
+    color:white;
+
+    width:45px;
+    height:40px;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+    font-size:17px;
+}
+
+.player-btn:hover{
+    background:var(--red);
+}
+
+/* =========================
+   LOGIN
+========================= */
+
+.login-overlay{
+    position:fixed;
+    inset:0;
+
+    z-index:6000;
+
+    background:rgba(0,0,0,.92);
+
+    display:none;
+
+    align-items:center;
+    justify-content:center;
+
+    padding:20px;
+}
+
+.login-overlay.active{
+    display:flex;
+}
+
+.login-box{
+    width:min(400px,100%);
+
+    padding:30px;
+
+    background:#181818;
+
+    border:1px solid #333;
+
+    border-radius:15px;
+
+    box-shadow:0 20px 60px rgba(0,0,0,.7);
+}
+
+.login-box h2{
+    margin-bottom:20px;
+
+    color:var(--red);
+}
+
+.login-input{
+    width:100%;
+
+    height:50px;
+
+    padding:0 15px;
+
+    background:#0d0d0d;
+
+    border:1px solid #333;
+
+    border-radius:8px;
+
+    color:white;
+
+    font-size:16px;
+
+    margin-bottom:15px;
+}
+
+.login-input:focus{
+    outline:none;
+    border-color:var(--red);
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn{
+    border:none;
+
+    border-radius:8px;
+
+    padding:11px 18px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.btn-red{
+    background:var(--red);
+    color:white;
+}
+
+.btn-red:hover{
+    background:var(--red2);
+}
+
+.btn-gray{
+    background:#333;
+    color:white;
+}
+
+.btn-green{
+    background:var(--green);
+    color:white;
+}
+
+.btn-danger{
+    background:#d32f2f;
+    color:white;
+}
+
+/* =========================
+   ADMIN
+========================= */
+
+.admin{
+    position:fixed;
+    inset:0;
+
+    z-index:5500;
+
+    display:none;
+
+    background:#080808;
+
+    overflow-y:auto;
+
+    padding:25px;
+}
+
+.admin.active{
+    display:block;
+}
+
+.admin-container{
+    max-width:1300px;
+    margin:auto;
+}
+
+.admin-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    gap:15px;
+
+    margin-bottom:25px;
+
+    padding:20px;
+
+    background:#171717;
+
+    border:1px solid #292929;
+
+    border-radius:14px;
+}
+
+.admin-title{
+    color:var(--red);
+
+    font-size:27px;
+    font-weight:900;
+}
+
+.admin-section{
+    margin-bottom:20px;
+
+    padding:20px;
+
+    background:#151515;
+
+    border:1px solid #292929;
+
+    border-radius:14px;
+}
+
+.admin-section-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    margin-bottom:15px;
+
+    gap:15px;
+}
+
+.admin-section-title{
+    font-size:21px;
+    font-weight:800;
+}
+
+.admin-item{
+    display:grid;
+
+    grid-template-columns:
+        55px
+        minmax(130px,1fr)
+        minmax(250px,2fr)
+        130px
+        50px
+        50px;
+
+    gap:10px;
+
+    padding:10px;
+
+    margin-bottom:8px;
+
+    background:#202020;
+
+    border-radius:9px;
+}
+
+.admin-input,
+.admin-select{
+    width:100%;
+
+    height:42px;
+
+    padding:0 10px;
+
+    background:#0d0d0d;
+
+    border:1px solid #383838;
+
+    border-radius:7px;
+
+    color:white;
+}
+
+.admin-input:focus,
+.admin-select:focus{
+    outline:none;
+
+    border-color:var(--red);
+}
+
+.admin-small-btn{
+    border:none;
+
+    border-radius:7px;
+
+    cursor:pointer;
+
+    font-size:17px;
+
+    color:white;
+}
+
+.save-btn{
+    background:var(--green);
+}
+
+.delete-btn{
+    background:#d32f2f;
+}
+
+.admin-add{
+    margin-top:10px;
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toast{
+    position:fixed;
+
+    left:50%;
+    bottom:25px;
+
+    transform:translate(-50%,100px);
+
+    z-index:9000;
+
+    background:#202020;
+
+    border-left:4px solid var(--green);
+
+    padding:14px 22px;
+
+    border-radius:8px;
+
+    box-shadow:0 10px 30px rgba(0,0,0,.6);
+
+    transition:.3s;
+
+    opacity:0;
+}
+
+.toast.show{
+    transform:translate(-50%,0);
+    opacity:1;
+}
+
+.toast.error{
+    border-left-color:var(--red);
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer{
+    text-align:center;
+
+    padding:30px;
+
+    color:#555;
+
+    font-size:13px;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:900px){
+
+    .header{
+        padding:0 15px;
+        height:65px;
+    }
+
+    .logo{
+        font-size:21px;
+    }
+
+    .main{
+        padding:18px 14px 45px;
+    }
+
+    .category-pill{
+        min-width:130px;
+        height:60px;
+
+        font-size:15px;
+    }
+
+    .live-grid{
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+
+        gap:12px;
+    }
+
+    .live-name{
+        font-size:14px;
+    }
+
+    .live-subtitle{
+        font-size:11px;
+    }
+
+    .content-grid{
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+    }
+
+    .admin{
+        padding:12px;
+    }
+
+    .admin-item{
+        grid-template-columns:1fr;
+    }
+
+}
+
+@media(max-width:500px){
+
+    .header-button{
+        width:38px;
+        height:38px;
+
+        font-size:17px;
+    }
+
+    .live-grid{
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+    }
+
+    .live-preview{
+        aspect-ratio:16/10;
+    }
+
+    .section-title{
+        font-size:21px;
+    }
+
+    .category-pill{
+        min-width:120px;
+    }
+
+    .player-modal{
+        padding:0;
+    }
+
+    .player-window{
+        border-radius:0;
+    }
+
+}
+
+</style>
 </head>
+
 <body>
-    <nav class="navbar">
-        <div class="navbar-brand"><span>👑</span><span>IL REGNO</span></div>
-        <ul class="navbar-menu" id="navbarMenu">
-            <li class="active" data-category="all">Home</li>
-            <li data-category="film">🎬 Film</li>
-            <li data-category="serie-tv">📺 Serie TV</li>
-            <li data-category="sport">🏅 Sport</li>
-            <li data-category="cartoni">🐱 Cartoni</li>
-            <li data-category="anime">🐉 Anime</li>
-            <li data-category="live-tv">📡 LIVE TV</li>
-        </ul>
-        <div class="navbar-actions">
-            <button class="btn-icon" id="btnAdBlock" title="Blocco annunci">🛡️</button>
-            <button class="btn-icon" id="btnAdmin" title="Admin">⚙️</button>
+
+<!-- =========================
+     HEADER
+========================= -->
+
+<header class="header">
+
+    <div class="logo">
+        <span>👑</span>
+        <span>IL REGNO</span>
+    </div>
+
+    <div class="header-spacer"></div>
+
+    <button
+        class="header-button"
+        id="searchButton"
+        title="Cerca">
+        🔍
+    </button>
+
+    <button
+        class="header-button"
+        id="adminButton"
+        title="Admin">
+        ⚙️
+    </button>
+
+</header>
+
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<main class="main">
+
+    <!-- CATEGORIE -->
+
+    <section class="category-nav-wrapper">
+
+        <div
+            class="category-nav"
+            id="categoryNav">
+
         </div>
-    </nav>
-    
-    <section class="hero">
-        <div class="hero-content">
-            <h1>👑 IL REGNO</h1>
-            <p>Il tuo hub di streaming tutto-in-uno</p>
-        </div>
+
     </section>
-    
-    <div class="container" id="mainContainer">
-        <div style="text-align:center; padding:50px;">
+
+
+    <!-- LIVE -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <h2 class="section-title">
+                📡 <span>Live TV</span>
+            </h2>
+
+            <div
+                class="section-count"
+                id="liveCount">
+            </div>
+
+        </div>
+
+        <div
+            class="live-grid"
+            id="liveGrid">
+
             <div class="loading"></div>
-            <p style="margin-top:20px; color:var(--text-secondary);">Caricamento in corso...</p>
+
         </div>
+
+    </section>
+
+
+    <!-- CONTENUTI -->
+
+    <section
+        class="section"
+        id="categorySection">
+
+    </section>
+
+
+    <footer class="footer">
+
+        👑 IL REGNO
+
+    </footer>
+
+</main>
+
+
+<!-- =========================
+     SEARCH
+========================= -->
+
+<div
+    class="search-overlay"
+    id="searchOverlay">
+
+    <div class="search-box">
+
+        <div class="search-top">
+
+            <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="Cerca film, serie, sport, canali...">
+
+            <button
+                class="close-search"
+                id="closeSearch">
+                ✕
+            </button>
+
+        </div>
+
+        <div
+            class="search-results"
+            id="searchResults">
+
+        </div>
+
     </div>
-    
-    <div class="modal" id="playerModal">
-        <div class="modal-content">
-            <button class="modal-close" id="playerClose">✕</button>
-            <div class="player-container" id="playerContainer">
-                <video id="videoPlayer" controls playsinline></video>
-                <div class="player-controls" id="playerControls">
-                    <button class="player-btn" id="btnPrevChannel">⏮️</button>
-                    <button class="player-btn" id="btnPlayPause">⏸️</button>
-                    <button class="player-btn" id="btnNextChannel">⏭️</button>
-                    <span class="player-title" id="playerTitle"></span>
-                    <button class="player-btn" id="btnFullscreen">⛶</button>
-                </div>
+
+</div>
+
+
+<!-- =========================
+     PLAYER
+========================= -->
+
+<div
+    class="player-modal"
+    id="playerModal">
+
+    <div class="player-window">
+
+        <div class="player-top">
+
+            <div
+                class="player-title"
+                id="playerTitle">
+                Player
             </div>
+
+            <button
+                class="player-close"
+                id="playerClose">
+                ✕
+            </button>
+
         </div>
-    </div>
-    
-    <div class="mini-player" id="miniPlayer">
-        <video id="miniVideo" muted></video>
-        <button class="mini-player-close" id="miniPlayerClose">✕</button>
-    </div>
-    
-    <div class="login-modal" id="loginModal">
-        <div class="login-box">
-            <h2>🔐 Accesso Admin</h2>
-            <input type="password" id="adminPassword" placeholder="Password">
-            <button class="btn btn-primary" id="btnLogin" style="width:100%;">Accedi</button>
-            <button class="btn btn-secondary" id="btnLoginCancel" style="width:100%; margin-top:10px;">Annulla</button>
+
+
+        <div class="video-container">
+
+            <video
+                id="videoPlayer"
+                controls
+                playsinline>
+            </video>
+
         </div>
-    </div>
-    
-    <div class="admin-panel" id="adminPanel">
-        <div class="admin-header">
-            <h1 class="admin-title">⚙️ Pannello Admin</h1>
-            <div>
-                <button class="btn btn-secondary" id="btnAdminClose">Chiudi</button>
-                <button class="btn btn-danger" id="btnLogout">Logout</button>
-            </div>
+
+
+        <div class="player-bottom">
+
+            <button
+                class="player-btn"
+                id="previousChannel">
+                ⏮
+            </button>
+
+            <button
+                class="player-btn"
+                id="playPause">
+                ▶
+            </button>
+
+            <button
+                class="player-btn"
+                id="nextChannel">
+                ⏭
+            </button>
+
+            <button
+                class="player-btn"
+                id="fullscreen">
+                ⛶
+            </button>
+
         </div>
-        <div id="adminContent"></div>
-        <button class="btn btn-success" id="btnAddCategory" style="margin-top:20px; width:100%;">
-            ➕ Aggiungi Nuova Categoria
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     LOGIN ADMIN
+========================= -->
+
+<div
+    class="login-overlay"
+    id="loginOverlay">
+
+    <div class="login-box">
+
+        <h2>🔐 Accesso Admin</h2>
+
+        <input
+            type="password"
+            id="adminPassword"
+            class="login-input"
+            placeholder="Password">
+
+        <button
+            class="btn btn-red"
+            id="loginButton"
+            style="width:100%;">
+            Accedi
         </button>
+
+        <button
+            class="btn btn-gray"
+            id="cancelLogin"
+            style="width:100%;margin-top:10px;">
+            Annulla
+        </button>
+
     </div>
-    
-    <div class="toast" id="toast"></div>
-    
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyByxULPVAzJObzhfDweMDw0Qtx1OumR_Bo",
-            databaseURL: "https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "il-regno-app",
-            appId: "1:816047392926:web:9de485468d75d7b4d8538f"
-        };
-        const PROXY_URL = 'https://ilregno-proxy.kenneygantkennethwygant.workers.dev/?url=';
-        const ADMIN_PASSWORD = 'regno2024';
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        
-        const DEFAULT_DATA = {
-            'live-tv': [
-                { name: 'Rai 1', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7', icon: '📺', type: 'live' },
-                { name: 'Rai 2', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308718&output=7', icon: '📺', type: 'live' },
-                { name: 'Rai 3', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308709&output=7', icon: '📺', type: 'live' },
-                { name: 'Rete 4', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-r4/r4-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Canale 5', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-c5/c5-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Italia 1', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-i1/i1-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'La7', url: 'https://d1chghleocc9sm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-evfku205gqrtf/Live.m3u8', icon: '📺', type: 'live' },
-                { name: 'TV8', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11223/tv8web/master.m3u8', icon: '📺', type: 'live' },
-                { name: 'Nove', url: 'https://d31mw7o1gs0dap.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-y5pbi2sq9r609/NOVE_IT.m3u8', icon: '📺', type: 'live' },
-                { name: '20 Mediaset', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-lb/lb-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai 4', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746966&output=7', icon: '📺', type: 'live' },
-                { name: 'Iris', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-ki/ki-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai 5', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=395276&output=7', icon: '📺', type: 'live' },
-                { name: 'Rai Movie', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747002&output=7', icon: '🎬', type: 'live' },
-                { name: 'Rai Premium', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746992&output=7', icon: '📺', type: 'live' },
-                { name: 'Cielo', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11219/cieloweb/master.m3u8', icon: '📺', type: 'live' },
-                { name: 'TV2000', url: 'https://hls-live-tv2000.akamaized.net/hls/live/2028510/tv2000/master.m3u8', icon: '📺', type: 'live' },
-                { name: 'La5', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-ka/ka-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Real Time', url: 'https://d3562mgijzx0zq.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-kizqtzpvvl3i8/Realtime_IT.m3u8', icon: '📺', type: 'live' },
-                { name: 'Cine34', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-b6/b6-clr.isml/index.m3u8', icon: '🎬', type: 'live' },
-                { name: 'Focus', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-fu/fu-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Top Crime', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-lt/lt-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Boing', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kb/kb-clr.isml/index.m3u8', icon: '🧒', type: 'live' },
-                { name: 'K2', url: 'https://d1pmpe0hs35ka5.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-39hsskpppgf72/K2_IT.m3u8', icon: '🧒', type: 'live' },
-                { name: 'Rai Gulp', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746953&output=7', icon: '🧒', type: 'live' },
-                { name: 'Rai YoYo', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7', icon: '🧒', type: 'live' },
-                { name: 'Cartoonito', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-la/la-clr.isml/index.m3u8', icon: '🧒', type: 'live' },
-                { name: 'Rai News 24', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=1&output=7', icon: '📰', type: 'live' },
-                { name: 'Sky TG24', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/12221/web/master.m3u8', icon: '📰', type: 'live' },
-                { name: 'TGCOM 24', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kf/kf-clr.isml/index.m3u8', icon: '📰', type: 'live' },
-                { name: 'DMAX', url: 'https://d2j2nqgg7bzth.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-02k1gv1j0ufwn/DMAX_IT.m3u8', icon: '📺', type: 'live' },
-                { name: 'Italia 2', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-i2/i2-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai Storia', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746990&output=7', icon: '📺', type: 'live' },
-                { name: 'Mediaset Extra', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kq/kq-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai Sport', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=358025&output=7', icon: '⚽', type: 'live' },
-                { name: 'Sportitalia', url: 'https://sportsitalia-samsungitaly.amagi.tv/playlist.m3u8', icon: '⚽', type: 'live' },
-                { name: 'SuperTennis', url: 'https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/outgest/aa3673f1-e178-44a9-a947-ef41db73211a/manifest.m3u8', icon: '🎾', type: 'live' },
-                { name: 'Radio 105', url: 'https://live02-seg.msr.cdn.mediaset.net/live/ch-ec/ec-clr.isml/index.m3u8', icon: '🎵', type: 'live' },
-                { name: 'R101 TV', url: 'https://live02-seg.msr.cdn.mediaset.net/live/ch-er/er-clr.isml/index.m3u8', icon: '🎵', type: 'live' },
-                { name: 'Deejay TV', url: 'https://4c4b867c89244861ac216426883d1ad0.msvdn.net/live/S85984808/sMO0tz9Sr2Rk/playlist.m3u8', icon: '🎵', type: 'live' },
-                { name: 'Radio Italia TV', url: 'https://radioitaliatv.akamaized.net/hls/live/2093117/RadioitaliaTV/master.m3u8', icon: '🎵', type: 'live' },
-                { name: 'RDS Social TV', url: 'https://stream.rdstv.radio/index.m3u8', icon: '🎵', type: 'live' },
-                { name: 'RTL 102.5', url: 'https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/playlist.m3u8', icon: '🎵', type: 'live' },
-                { name: 'Food Network', url: 'https://dk3okdd5036kz.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-o4pw0nc02sthz/Foodnetwork_IT.m3u8', icon: '🍳', type: 'live' },
-                { name: 'HGTV', url: 'https://d1tidto9vz737l.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-joaw4f4kh2en1/HGTV_IT.m3u8', icon: '🏠', type: 'live' },
-                { name: 'Motor Trend', url: 'https://d205m6k582pec4.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-asg5puyzdtnqu/Motortrend_IT.m3u8', icon: '🏎️', type: 'live' },
-                { name: 'Giallo', url: 'https://d9fqo6nfqlv2h.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ulukbrgm1n3yb/Giallo_IT.m3u8', icon: '🔍', type: 'live' },
-                { name: 'Radio TV Serie A', url: 'https://stream.radioseriea.com/50773f0d0070476a8612d9984c6059d8/index.m3u8', icon: '⚽', type: 'live' },
-                { name: 'Gambero Rosso', url: 'https://2018f6355a15442ebb37007fa4f6c064.msvdn.net/live/S7530969/XWerenuxbSdW/playlist.m3u8', icon: '🍳', type: 'live' }
-            ],
-            'film': [
-                { name: 'StreamingCommunity', url: 'https://streamingcommunityz.tech/', icon: '🎬', type: 'link' }
-            ],
-            'serie-tv': [
-                { name: 'StreamingCommunity', url: 'https://streamingcommunityz.tech/it/tv-shows', icon: '📺', type: 'link' }
-            ],
-            'sport': [
-                { name: 'FCTV33HD', url: 'https://www.fctv33hd.mom/it', icon: '⚽', type: 'link' }
-            ],
-            'cartoni': [
-                { name: 'Loonex', url: 'https://loonex.eu/cartoni/', icon: '🐱', type: 'link' }
-            ],
-            'anime': [
-                { name: 'AnimeWorld', url: 'https://www.animeworld.ac/', icon: '🐉', type: 'link' }
-            ]
-        };
-        
-        const CATEGORY_NAMES = {
-            'favorites': '⭐ Preferiti',
-            'live-tv': '📡 LIVE TV',
-            'film': '🎬 Film',
-            'serie-tv': '📺 Serie TV',
-            'sport': '🏅 Sport',
-            'cartoni': '🐱 Cartoni animati',
-            'anime': '🐉 Anime'
-        };
-        const CATEGORY_ICONS = {
-            'live-tv': '📡',
-            'film': '🎬',
-            'serie-tv': '📺',
-            'sport': '🏅',
-            'cartoni': '🐱',
-            'anime': '🐉'
-        };
-        
-        let appData = {};
-        let currentCategory = 'all';
-        let currentChannelIndex = -1;
-        let hls = null, miniHls = null;
-        let isAdmin = localStorage.getItem('adminAuth') === 'true';
-        let adBlockEnabled = localStorage.getItem('adBlock') === 'true';
-        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-        let controlsTimeout;
-        
-        function showToast(msg, type='success') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = `toast ${type} show`;
-            setTimeout(() => t.classList.remove('show'), 3000);
+
+</div>
+
+
+<!-- =========================
+     ADMIN
+========================= -->
+
+<div
+    class="admin"
+    id="adminPanel">
+
+    <div class="admin-container">
+
+        <div class="admin-header">
+
+            <div class="admin-title">
+                ⚙️ Pannello Admin
+            </div>
+
+            <div style="display:flex;gap:8px;">
+
+                <button
+                    class="btn btn-gray"
+                    id="closeAdmin">
+                    Chiudi
+                </button>
+
+                <button
+                    class="btn btn-red"
+                    id="logoutAdmin">
+                    Logout
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div id="adminContent"></div>
+
+
+        <button
+            class="btn btn-green admin-add"
+            id="addCategory">
+            ➕ Aggiungi categoria
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- TOAST -->
+
+<div
+    class="toast"
+    id="toast">
+</div>
+
+
+<script>
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyByxULPVAzJObzhfDweMDw0Qtx1OumR_Bo",
+
+    databaseURL:
+        "https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app",
+
+    projectId:
+        "il-regno-app",
+
+    appId:
+        "1:816047392926:web:9de485468d75d7b4d8538f"
+
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
+
+
+/* =========================================================
+   CONFIGURAZIONE
+========================================================= */
+
+const ADMIN_PASSWORD = "regno2024";
+
+const PROXY_URL =
+    "https://ilregno-proxy.kenneygantkennethwygant.workers.dev/?url=";
+
+
+/* =========================================================
+   CATEGORIE
+========================================================= */
+
+const CATEGORY_NAMES = {
+
+    "live-tv":
+        "📡 Live TV",
+
+    "film":
+        "🎬 Film",
+
+    "serie-tv":
+        "📺 Serie TV",
+
+    "sport":
+        "🏅 Sport",
+
+    "cartoni":
+        "🐱 Cartoni",
+
+    "anime":
+        "🐉 Anime"
+
+};
+
+
+const CATEGORY_ICONS = {
+
+    "live-tv":"📡",
+    "film":"🎬",
+    "serie-tv":"📺",
+    "sport":"🏅",
+    "cartoni":"🐱",
+    "anime":"🐉"
+
+};
+
+
+/* =========================================================
+   STATO
+========================================================= */
+
+let appData = {};
+
+let currentCategory =
+    "live-tv";
+
+let currentChannels = [];
+
+let currentChannelIndex = 0;
+
+let hls = null;
+
+let isAdmin = false;
+
+
+/* =========================================================
+   UTILITY
+========================================================= */
+
+function escapeHtml(value){
+
+    if(value === undefined ||
+       value === null){
+
+        return "";
+
+    }
+
+    return String(value)
+
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
+}
+
+
+function showToast(
+    message,
+    type="success"
+){
+
+    const toast =
+        document.getElementById("toast");
+
+    toast.textContent =
+        message;
+
+    toast.className =
+        "toast show " +
+        (type === "error"
+            ? "error"
+            : "");
+
+    clearTimeout(
+        window.toastTimer
+    );
+
+    window.toastTimer =
+        setTimeout(() => {
+
+            toast.className =
+                "toast";
+
+        },3000);
+
+}
+
+
+function getItemImage(item){
+
+    return (
+        item.logo ||
+        item.image ||
+        item.poster ||
+        item.thumb ||
+        item.thumbnail ||
+        ""
+    );
+
+}
+
+
+function getItemUrl(item){
+
+    return (
+        item.url ||
+        item.stream ||
+        item.src ||
+        item.link ||
+        item.m3u8 ||
+        ""
+    );
+
+}
+
+
+function isLiveItem(item){
+
+    return item &&
+        (
+            item.type === "live" ||
+            getItemUrl(item).includes(".m3u8") ||
+            item.category === "live-tv"
+        );
+
+}
+
+
+/* =========================================================
+   PROXY
+========================================================= */
+
+function applyProxy(url){
+
+    if(!url){
+        return "";
+    }
+
+    /*
+       Se vuoi utilizzare sempre il proxy
+       lascia questa funzione così.
+
+       Se un URL non necessita del proxy,
+       il browser tenterà comunque il caricamento.
+    */
+
+    return PROXY_URL +
+        encodeURIComponent(url);
+
+}
+
+
+/* =========================================================
+   CARICAMENTO FIREBASE
+========================================================= */
+
+async function loadDatabase(){
+
+    try{
+
+        const snapshot =
+            await db.ref().once("value");
+
+        const data =
+            snapshot.val();
+
+        if(data &&
+           typeof data === "object"){
+
+            appData = data;
+
+        }else{
+
+            appData = {};
+
         }
-        function applyProxy(url) {
-            return (adBlockEnabled && !url.startsWith(PROXY_URL)) ? PROXY_URL + encodeURIComponent(url) : url;
+
+        renderAll();
+
+    }catch(error){
+
+        console.error(
+            "Firebase:",
+            error
+        );
+
+        showToast(
+            "Errore caricamento Firebase",
+            "error"
+        );
+
+        renderAll();
+
+    }
+
+}
+
+
+/* =========================================================
+   NAV CATEGORIE
+========================================================= */
+
+function renderCategoryNav(){
+
+    const nav =
+        document.getElementById(
+            "categoryNav"
+        );
+
+    nav.innerHTML = "";
+
+    const order = [
+
+        "live-tv",
+        "film",
+        "serie-tv",
+        "sport",
+        "cartoni",
+        "anime"
+
+    ];
+
+
+    const keys = [];
+
+    order.forEach(key => {
+
+        if(
+            appData[key] ||
+            key === "live-tv"
+        ){
+
+            keys.push(key);
+
         }
-        function isFavorite(item) { return favorites.some(f => f.url === item.url); }
-        function toggleFavorite(item) {
-            if (isFavorite(item)) {
-                favorites = favorites.filter(f => f.url !== item.url);
-                showToast('Rimosso dai preferiti');
-            } else {
-                favorites.push(item);
-                showToast('Aggiunto ai preferiti');
-            }
-            localStorage.setItem('favorites', JSON.stringify(favorites));
-            renderCategories();
+
+    });
+
+
+    Object.keys(appData).forEach(key => {
+
+        if(
+            !keys.includes(key) &&
+            key !== "favorites"
+        ){
+
+            keys.push(key);
+
         }
-        
-        async function ensureDefaultCategories(existingData) {
-            const updates = {};
-            let needed = false;
-            for (const [key, value] of Object.entries(DEFAULT_DATA)) {
-                if (!existingData || !existingData[key]) {
-                    updates[key] = value;
-                    needed = true;
-                }
-            }
-            if (needed) {
-                await db.ref().update(updates);
-            }
+
+    });
+
+
+    keys.forEach(key => {
+
+        const button =
+            document.createElement("button");
+
+        button.className =
+            "category-pill " +
+            (
+                key === currentCategory
+                    ? "active"
+                    : ""
+            );
+
+        button.dataset.category =
+            key;
+
+        const icon =
+            CATEGORY_ICONS[key] ||
+            "📁";
+
+        let name =
+            CATEGORY_NAMES[key];
+
+        if(!name){
+
+            name =
+                key
+                    .replaceAll("-"," ")
+                    .replace(/\b\w/g,
+                        char =>
+                            char.toUpperCase()
+                    );
+
+        }else{
+
+            name =
+                name.replace(
+                    /^[^\s]+\s/,
+                    ""
+                );
+
         }
-        
-        async function initializeDatabase() {
-            try {
-                const snapshot = await db.ref().once('value');
-                const data = snapshot.val() || {};
-                await ensureDefaultCategories(data);
-                db.ref().on('value', (snap) => {
-                    appData = snap.val() || {};
-                    renderCategories();
+
+        button.innerHTML = `
+
+            <span class="category-icon">
+                ${icon}
+            </span>
+
+            <span>
+                ${escapeHtml(name)}
+            </span>
+
+        `;
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                currentCategory =
+                    key;
+
+                renderAll();
+
+                window.scrollTo({
+
+                    top:0,
+
+                    behavior:"smooth"
+
                 });
-            } catch (error) {
-                console.error('Errore Firebase:', error);
-                showToast('Errore caricamento database', 'error');
+
             }
+        );
+
+        nav.appendChild(button);
+
+    });
+
+}
+
+
+/* =========================================================
+   LIVE PREVIEW
+========================================================= */
+
+function renderLive(){
+
+    const grid =
+        document.getElementById(
+            "liveGrid"
+        );
+
+    const count =
+        document.getElementById(
+            "liveCount"
+        );
+
+    const items =
+        Array.isArray(
+            appData["live-tv"]
+        )
+            ? appData["live-tv"]
+            : [];
+
+
+    count.textContent =
+        items.length +
+        (
+            items.length === 1
+                ? " canale"
+                : " canali"
+        );
+
+
+    grid.innerHTML = "";
+
+    if(!items.length){
+
+        grid.innerHTML = `
+
+            <div class="empty"
+                 style="grid-column:1/-1">
+
+                Nessun canale Live disponibile.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    items.forEach(
+        (item,index) => {
+
+            grid.appendChild(
+                createLiveCard(
+                    item,
+                    index
+                )
+            );
+
         }
-        
-        function renderCategories() {
-            const container = document.getElementById('mainContainer');
-            container.innerHTML = '';
-            if (favorites.length > 0 && (currentCategory === 'all' || currentCategory === 'favorites')) {
-                container.appendChild(createCategorySection('favorites', favorites, true));
+    );
+
+}
+
+
+function createLiveCard(
+    item,
+    index
+){
+
+    const card =
+        document.createElement(
+            "div"
+        );
+
+    card.className =
+        "live-card";
+
+    const image =
+        getItemImage(item);
+
+    card.innerHTML = `
+
+        <div class="live-preview">
+
+            <div class="live-badge">
+                LIVE
+            </div>
+
+            ${
+                image
+
+                ?
+
+                `<img
+                    src="${escapeHtml(image)}"
+                    alt="${escapeHtml(item.name || "Canale")}"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='block';"
+                >
+                <div
+                    class="live-placeholder"
+                    style="display:none">
+                    📺
+                </div>`
+
+                :
+
+                `<div class="live-placeholder">
+                    ${escapeHtml(item.icon || "📺")}
+                </div>`
+
             }
-            if (currentCategory === 'all' || currentCategory === 'live-tv') {
-                const liveItems = appData['live-tv'] || [];
-                if (liveItems.length) container.appendChild(createCategorySection('live-tv', liveItems));
-            }
-            if (currentCategory === 'all') {
-                container.appendChild(createCategoriesRow());
-            } else if (currentCategory !== 'live-tv' && currentCategory !== 'favorites') {
-                const items = appData[currentCategory] || [];
-                if (items.length) {
-                    container.appendChild(createCategorySection(currentCategory, items));
-                } else {
-                    const empty = document.createElement('div');
-                    empty.className = 'empty-message';
-                    empty.innerHTML = `<h3>${CATEGORY_NAMES[currentCategory]||currentCategory}</h3><p>Nessun contenuto.</p>`;
-                    container.appendChild(empty);
+
+        </div>
+
+        <div class="live-info">
+
+            <div class="live-name">
+
+                ${escapeHtml(
+                    item.name ||
+                    "Canale"
+                )}
+
+            </div>
+
+            <div class="live-subtitle">
+
+                🔴 Diretta
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    card.addEventListener(
+        "click",
+        () => {
+
+            openPlayer(
+                item,
+                "live-tv",
+                index
+            );
+
+        }
+    );
+
+
+    return card;
+
+}
+
+
+/* =========================================================
+   CONTENUTI CATEGORIA
+========================================================= */
+
+function renderCategoryContent(){
+
+    const section =
+        document.getElementById(
+            "categorySection"
+        );
+
+    section.innerHTML = "";
+
+
+    if(
+        currentCategory ===
+        "live-tv"
+    ){
+
+        return;
+
+    }
+
+
+    const items =
+        Array.isArray(
+            appData[currentCategory]
+        )
+            ? appData[currentCategory]
+            : [];
+
+
+    let name =
+        CATEGORY_NAMES[
+            currentCategory
+        ];
+
+
+    if(!name){
+
+        name =
+            currentCategory
+                .replaceAll("-"," ")
+                .replace(/\b\w/g,
+                    c => c.toUpperCase()
+                );
+
+    }
+
+
+    name =
+        name.replace(
+            /^[^\s]+\s/,
+            ""
+        );
+
+
+    section.innerHTML = `
+
+        <div class="section-header">
+
+            <h2 class="section-title">
+
+                ${
+                    CATEGORY_ICONS[
+                        currentCategory
+                    ] || "📁"
                 }
+
+                <span>
+                    ${escapeHtml(name)}
+                </span>
+
+            </h2>
+
+            <div class="section-count">
+
+                ${items.length} elementi
+
+            </div>
+
+        </div>
+
+        <div
+            class="content-grid"
+            id="contentGrid">
+
+        </div>
+
+    `;
+
+
+    const grid =
+        section.querySelector(
+            "#contentGrid"
+        );
+
+
+    if(!items.length){
+
+        grid.innerHTML = `
+
+            <div
+                class="empty"
+                style="grid-column:1/-1">
+
+                Nessun contenuto disponibile.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    items.forEach(
+        item => {
+
+            grid.appendChild(
+                createContentCard(
+                    item,
+                    currentCategory
+                )
+            );
+
+        }
+    );
+
+}
+
+
+function createContentCard(
+    item,
+    category
+){
+
+    const card =
+        document.createElement(
+            "div"
+        );
+
+    card.className =
+        "content-card";
+
+
+    const image =
+        getItemImage(item);
+
+
+    card.innerHTML = `
+
+        <div class="content-image">
+
+            ${
+                image
+
+                ?
+
+                `<img
+                    src="${escapeHtml(image)}"
+                    alt="${escapeHtml(item.name || "")}"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='block';"
+                >
+                <span style="display:none">
+                    ${escapeHtml(item.icon || "🎬")}
+                </span>`
+
+                :
+
+                `<span>
+                    ${escapeHtml(item.icon || "🎬")}
+                </span>`
+
             }
+
+        </div>
+
+        <div class="content-info">
+
+            <div class="content-name">
+
+                ${escapeHtml(
+                    item.name ||
+                    "Senza titolo"
+                )}
+
+            </div>
+
+            <div class="content-type">
+
+                ${
+                    isLiveItem(item)
+                        ? "🔴 LIVE"
+                        : "🔗 Link"
+                }
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    card.addEventListener(
+        "click",
+        () => {
+
+            if(isLiveItem(item)){
+
+                const items =
+                    appData[category] ||
+                    [];
+
+                const index =
+                    items.indexOf(item);
+
+                openPlayer(
+                    item,
+                    category,
+                    index
+                );
+
+            }else{
+
+                const url =
+                    getItemUrl(item);
+
+                if(url){
+
+                    window.open(
+                        applyProxy(url),
+                        "_blank"
+                    );
+
+                }
+
+            }
+
         }
-        
-        function createCategoriesRow() {
-            const section = document.createElement('div');
-            section.className = 'category';
-            section.innerHTML = `
-                <div class="category-header"><h2 class="category-title">📂 Esplora per Categoria</h2></div>
-                <div class="categories-row" id="categoriesRow"></div>
-            `;
-            const row = section.querySelector('.categories-row');
-            const show = ['film','serie-tv','sport','cartoni','anime'];
-            Object.keys(appData).forEach(k => { if (!['live-tv','film','serie-tv','sport','cartoni','anime','favorites'].includes(k)) show.push(k); });
-            show.forEach(catKey => {
-                const items = appData[catKey] || [];
-                const icon = CATEGORY_ICONS[catKey] || '📁';
-                const name = (CATEGORY_NAMES[catKey] || catKey).replace(/^[^\s]+\s/, '');
-                const card = document.createElement('div');
-                card.className = 'category-card';
-                card.tabIndex = 0;
-                card.innerHTML = `<span class="category-card-count">${items.length}</span><span class="category-card-icon">${icon}</span><span class="category-card-name">${name}</span>`;
-                card.addEventListener('click', () => handleCategoryClick(catKey));
-                card.addEventListener('keydown', e => e.key==='Enter' && card.click());
-                row.appendChild(card);
+    );
+
+
+    return card;
+
+}
+
+
+/* =========================================================
+   RENDER
+========================================================= */
+
+function renderAll(){
+
+    renderCategoryNav();
+
+    renderLive();
+
+    renderCategoryContent();
+
+}
+
+
+/* =========================================================
+   PLAYER
+========================================================= */
+
+function openPlayer(
+    item,
+    category,
+    index
+){
+
+    const modal =
+        document.getElementById(
+            "playerModal"
+        );
+
+    const video =
+        document.getElementById(
+            "videoPlayer"
+        );
+
+
+    currentCategory =
+        category;
+
+    currentChannels =
+        appData[category] ||
+        [];
+
+    currentChannelIndex =
+        index;
+
+
+    document.getElementById(
+        "playerTitle"
+    ).textContent =
+        item.name ||
+        "Player";
+
+
+    modal.classList.add(
+        "active"
+    );
+
+
+    playVideo(
+        video,
+        getItemUrl(item)
+    );
+
+}
+
+
+function playVideo(
+    video,
+    url
+){
+
+    if(hls){
+
+        hls.destroy();
+
+        hls = null;
+
+    }
+
+
+    video.pause();
+
+    video.removeAttribute(
+        "src"
+    );
+
+    video.load();
+
+
+    if(!url){
+
+        return;
+
+    }
+
+
+    const stream =
+        applyProxy(url);
+
+
+    const isM3U8 =
+        url.toLowerCase()
+            .includes(".m3u8");
+
+
+    if(
+        isM3U8 &&
+        window.Hls &&
+        Hls.isSupported()
+    ){
+
+        hls =
+            new Hls({
+
+                enableWorker:true,
+
+                lowLatencyMode:true
+
             });
-            return section;
+
+
+        hls.loadSource(
+            stream
+        );
+
+        hls.attachMedia(
+            video
+        );
+
+
+        hls.on(
+            Hls.Events.MANIFEST_PARSED,
+            () => {
+
+                video.play()
+                    .catch(
+                        () => {}
+                    );
+
+            }
+        );
+
+
+        hls.on(
+            Hls.Events.ERROR,
+            (
+                event,
+                data
+            ) => {
+
+                console.warn(
+                    "HLS:",
+                    data
+                );
+
+            }
+        );
+
+    }
+
+    else{
+
+        video.src =
+            stream;
+
+        video.play()
+            .catch(
+                () => {}
+            );
+
+    }
+
+}
+
+
+function closePlayer(){
+
+    const modal =
+        document.getElementById(
+            "playerModal"
+        );
+
+    const video =
+        document.getElementById(
+            "videoPlayer"
+        );
+
+
+    video.pause();
+
+    video.removeAttribute(
+        "src"
+    );
+
+    video.load();
+
+
+    if(hls){
+
+        hls.destroy();
+
+        hls = null;
+
+    }
+
+
+    modal.classList.remove(
+        "active"
+    );
+
+}
+
+
+document.getElementById(
+    "playerClose"
+).addEventListener(
+    "click",
+    closePlayer
+);
+
+
+document.getElementById(
+    "playerModal"
+).addEventListener(
+    "click",
+    event => {
+
+        if(
+            event.target.id ===
+            "playerModal"
+        ){
+
+            closePlayer();
+
         }
-        
-        function handleCategoryClick(catKey) {
-            const items = appData[catKey] || [];
-            if (items.length === 1 && items[0].type !== 'live') {
-                window.open(applyProxy(items[0].url), '_blank');
+
+    }
+);
+
+
+/* =========================================================
+   PLAYER CONTROLLI
+========================================================= */
+
+document.getElementById(
+    "playPause"
+).addEventListener(
+    "click",
+    () => {
+
+        const video =
+            document.getElementById(
+                "videoPlayer"
+            );
+
+        if(video.paused){
+
+            video.play();
+
+        }else{
+
+            video.pause();
+
+        }
+
+    }
+);
+
+
+document.getElementById(
+    "fullscreen"
+).addEventListener(
+    "click",
+    () => {
+
+        const container =
+            document.querySelector(
+                ".video-container"
+            );
+
+        if(
+            document.fullscreenElement
+        ){
+
+            document.exitFullscreen();
+
+        }else if(
+            container.requestFullscreen
+        ){
+
+            container.requestFullscreen();
+
+        }
+
+    }
+);
+
+
+document.getElementById(
+    "previousChannel"
+).addEventListener(
+    "click",
+    () => {
+
+        if(
+            currentChannelIndex <= 0
+        ){
+
+            return;
+
+        }
+
+
+        currentChannelIndex--;
+
+        const item =
+            currentChannels[
+                currentChannelIndex
+            ];
+
+        if(!item){
+
+            return;
+
+        }
+
+
+        document.getElementById(
+            "playerTitle"
+        ).textContent =
+            item.name ||
+            "Player";
+
+
+        playVideo(
+            document.getElementById(
+                "videoPlayer"
+            ),
+            getItemUrl(item)
+        );
+
+    }
+);
+
+
+document.getElementById(
+    "nextChannel"
+).addEventListener(
+    "click",
+    () => {
+
+        if(
+            currentChannelIndex >=
+            currentChannels.length - 1
+        ){
+
+            return;
+
+        }
+
+
+        currentChannelIndex++;
+
+        const item =
+            currentChannels[
+                currentChannelIndex
+            ];
+
+        if(!item){
+
+            return;
+
+        }
+
+
+        document.getElementById(
+            "playerTitle"
+        ).textContent =
+            item.name ||
+            "Player";
+
+
+        playVideo(
+            document.getElementById(
+                "videoPlayer"
+            ),
+            getItemUrl(item)
+        );
+
+    }
+);
+
+
+/* =========================================================
+   RICERCA
+========================================================= */
+
+const searchOverlay =
+    document.getElementById(
+        "searchOverlay"
+    );
+
+const searchInput =
+    document.getElementById(
+        "searchInput"
+    );
+
+const searchResults =
+    document.getElementById(
+        "searchResults"
+    );
+
+
+document.getElementById(
+    "searchButton"
+).addEventListener(
+    "click",
+    () => {
+
+        searchOverlay.classList.add(
+            "active"
+        );
+
+        setTimeout(
+            () =>
+                searchInput.focus(),
+            100
+        );
+
+    }
+);
+
+
+document.getElementById(
+    "closeSearch"
+).addEventListener(
+    "click",
+    () => {
+
+        searchOverlay.classList.remove(
+            "active"
+        );
+
+        searchInput.value = "";
+
+        searchResults.innerHTML = "";
+
+    }
+);
+
+
+searchInput.addEventListener(
+    "input",
+    () => {
+
+        const query =
+            searchInput.value
+                .trim()
+                .toLowerCase();
+
+
+        searchResults.innerHTML = "";
+
+
+        if(!query){
+
+            return;
+
+        }
+
+
+        const found = [];
+
+
+        Object.entries(
+            appData
+        ).forEach(
+            ([
+                category,
+                items
+            ]) => {
+
+                if(
+                    !Array.isArray(items)
+                ){
+
+                    return;
+
+                }
+
+
+                items.forEach(
+                    item => {
+
+                        const name =
+                            String(
+                                item.name ||
+                                ""
+                            )
+                            .toLowerCase();
+
+
+                        if(
+                            name.includes(
+                                query
+                            )
+                        ){
+
+                            found.push({
+
+                                item,
+
+                                category
+
+                            });
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+        if(!found.length){
+
+            searchResults.innerHTML = `
+
+                <div class="empty"
+                     style="grid-column:1/-1">
+
+                    Nessun risultato trovato.
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        found.forEach(
+            result => {
+
+                const card =
+                    createContentCard(
+                        result.item,
+                        result.category
+                    );
+
+                searchResults.appendChild(
+                    card
+                );
+
+            }
+        );
+
+    }
+);
+
+
+/* =========================================================
+   ADMIN LOGIN
+========================================================= */
+
+document.getElementById(
+    "adminButton"
+).addEventListener(
+    "click",
+    () => {
+
+        if(isAdmin){
+
+            openAdmin();
+
+        }else{
+
+            document.getElementById(
+                "loginOverlay"
+            ).classList.add(
+                "active"
+            );
+
+            setTimeout(
+                () =>
+                    document.getElementById(
+                        "adminPassword"
+                    ).focus(),
+                100
+            );
+
+        }
+
+    }
+);
+
+
+document.getElementById(
+    "cancelLogin"
+).addEventListener(
+    "click",
+    () => {
+
+        document.getElementById(
+            "loginOverlay"
+        ).classList.remove(
+            "active"
+        );
+
+        document.getElementById(
+            "adminPassword"
+        ).value = "";
+
+    }
+);
+
+
+document.getElementById(
+    "loginButton"
+).addEventListener(
+    "click",
+    loginAdmin
+);
+
+
+document.getElementById(
+    "adminPassword"
+).addEventListener(
+    "keydown",
+    event => {
+
+        if(
+            event.key ===
+            "Enter"
+        ){
+
+            loginAdmin();
+
+        }
+
+    }
+);
+
+
+function loginAdmin(){
+
+    const password =
+        document.getElementById(
+            "adminPassword"
+        ).value;
+
+
+    if(
+        password ===
+        ADMIN_PASSWORD
+    ){
+
+        isAdmin = true;
+
+        localStorage.setItem(
+            "ilregno_admin",
+            "true"
+        );
+
+
+        document.getElementById(
+            "loginOverlay"
+        ).classList.remove(
+            "active"
+        );
+
+
+        document.getElementById(
+            "adminPassword"
+        ).value = "";
+
+
+        openAdmin();
+
+        showToast(
+            "Accesso effettuato"
+        );
+
+    }else{
+
+        showToast(
+            "Password errata",
+            "error"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   ADMIN
+========================================================= */
+
+function openAdmin(){
+
+    document.getElementById(
+        "adminPanel"
+    ).classList.add(
+        "active"
+    );
+
+    document.body.style.overflow =
+        "hidden";
+
+    renderAdmin();
+
+}
+
+
+function closeAdmin(){
+
+    document.getElementById(
+        "adminPanel"
+    ).classList.remove(
+        "active"
+    );
+
+    document.body.style.overflow =
+        "";
+
+}
+
+
+document.getElementById(
+    "closeAdmin"
+).addEventListener(
+    "click",
+    closeAdmin
+);
+
+
+document.getElementById(
+    "logoutAdmin"
+).addEventListener(
+    "click",
+    () => {
+
+        isAdmin = false;
+
+        localStorage.removeItem(
+            "ilregno_admin"
+        );
+
+        closeAdmin();
+
+        showToast(
+            "Logout effettuato"
+        );
+
+    }
+);
+
+
+/* =========================================================
+   ADMIN RENDER
+========================================================= */
+
+function renderAdmin(){
+
+    const container =
+        document.getElementById(
+            "adminContent"
+        );
+
+    container.innerHTML = "";
+
+
+    const order = [
+
+        "sport",
+        "film",
+        "serie-tv",
+        "cartoni",
+        "anime",
+        "live-tv"
+
+    ];
+
+
+    const categories = [];
+
+
+    order.forEach(
+        category => {
+
+            if(
+                appData[category] !==
+                undefined
+            ){
+
+                categories.push(
+                    category
+                );
+
+            }
+
+        }
+    );
+
+
+    Object.keys(
+        appData
+    ).forEach(
+        category => {
+
+            if(
+                !categories.includes(
+                    category
+                ) &&
+                category !==
+                "favorites"
+            ){
+
+                categories.push(
+                    category
+                );
+
+            }
+
+        }
+    );
+
+
+    categories.forEach(
+        category => {
+
+            container.appendChild(
+                createAdminSection(
+                    category
+                )
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ADMIN SECTION
+========================================================= */
+
+function createAdminSection(
+    category
+){
+
+    const section =
+        document.createElement(
+            "section"
+        );
+
+    section.className =
+        "admin-section";
+
+
+    let name =
+        CATEGORY_NAMES[
+            category
+        ];
+
+
+    if(!name){
+
+        name =
+            category
+                .replaceAll("-"," ")
+                .replace(/\b\w/g,
+                    c => c.toUpperCase()
+                );
+
+    }
+
+
+    const items =
+        Array.isArray(
+            appData[category]
+        )
+            ? appData[category]
+            : [];
+
+
+    section.innerHTML = `
+
+        <div
+            class="admin-section-header">
+
+            <div class="admin-section-title">
+
+                ${
+                    CATEGORY_ICONS[
+                        category
+                    ] || "📁"
+                }
+
+                ${escapeHtml(
+                    name.replace(
+                        /^[^\s]+\s/,
+                        ""
+                    )
+                )}
+
+            </div>
+
+            <button
+                class="btn btn-red"
+                data-add>
+                ➕ Aggiungi
+            </button>
+
+        </div>
+
+        <div
+            class="admin-items">
+        </div>
+
+    `;
+
+
+    const itemsContainer =
+        section.querySelector(
+            ".admin-items"
+        );
+
+
+    items.forEach(
+        (item,index) => {
+
+            itemsContainer.appendChild(
+                createAdminItem(
+                    item,
+                    category,
+                    index
+                )
+            );
+
+        }
+    );
+
+
+    section.querySelector(
+        "[data-add]"
+    ).addEventListener(
+        "click",
+        async () => {
+
+            const newItem = {
+
+                name:
+                    "Nuovo contenuto",
+
+                url:
+                    "https://",
+
+                icon:
+                    "📺",
+
+                type:
+                    category ===
+                    "live-tv"
+                        ? "live"
+                        : "link"
+
+            };
+
+
+            if(
+                !Array.isArray(
+                    appData[category]
+                )
+            ){
+
+                appData[category] =
+                    [];
+
+            }
+
+
+            appData[category].push(
+                newItem
+            );
+
+
+            await saveCategory(
+                category
+            );
+
+
+            renderAdmin();
+
+            renderAll();
+
+            showToast(
+                "Elemento aggiunto"
+            );
+
+        }
+    );
+
+
+    return section;
+
+}
+
+
+/* =========================================================
+   ADMIN ITEM
+========================================================= */
+
+function createAdminItem(
+    item,
+    category,
+    index
+){
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.className =
+        "admin-item";
+
+
+    div.innerHTML = `
+
+        <input
+            class="admin-input"
+            data-field="icon"
+            value="${escapeHtml(item.icon || "")}"
+            placeholder="📺">
+
+        <input
+            class="admin-input"
+            data-field="name"
+            value="${escapeHtml(item.name || "")}"
+            placeholder="Nome">
+
+        <input
+            class="admin-input"
+            data-field="url"
+            value="${escapeHtml(getItemUrl(item))}"
+            placeholder="URL">
+
+        <select
+            class="admin-select"
+            data-field="type">
+
+            <option
+                value="live"
+                ${
+                    item.type === "live"
+                        ? "selected"
+                        : ""
+                }>
+                LIVE
+            </option>
+
+            <option
+                value="link"
+                ${
+                    item.type !== "live"
+                        ? "selected"
+                        : ""
+                }>
+                LINK
+            </option>
+
+        </select>
+
+        <button
+            class="admin-small-btn save-btn"
+            title="Salva">
+            💾
+        </button>
+
+        <button
+            class="admin-small-btn delete-btn"
+            title="Elimina">
+            🗑️
+        </button>
+
+    `;
+
+
+    div.querySelector(
+        ".save-btn"
+    ).addEventListener(
+        "click",
+        async () => {
+
+            const icon =
+                div.querySelector(
+                    '[data-field="icon"]'
+                ).value;
+
+
+            const name =
+                div.querySelector(
+                    '[data-field="name"]'
+                ).value;
+
+
+            const url =
+                div.querySelector(
+                    '[data-field="url"]'
+                ).value;
+
+
+            const type =
+                div.querySelector(
+                    '[data-field="type"]'
+                ).value;
+
+
+            item.icon =
+                icon;
+
+            item.name =
+                name;
+
+            item.url =
+                url;
+
+            item.type =
+                type;
+
+
+            if(
+                !Array.isArray(
+                    appData[category]
+                )
+            ){
+
+                appData[category] =
+                    [];
+
+            }
+
+
+            appData[category][index] =
+                item;
+
+
+            await saveCategory(
+                category
+            );
+
+
+            renderAll();
+
+            showToast(
+                "URL e dati salvati"
+            );
+
+        }
+    );
+
+
+    div.querySelector(
+        ".delete-btn"
+    ).addEventListener(
+        "click",
+        async () => {
+
+            if(
+                !confirm(
+                    "Vuoi eliminare questo elemento?"
+                )
+            ){
+
                 return;
+
             }
-            currentCategory = catKey;
-            document.querySelectorAll('.navbar-menu li').forEach(li => li.classList.toggle('active', li.dataset.category === catKey));
-            renderCategories();
-            window.scrollTo({ top:0, behavior:'smooth' });
+
+
+            appData[
+                category
+            ].splice(
+                index,
+                1
+            );
+
+
+            await saveCategory(
+                category
+            );
+
+
+            renderAdmin();
+
+            renderAll();
+
+            showToast(
+                "Elemento eliminato"
+            );
+
         }
-        
-        function createCategorySection(catKey, items, isFav=false) {
-            const section = document.createElement('div');
-            section.className = `category ${isFav?'favorites-section':''}`;
-            const title = CATEGORY_NAMES[catKey] || catKey;
-            section.innerHTML = `
-                <div class="category-header">
-                    <h2 class="category-title">${title}</h2>
-                    <button class="category-toggle">➖</button>
-                </div>
-                <div class="category-content"></div>
-            `;
-            const content = section.querySelector('.category-content');
-            items.forEach((item, idx) => content.appendChild(createCard(item, catKey, idx)));
-            section.querySelector('.category-toggle').addEventListener('click', function() {
-                const cnt = section.querySelector('.category-content');
-                if (cnt.style.display === 'none') { cnt.style.display='flex'; this.textContent='➖'; }
-                else { cnt.style.display='none'; this.textContent='➕'; }
-            });
-            return section;
+    );
+
+
+    return div;
+
+}
+
+
+/* =========================================================
+   SALVATAGGIO FIREBASE
+========================================================= */
+
+async function saveCategory(
+    category
+){
+
+    try{
+
+        await db.ref(
+            category
+        ).set(
+            appData[category] ||
+            []
+        );
+
+        return true;
+
+    }catch(error){
+
+        console.error(
+            error
+        );
+
+        showToast(
+            "Errore durante il salvataggio",
+            "error"
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   NUOVA CATEGORIA
+========================================================= */
+
+document.getElementById(
+    "addCategory"
+).addEventListener(
+    "click",
+    async () => {
+
+        const name =
+            prompt(
+                "Nome della nuova categoria:"
+            );
+
+
+        if(!name){
+
+            return;
+
         }
-        
-        function createCard(item, catKey, idx) {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.tabIndex = 0;
-            const isLive = item.type === 'live';
-            const fav = isFavorite(item);
-            card.innerHTML = `
-                <div class="card-image">
-                    ${isLive ? '<div class="card-badge live">LIVE</div>' : ''}
-                    <span>${item.icon||'📺'}</span>
-                    <button class="card-favorite ${fav?'active':''}">${fav?'⭐':'☆'}</button>
-                </div>
-                <div class="card-info">
-                    <div class="card-title">${item.name}</div>
-                    <div class="card-meta">${isLive?'🔴 Diretta':'🔗 Link esterno'}</div>
-                </div>
-            `;
-            card.addEventListener('click', e => {
-                if (e.target.classList.contains('card-favorite')) return;
-                if (isLive) openPlayer(item, catKey, idx);
-                else window.open(applyProxy(item.url), '_blank');
-            });
-            card.querySelector('.card-favorite').addEventListener('click', e => {
-                e.stopPropagation();
-                toggleFavorite(item);
-            });
-            card.addEventListener('keydown', e => e.key==='Enter' && card.click());
-            return card;
+
+
+        const key =
+            name
+                .trim()
+                .toLowerCase()
+                .replace(
+                    /\s+/g,
+                    "-"
+                )
+                .replace(
+                    /[^a-z0-9àèéìòù_-]/gi,
+                    ""
+                );
+
+
+        if(!key){
+
+            showToast(
+                "Nome non valido",
+                "error"
+            );
+
+            return;
+
         }
-        
-        function openPlayer(item, catKey, idx) {
-            const modal = document.getElementById('playerModal');
-            document.getElementById('playerTitle').textContent = item.name;
-            currentChannelIndex = idx;
-            modal.classList.add('active');
-            document.getElementById('miniPlayer').classList.remove('active');
-            playStream(document.getElementById('videoPlayer'), item.url);
-            setupPlayerControls(catKey);
+
+
+        if(
+            appData[key] !==
+            undefined
+        ){
+
+            showToast(
+                "Categoria già esistente",
+                "error"
+            );
+
+            return;
+
         }
-        
-        function playStream(videoEl, url, isMini=false) {
-            if (isMini && miniHls) { miniHls.destroy(); miniHls = null; }
-            else if (!isMini && hls) { hls.destroy(); hls = null; }
-            const proxied = applyProxy(url);
-            if (url.includes('.m3u8')) {
-                if (Hls.isSupported()) {
-                    const instance = new Hls();
-                    instance.loadSource(proxied);
-                    instance.attachMedia(videoEl);
-                    instance.on(Hls.Events.MANIFEST_PARSED, () => videoEl.play().catch(()=>{}));
-                    if (isMini) miniHls = instance; else hls = instance;
-                } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-                    videoEl.src = proxied;
-                    videoEl.play().catch(()=>{});
-                }
-            } else {
-                videoEl.src = proxied;
-                videoEl.play().catch(()=>{});
+
+
+        appData[key] = [];
+
+
+        await saveCategory(
+            key
+        );
+
+
+        CATEGORY_NAMES[key] =
+            name;
+
+
+        renderAdmin();
+
+        renderAll();
+
+
+        showToast(
+            "Categoria creata"
+        );
+
+    }
+);
+
+
+/* =========================================================
+   TASTO ESC
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if(
+            event.key !==
+            "Escape"
+        ){
+
+            return;
+
+        }
+
+
+        if(
+            document.getElementById(
+                "searchOverlay"
+            ).classList.contains(
+                "active"
+            )
+        ){
+
+            document.getElementById(
+                "closeSearch"
+            ).click();
+
+        }
+
+
+        if(
+            document.getElementById(
+                "playerModal"
+            ).classList.contains(
+                "active"
+            )
+        ){
+
+            closePlayer();
+
+        }
+
+
+        if(
+            document.getElementById(
+                "loginOverlay"
+            ).classList.contains(
+                "active"
+            )
+        ){
+
+            document.getElementById(
+                "cancelLogin"
+            ).click();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   LOGIN ADMIN MEMORIZZATO
+========================================================= */
+
+if(
+    localStorage.getItem(
+        "ilregno_admin"
+    ) === "true"
+){
+
+    isAdmin = true;
+
+}
+
+
+/* =========================================================
+   AVVIO
+========================================================= */
+
+loadDatabase();
+
+
+/* =========================================================
+   AGGIORNAMENTO AUTOMATICO FIREBASE
+========================================================= */
+
+db.ref().on(
+    "value",
+    snapshot => {
+
+        const data =
+            snapshot.val();
+
+
+        if(
+            data &&
+            typeof data ===
+            "object"
+        ){
+
+            appData =
+                data;
+
+
+            if(
+                !document.getElementById(
+                    "adminPanel"
+                ).classList.contains(
+                    "active"
+                )
+            ){
+
+                renderAll();
+
             }
+
         }
-        
-        function setupPlayerControls(catKey) {
-            const video = document.getElementById('videoPlayer');
-            const controls = document.getElementById('playerControls');
-            const container = document.getElementById('playerContainer');
-            document.getElementById('btnPlayPause').onclick = () => {
-                if (video.paused) { video.play(); document.getElementById('btnPlayPause').textContent='⏸️'; }
-                else { video.pause(); document.getElementById('btnPlayPause').textContent='▶️'; }
-            };
-            document.getElementById('btnFullscreen').onclick = () => toggleFullscreen(container);
-            const channels = appData[catKey] || [];
-            document.getElementById('btnPrevChannel').onclick = () => {
-                if (currentChannelIndex > 0) {
-                    currentChannelIndex--;
-                    const ch = channels[currentChannelIndex];
-                    document.getElementById('playerTitle').textContent = ch.name;
-                    playStream(video, ch.url);
-                }
-            };
-            document.getElementById('btnNextChannel').onclick = () => {
-                if (currentChannelIndex < channels.length-1) {
-                    currentChannelIndex++;
-                    const ch = channels[currentChannelIndex];
-                    document.getElementById('playerTitle').textContent = ch.name;
-                    playStream(video, ch.url);
-                }
-            };
-            const hide = () => {
-                clearTimeout(controlsTimeout);
-                controlsTimeout = setTimeout(() => { if (!video.paused) controls.classList.add('hidden'); }, 3000);
-            };
-            container.addEventListener('mousemove', () => { controls.classList.remove('hidden'); hide(); });
-            container.addEventListener('touchstart', () => { controls.classList.remove('hidden'); hide(); });
-            hide();
-        }
-        
-        function toggleFullscreen(el) {
-            const d = document;
-            const isFs = !!(d.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement);
-            if (isFs) {
-                if (d.exitFullscreen) d.exitFullscreen();
-                else if (d.webkitExitFullscreen) d.webkitExitFullscreen();
-                else if (d.mozCancelFullScreen) d.mozCancelFullScreen();
-                else if (d.msExitFullscreen) d.msExitFullscreen();
-            } else {
-                if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-                else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-                else if (el.msRequestFullscreen) el.msRequestFullscreen();
-                else if (el.webkitEnterFullscreen) {
-                    const vid = el.querySelector('video');
-                    if (vid && vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
-                }
-            }
-        }
-        
-        document.getElementById('playerClose').addEventListener('click', () => {
-            document.getElementById('playerModal').classList.remove('active');
-            const v = document.getElementById('videoPlayer');
-            v.pause();
-            if (hls) { hls.destroy(); hls = null; }
-            if (v.src) showMiniPlayer();
-        });
-        
-        function showMiniPlayer() {
-            document.getElementById('miniPlayer').classList.add('active');
-            document.getElementById('miniVideo').play().catch(()=>{});
-        }
-        document.getElementById('miniPlayer').addEventListener('click', e => {
-            if (e.target.id==='miniPlayerClose') return;
-            document.getElementById('playerModal').classList.add('active');
-            document.getElementById('miniPlayer').classList.remove('active');
-            const v = document.getElementById('videoPlayer');
-            v.src = document.getElementById('miniVideo').src;
-            v.play();
-        });
-        document.getElementById('miniPlayerClose').addEventListener('click', e => {
-            e.stopPropagation();
-            document.getElementById('miniPlayer').classList.remove('active');
-            document.getElementById('miniVideo').pause();
-            if (miniHls) { miniHls.destroy(); miniHls = null; }
-        });
-        
-        /* ========== ADMIN ========== */
-        function openAdminPanel() {
-            const panel = document.getElementById('adminPanel');
-            panel.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            if (Object.keys(appData).length === 0) {
-                db.ref().once('value').then(snap => {
-                    appData = snap.val() || {};
-                    ensureDefaultCategories(appData).then(() => refreshAdminContent());
-                });
-            } else {
-                refreshAdminContent();
-            }
-        }
-        function closeAdminPanel() {
-            document.getElementById('adminPanel').classList.remove('active');
-            document.body.style.overflow = '';
-        }
-        function refreshAdminContent() {
-            const content = document.getElementById('adminContent');
-            content.innerHTML = '';
-            // Ordine desiderato: sport, film, serie-tv, cartoni, anime, poi altre categorie personalizzate, infine live-tv
-            const priorityOrder = ['sport', 'film', 'serie-tv', 'cartoni', 'anime'];
-            // Set di tutte le chiavi presenti (default + eventuali personalizzate da appData)
-            const allKeys = new Set([...Object.keys(DEFAULT_DATA), ...Object.keys(appData)]);
-            const orderedKeys = [];
-            // Aggiungi prima le categorie predefinite nell'ordine priorityOrder
-            priorityOrder.forEach(key => {
-                if (allKeys.has(key)) {
-                    orderedKeys.push(key);
-                    allKeys.delete(key);
-                }
-            });
-            // Aggiungi eventuali altre categorie (personalizzate) in ordine alfabetico
-            const remaining = Array.from(allKeys).filter(k => k !== 'live-tv').sort();
-            orderedKeys.push(...remaining);
-            // Infine, se esiste live-tv, mettilo in fondo
-            if (allKeys.has('live-tv') || DEFAULT_DATA['live-tv']) {
-                orderedKeys.push('live-tv');
-            }
-            // Genera le sezioni
-            orderedKeys.forEach(catKey => {
-                content.appendChild(createAdminSection(catKey));
-            });
-        }
-        
-        document.getElementById('btnAdmin').addEventListener('click', () => {
-            if (isAdmin) openAdminPanel();
-            else document.getElementById('loginModal').classList.add('active');
-        });
-        document.getElementById('btnLogin').addEventListener('click', () => {
-            if (document.getElementById('adminPassword').value === ADMIN_PASSWORD) {
-                isAdmin = true;
-                localStorage.setItem('adminAuth', 'true');
-                document.getElementById('loginModal').classList.remove('active');
-                document.getElementById('adminPassword').value = '';
-                openAdminPanel();
-                showToast('Accesso effettuato', 'success');
-            } else showToast('Password errata', 'error');
-        });
-        document.getElementById('btnLoginCancel').addEventListener('click', () => {
-            document.getElementById('loginModal').classList.remove('active');
-            document.getElementById('adminPassword').value = '';
-        });
-        document.getElementById('btnAdminClose').addEventListener('click', closeAdminPanel);
-        document.getElementById('btnLogout').addEventListener('click', () => {
-            isAdmin = false;
-            localStorage.removeItem('adminAuth');
-            closeAdminPanel();
-            showToast('Logout effettuato', 'success');
-        });
-        
-        function createAdminSection(catKey) {
-            const section = document.createElement('div');
-            section.className = 'admin-section';
-            const title = CATEGORY_NAMES[catKey] || catKey;
-            const items = appData[catKey] || [];
-            section.innerHTML = `
-                <div class="admin-section-title">
-                    <span>${title}</span>
-                    <button class="btn btn-primary btn-add-item" data-category="${catKey}">➕ Aggiungi</button>
-                </div>
-                <div class="admin-items"></div>
-            `;
-            const container = section.querySelector('.admin-items');
-            items.forEach((item, idx) => container.appendChild(createAdminItem(item, catKey, idx)));
-            section.querySelector('.btn-add-item').addEventListener('click', () => {
-                const newItem = { name: 'Nuovo', url: 'https://', icon: '📺', type: 'link' };
-                items.push(newItem);
-                saveCategory(catKey, items);
-                container.appendChild(createAdminItem(newItem, catKey, items.length-1));
-            });
-            return section;
-        }
-        
-        function createAdminItem(item, catKey, idx) {
-            const div = document.createElement('div');
-            div.className = 'admin-item';
-            div.innerHTML = `
-                <input value="${item.icon||''}" placeholder="Icona" style="max-width:60px;" data-field="icon">
-                <input value="${item.name||''}" placeholder="Nome" data-field="name">
-                <input value="${item.url||''}" placeholder="URL" data-field="url">
-                <select data-field="type">
-                    <option value="live" ${item.type==='live'?'selected':''}>LIVE TV</option>
-                    <option value="link" ${item.type==='link'?'selected':''}>Link esterno</option>
-                </select>
-                <button class="btn btn-success btn-save">💾</button>
-                <button class="btn btn-danger btn-delete">🗑️</button>
-            `;
-            div.querySelector('.btn-save').addEventListener('click', () => {
-                item.icon = div.querySelector('[data-field="icon"]').value;
-                item.name = div.querySelector('[data-field="name"]').value;
-                item.url = div.querySelector('[data-field="url"]').value;
-                item.type = div.querySelector('[data-field="type"]').value;
-                const items = appData[catKey] || [];
-                items[idx] = item;
-                saveCategory(catKey, items);
-                showToast('Elemento salvato', 'success');
-            });
-            div.querySelector('.btn-delete').addEventListener('click', () => {
-                if (confirm('Eliminare questo elemento?')) {
-                    const items = appData[catKey] || [];
-                    items.splice(idx, 1);
-                    saveCategory(catKey, items);
-                    div.remove();
-                    showToast('Elemento eliminato', 'success');
-                }
-            });
-            return div;
-        }
-        
-        function saveCategory(catKey, items) {
-            db.ref(catKey).set(items).catch(err => {
-                console.error(err);
-                showToast('Errore salvataggio', 'error');
-            });
-        }
-        
-        document.getElementById('btnAddCategory').addEventListener('click', () => {
-            const name = prompt('Nome nuova categoria (es: documentari):');
-            if (name) {
-                const key = name.toLowerCase().replace(/\s+/g, '-');
-                if (!appData[key]) {
-                    appData[key] = [];
-                    saveCategory(key, []);
-                    CATEGORY_NAMES[key] = name;
-                    refreshAdminContent();
-                    showToast('Categoria aggiunta', 'success');
-                } else showToast('Categoria già esistente', 'error');
-            }
-        });
-        
-        /* Navbar */
-        document.querySelectorAll('.navbar-menu li').forEach(li => {
-            li.addEventListener('click', () => {
-                const cat = li.dataset.category;
-                if (cat === 'all') {
-                    currentCategory = 'all';
-                    document.querySelectorAll('.navbar-menu li').forEach(l => l.classList.remove('active'));
-                    li.classList.add('active');
-                    renderCategories();
-                    window.scrollTo({top:0, behavior:'smooth'});
-                } else handleCategoryClick(cat);
-            });
-        });
-        
-        /* AdBlock */
-        document.getElementById('btnAdBlock').addEventListener('click', () => {
-            adBlockEnabled = !adBlockEnabled;
-            localStorage.setItem('adBlock', adBlockEnabled);
-            document.getElementById('btnAdBlock').classList.toggle('active', adBlockEnabled);
-            showToast(adBlockEnabled ? 'Blocco annunci ON' : 'Blocco annunci OFF', 'success');
-        });
-        if (adBlockEnabled) document.getElementById('btnAdBlock').classList.add('active');
-        
-        initializeDatabase();
-        
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('data:application/javascript,' + encodeURIComponent(
-                `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(clients.claim()));self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response('Offline'))));`
-            )).catch(()=>{});
-        }
-        console.log('👑 IL REGNO - Pronto');
-    </script>
+
+    },
+    error => {
+
+        console.error(
+            "Firebase realtime:",
+            error
+        );
+
+    }
+);
+
+</script>
+
 </body>
 </html>
