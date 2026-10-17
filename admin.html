@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Il Regno · Admin</title>
+<style>
+/* Stessa grafica di bozze/R-sfondo-1: fondo nero, rosso #ff3048, sfondo «Luci»; comandi alti almeno 64 px, testo almeno 16 px */
+:root{--bg:#07080b;--panel:#101217;--card:#0d0f14;--text:#f6f7f9;--muted:#a3a6b2;--red:#ff3048;--yellow:#ffc531;--green:#2fd06b;
+  --line:rgba(255,255,255,.10);--gut:24px}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;color:var(--text);font:17px/1.25 Roboto,system-ui,sans-serif;background-color:var(--bg);
+  background-image:radial-gradient(ellipse 70% 55% at 8% 0%,rgba(255,48,72,.22),transparent 70%),radial-gradient(ellipse 60% 50% at 100% 100%,rgba(140,20,60,.30),transparent 70%),radial-gradient(ellipse 50% 40% at 85% 10%,rgba(90,40,160,.16),transparent 70%),linear-gradient(180deg,#0b0a10,#07080b);
+  background-attachment:fixed;overflow-x:hidden}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:1100px;margin:0 auto;padding:0 var(--gut) 96px}
+
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;height:80px;padding:8px 0;margin:0 calc(-1*var(--gut));padding-left:var(--gut);padding-right:var(--gut);
+  background:#07080b;border-bottom:1px solid var(--line)}
+.logo{font-size:27px;font-weight:900;letter-spacing:.5px;white-space:nowrap}
+.logo span{color:var(--red)}
+.logo small{font-size:18px;font-weight:600;color:var(--muted);margin-left:8px}
+.sp{flex:1}
+.btn{height:64px;padding:0 22px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:17px;font-weight:700;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--text)}
+.btn:hover{border-color:rgba(255,48,72,.6)}
+.btn.rosso{background:var(--red);border-color:var(--red);color:#fff}
+.btn.rosso:hover{border-color:#fff}
+.btn.giallo{border-color:var(--yellow);color:var(--yellow)}
+.btn[disabled]{opacity:.35;cursor:default}
+.btn.mv{width:64px;padding:0;border-radius:14px;font-size:20px;flex:0 0 auto}
+
+h2{display:flex;align-items:center;gap:10px;margin:22px 0 10px;font-size:20px;font-weight:800}
+h2::before{content:"";width:4px;height:18px;background:var(--red);border-radius:2px}
+h2 small{font-size:16px;font-weight:400;color:var(--muted)}
+h2 .btn{margin-left:auto}
+h3{margin:14px 0 8px;font-size:17px;font-weight:700;color:var(--muted)}
+
+.stato{display:inline-block;width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+.stato.ko{background:var(--yellow);box-shadow:0 0 0 3px rgba(255,197,49,.18)}
+
+.voce{flex:1;min-width:0;height:64px;display:flex;align-items:center;gap:12px;padding:0 16px;text-align:left;
+  background:var(--card);border:1px solid var(--line);border-radius:14px}
+.voce:hover{border-color:rgba(255,48,72,.6);background:#13151c}
+.voce b{font-size:17px;font-weight:700;white-space:nowrap}
+.voce small{font-size:16px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.voce .nome{flex:0 0 auto;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+.voce.ko{border-style:dashed;border-color:rgba(255,197,49,.5)}
+.btn.sporco{box-shadow:0 0 0 4px rgba(255,197,49,.6)}
+.scheda{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px}
+.scheda.ko{border-style:dashed;border-color:rgba(255,197,49,.5)}
+.scheda .r{display:flex;gap:8px;align-items:center}
+.scheda .r>*{min-width:0}
+.scheda .nome{flex:1 1 0}.scheda .url{flex:2 1 0}.scheda .gr{flex:1 1 0}.scheda .sg{flex:0 0 110px}.scheda .rai{flex:0 0 130px}
+.scheda input,.scheda select{width:100%;height:64px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:#0b0c10;font-size:17px}
+.scheda .btn{height:64px}
+
+.problemi{background:rgba(255,197,49,.07);border:1px solid rgba(255,197,49,.35);border-radius:14px;padding:4px 14px 14px;margin-top:16px}
+.problemi .ok{color:var(--muted);margin:12px 0 0}
+.griglia{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.griglia .voce{padding:0 12px}
+.sitoko{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.sitoko .voce{flex:1 1 280px}
+
+.form{max-width:640px;margin:0 auto;padding-top:20px}
+.form h1{font-size:24px;margin:0 0 14px}
+label{display:block;margin:14px 0 6px;color:var(--muted);font-size:16px}
+input[type=text],input[type=email],input[type=password]{width:100%;height:64px;padding:0 16px;border-radius:14px;border:1px solid rgba(255,255,255,.22);
+  background:#0b0c10;font-size:18px}
+input:focus{outline:2px solid var(--red);outline-offset:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips .btn{padding:0 18px}
+.chips .btn.on{background:var(--red);border-color:var(--red);color:#fff}
+.azioni{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.hint{color:var(--muted);font-size:16px;margin:6px 0 0}
+
+#msg{position:fixed;left:0;right:0;bottom:0;z-index:9;padding:16px var(--gut);min-height:64px;display:flex;align-items:center;justify-content:center;
+  background:#181b22;border-top:1px solid var(--line);font-size:18px;font-weight:600;cursor:pointer}
+#msg.err{background:#3a1018;border-top-color:var(--red)}
+#msg.ok{background:#0f2a1a;border-top-color:var(--green)}
+#msg[hidden]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo">IL <span>REGNO</span><small>Admin</small></div>
+    <div class="sp"></div>
+    <div id="barra"></div>
+  </div>
+  <div id="app"></div>
+</div>
+<div id="msg" hidden role="status"></div>
+
+<script>
+// Pagina admin di Il Regno. Nessuna password o chiave segreta qui: la chiave web di Firebase è pubblica per costruzione.
+// Accesso e dati via REST (nessun SDK). Le credenziali restano solo in memoria della pagina.
+var DB = "https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app";
+var KEY = "AIzaSyByxULPVAzJObzhfDweMDw0Qtx1OumR_Bo";
+var S = { auth: null, data: null, orig: "", etag: null, stato: null, view: "login", edit: null, conferma: null, scroll: 0, timer: null, occupato: false };
+
+function h(tag, attrs) {
+  var el = document.createElement(tag);
+  for (var k in attrs || {}) {
+    var v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k.slice(0, 2) === "on") el[k] = v; else if (k === "class") el.className = v; else if (v === true) el.setAttribute(k, ""); else el.setAttribute(k, v);
+  }
+  for (var i = 2; i < arguments.length; i++) {
+    var c = arguments[i];
+    if (c == null || c === false) continue;
+    el.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+  }
+  return el;
+}
+function toArr(x) {
+  if (Array.isArray(x)) return x;
+  if (x && typeof x === "object") return Object.keys(x).sort(function (a, b) { return a - b; }).map(function (k) { return x[k]; });
+  return [];
+}
+function setMsg(t, cls) {
+  var m = document.getElementById("msg");
+  m.textContent = t || ""; m.className = cls || ""; m.hidden = !t;
+}
+document.getElementById("msg").onclick = function () { setMsg(""); };
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function dirty() { return S.data !== null && JSON.stringify(S.data) !== S.orig; }
+var CATEGORIE = [["film", "Categoria: Film"], ["serie", "Categoria: Serie TV"], ["sport", "Categoria: Sport"], ["anime", "Categoria: Anime"]];
+function mkId(nome, lista) {
+  var base = String(nome).toLowerCase().replace(/[^a-z0-9]/g, "") || "voce", id = base, n = 2;
+  function usato(x) { return lista.some(function (e) { return e && e.id === x; }); }
+  while (usato(id)) id = base + n++;
+  return id;
+}
+
+/* ---------------- accesso ---------------- */
+function postJson(url, body, form) {
+  return fetch(url, { method: "POST", headers: { "Content-Type": form ? "application/x-www-form-urlencoded" : "application/json" }, body: body })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); });
+}
+function prendiToken(idToken, refreshToken, scad) {
+  var s = parseInt(scad, 10) || 3600;
+  S.auth = { idToken: idToken, refreshToken: refreshToken, exp: Date.now() / 1000 + s, margine: Math.min(120, s * 0.2) };
+  clearTimeout(S.timer);
+  S.timer = setTimeout(function () { rinnova(); }, Math.max(1, s - S.auth.margine) * 1000);
+}
+function accedi(email, pwd) {
+  if (!email || !pwd) { setMsg("Email o password errate", "err"); return Promise.resolve(); }
+  S.occupato = true; setMsg("Accesso…");
+  return postJson("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + KEY,
+      JSON.stringify({ email: email, password: pwd, returnSecureToken: true }))
+    .then(function (r) {
+      S.occupato = false;
+      if (r.ok && r.j.idToken) {
+        lsSet("ilregno.adminEmail", email);
+        S.auth = null; prendiToken(r.j.idToken, r.j.refreshToken, r.j.expiresIn);
+        setMsg("");
+        if (S.data) { S.view = "lista"; render(); return; }
+        return carica().then(function (ok) { if (ok) { S.view = "lista"; } render(); });
+      }
+      var code = String((r.j.error && r.j.error.message) || "");
+      if (/TOO_MANY_ATTEMPTS/.test(code)) setMsg("Troppi tentativi: riprova tra qualche minuto", "err");
+      else if (/USER_DISABLED/.test(code)) setMsg("Utente disattivato", "err");
+      else if (r.status === 400) setMsg("Email o password errate", "err");
+      else setMsg("Accesso non riuscito (" + (code || r.status) + ")", "err");
+    }, function () { S.occupato = false; setMsg("Nessuna connessione", "err"); });
+}
+function rinnova() {
+  if (!S.auth) return Promise.resolve(false);
+  return postJson("https://securetoken.googleapis.com/v1/token?key=" + KEY,
+      "grant_type=refresh_token&refresh_token=" + encodeURIComponent(S.auth.refreshToken), true)
+    .then(function (r) {
+      if (r.ok && r.j.id_token) { prendiToken(r.j.id_token, r.j.refresh_token || S.auth.refreshToken, r.j.expires_in); return true; }
+      S.auth = null; S.view = "login"; render(); setMsg("Sessione scaduta: accedi di nuovo", "err"); return false;
+    }, function () { setMsg("Nessuna connessione", "err"); return false; });
+}
+function esci() { clearTimeout(S.timer); S.auth = null; S.data = null; S.orig = ""; S.etag = null; S.view = "login"; setMsg(""); render(); }
+
+/* ---------------- dati ---------------- */
+function carica() {
+  return fetch(DB + "/v2.json", { headers: { "X-Firebase-ETag": "true" }, cache: "no-store" }).then(function (r) {
+    if (!r.ok) { setMsg("Lettura non riuscita (" + r.status + ")", "err"); return false; }
+    var etag = r.headers.get("ETag");
+    return r.json().then(function (d) {
+      if (d === null || typeof d !== "object") { setMsg("Nel database non c'è ancora v2: serve la migrazione", "err"); return false; }
+      if (d.canali !== undefined && !Array.isArray(d.canali)) d.canali = toArr(d.canali);
+      if (d.siti !== undefined && !Array.isArray(d.siti)) d.siti = toArr(d.siti);
+      if (d.gruppi !== undefined && !Array.isArray(d.gruppi)) d.gruppi = toArr(d.gruppi);
+      S.data = d; S.orig = JSON.stringify(d); S.etag = etag;
+      return fetch("stato.json", { cache: "no-store" }).then(function (x) { return x.ok ? x.json() : null; }).catch(function () { return null; })
+        .then(function (st) { S.stato = st; return true; });
+    });
+  }, function () { setMsg("Nessuna connessione", "err"); return false; });
+}
+function salva() {
+  if (!dirty()) { setMsg("Nessuna modifica da salvare"); return; }
+  toArr(S.data.canali).concat(toArr(S.data.siti)).forEach(function (e) {
+    if (e) ["nome", "url", "sigla"].forEach(function (k) { if (typeof e[k] === "string" && e[k] !== e[k].trim()) e[k] = e[k].trim(); });
+  });
+  var bad = toArr(S.data.canali).concat(toArr(S.data.siti)).filter(function (e) { return !e || !String(e.nome || "").trim() || !/^https?:\/\/\S+$/.test(String(e.url || "")); });
+  if (bad.length) { setMsg("Ci sono voci senza nome o senza indirizzo valido", "err"); return; }
+  S.occupato = true; setMsg("Salvo…"); render();
+  var pronto = (S.auth.exp - Date.now() / 1000 < S.auth.margine + 30) ? rinnova() : Promise.resolve(true);
+  pronto.then(function (ok) {
+    if (!ok) { S.occupato = false; render(); return; }
+    // Se il database non lascia leggere l'ETag, si confronta una rilettura prima di scrivere (meno sicuro, ma non perde nulla di visibile).
+    var controllo = S.etag ? Promise.resolve(true) : fetch(DB + "/v2.json", { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
+      try { return JSON.stringify(JSON.parse(t)) === S.orig; } catch (e) { return false; }
+    });
+    return controllo.then(function (uguale) {
+      if (!uguale) return 412;
+      var hd = { "Content-Type": "application/json" };
+      if (S.etag) hd["if-match"] = S.etag;
+      return fetch(DB + "/v2.json?auth=" + encodeURIComponent(S.auth.idToken), { method: "PUT", headers: hd, body: JSON.stringify(S.data) })
+        .then(function (r) { return r.status; });
+    }).then(function (st) {
+      if (st === 412) {
+        setMsg("I dati sono cambiati, ricarico", "err");
+        return carica().then(function () { S.occupato = false; S.view = "lista"; render(); });
+      }
+      if (st === 401 || st === 403) { S.occupato = false; setMsg("Il database rifiuta la scrittura (permesso negato)", "err"); render(); return; }
+      if (st < 200 || st > 299) { S.occupato = false; setMsg("Salvataggio non riuscito (" + st + ")", "err"); render(); return; }
+      return carica().then(function () { S.occupato = false; setMsg("Salvato", "ok"); render(); });
+    });
+  }).catch(function () { S.occupato = false; setMsg("Nessuna connessione: non salvato", "err"); render(); });
+}
+
+/* ---------------- stato dei link ---------------- */
+function problema(tipo, id) {
+  var s = S.stato && S.stato[tipo] && S.stato[tipo][id];
+  return s && s.ok === false ? s : null;
+}
+function dataControllo() {
+  if (!S.stato || !S.stato.aggiornato) return "";
+  var d = new Date(S.stato.aggiornato);
+  if (isNaN(d)) return "";
+  function z(n) { return (n < 10 ? "0" : "") + n; }
+  return " (controllo del " + z(d.getDate()) + "/" + z(d.getMonth() + 1) + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ")";
+}
+// il sito risponde ma il vecchio indirizzo rimanda da sé a un altro (stato.json: nuovo)
+function nuovoIndirizzo(e) {
+  var s = S.stato && S.stato.siti && S.stato.siti[e.id];
+  return s && s.nuovo && s.nuovo !== e.url ? s.nuovo : null;
+}
+function pannelloProblemi() {
+  if (!S.stato) return null;
+  var canali = toArr(S.data.canali), siti = toArr(S.data.siti);
+  var pc = canali.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && problema("canali", x.c.id); });
+  var ps = siti.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && (problema("siti", x.c.id) || nuovoIndirizzo(x.c)); });
+  var box = h("div", { class: "problemi" }, h("h3", null, "Da controllare" + dataControllo()));
+  if (!pc.length && !ps.length) { box.appendChild(h("p", { class: "ok" }, "Nessun problema segnalato")); return box; }
+  ps.forEach(function (x) {
+    var nuovo = nuovoIndirizzo(x.c), ko = problema("siti", x.c.id);
+    var riga = h("div", { class: "sitoko" },
+      h("button", { class: "voce ko", onclick: function () { vaiA("siti", x.i); } }, h("i", { class: "stato ko" }), h("b", { class: "nome" }, x.c.nome), h("small", null, ko ? "sito non risponde" : "indirizzo cambiato")));
+    if (nuovo) {
+      riga.appendChild(h("small", { class: "hint" }, "Rimanda a " + nuovo));
+      riga.appendChild(h("button", { class: "btn giallo", onclick: function () { x.c.url = nuovo; setMsg("Indirizzo cambiato: premi Salva"); render(); vaiA("siti", x.i); } }, "Usa il nuovo indirizzo"));
+    }
+    box.appendChild(riga);
+  });
+  if (pc.length) {
+    box.appendChild(h("h3", null, "Canali che non rispondono: " + pc.length));
+    var g = h("div", { class: "griglia" });
+    pc.forEach(function (x) {
+      g.appendChild(h("button", { class: "voce ko", onclick: function () { vaiA("canali", x.i); } }, h("i", { class: "stato ko" }), h("b", { class: "nome" }, x.c.nome)));
+    });
+    box.appendChild(g);
+  }
+  return box;
+}
+
+/* ---------------- elenco: ogni campo è modificabile sul posto ---------------- */
+function sposta(tipo, i, verso) {
+  var a = S.data[tipo], j = i + verso;
+  // i canali si spostano dentro il loro gruppo (come li vede chi guarda): si scambia col vicino dello stesso gruppo
+  while (j >= 0 && j < a.length && tipo === "canali" && a[j].gruppo !== a[i].gruppo) j += verso;
+  if (j < 0 || j >= a.length) return;
+  var t = a[i]; a[i] = a[j]; a[j] = t;
+  S.conferma = null; setMsg(""); render();
+  vaiA(tipo, j);
+}
+function haVicino(tipo, i, verso) {
+  var a = toArr(S.data[tipo]), j = i + verso;
+  while (j >= 0 && j < a.length && tipo === "canali" && a[j].gruppo !== a[i].gruppo) j += verso;
+  return j >= 0 && j < a.length;
+}
+function vaiA(tipo, i) {
+  var r = document.getElementById("r_" + tipo + "_" + i);
+  if (!r) return;
+  r.scrollIntoView({ block: "center" });
+  var f = r.querySelector("input"); if (f) f.focus({ preventScroll: true });
+}
+function segnaModifiche() {
+  var b = document.getElementById("salva");
+  if (b) b.classList.toggle("sporco", dirty());
+}
+// Si scrive nella voce solo il campo che Lorenzo tocca: gli altri, e quelli che la pagina non conosce, restano com'erano.
+function campoTesto(e, k, nome, cls) {
+  var inp = h("input", { type: "text", class: cls, "aria-label": nome, placeholder: nome, autocomplete: "off", autocapitalize: "none", spellcheck: "false" });
+  inp.value = e[k] == null ? "" : String(e[k]);
+  inp.oninput = function () { e[k] = this.value; segnaModifiche(); };
+  return inp;
+}
+function campoScelta(cls, nome, opzioni, corrente, cambia) {
+  var sel = h("select", { class: cls, "aria-label": nome });
+  opzioni.forEach(function (o) { sel.appendChild(h("option", { value: o[0] }, o[1])); });
+  sel.value = corrente;
+  sel.onchange = function () { cambia(this.value); };
+  return sel;
+}
+function scheda(tipo, e, i, gruppi) {
+  var ko = problema(tipo, e.id), ch = tipo === "canali";
+  var id = tipo + ":" + i, conferma = S.conferma === id;
+  var r2 = h("div", { class: "r" });
+  if (ch) {
+    r2.appendChild(campoScelta("gr", "Gruppo", gruppi.map(function (g) { return [g, g || "Senza gruppo"]; }), e.gruppo || "", function (v) { e.gruppo = v; render(); vaiA(tipo, i); }));
+    r2.appendChild(campoTesto(e, "sigla", "Sigla", "sg"));
+    r2.appendChild(campoScelta("rai", "Indirizzo Rai", [["false", "Rai: no"], ["true", "Rai: sì"]], e.rai === true ? "true" : "false", function (v) { e.rai = v === "true"; segnaModifiche(); }));
+  } else {
+    // categoria (pillola) del sito: vuoto = la sua, cioè l'id; si scrive solo questo campo, gli altri della voce restano com'erano
+    r2.appendChild(campoScelta("gr", "Categoria", [["", "Categoria: come l'id"]].concat(CATEGORIE), e.pillola || "", function (v) {
+      if (v) e.pillola = v; else delete e.pillola;
+      segnaModifiche();
+    }));
+    r2.appendChild(h("span", { class: "sp" }));
+  }
+  r2.appendChild(h("button", { class: "btn mv", "aria-label": "Su", disabled: !haVicino(tipo, i, -1), onclick: function () { sposta(tipo, i, -1); } }, "▲"));
+  r2.appendChild(h("button", { class: "btn mv", "aria-label": "Giù", disabled: !haVicino(tipo, i, 1), onclick: function () { sposta(tipo, i, 1); } }, "▼"));
+  r2.appendChild(h("button", { class: "btn giallo", onclick: function () {
+    if (!conferma) { S.conferma = id; render(); vaiA(tipo, i); return; }
+    S.conferma = null; S.data[tipo].splice(i, 1); render();
+  } }, conferma ? "Sicuro? Togli" : "Togli"));
+  return h("div", { class: "scheda" + (ko ? " ko" : ""), id: "r_" + tipo + "_" + i },
+    h("div", { class: "r" }, ko ? h("i", { class: "stato ko" }) : null, campoTesto(e, "nome", "Nome", "nome"), campoTesto(e, "url", "Indirizzo", "url")), r2);
+}
+function vistaLista() {
+  var d = S.data, app = h("div"), canali = toArr(d.canali), siti = toArr(d.siti);
+  var p = pannelloProblemi(); if (p) app.appendChild(p);
+  app.appendChild(h("h2", null, "Siti ", h("small", null, siti.length), h("button", { class: "btn", onclick: function () { apriNuovo("siti"); } }, "+ Aggiungi sito")));
+  siti.forEach(function (e, i) { if (e) app.appendChild(scheda("siti", e, i)); });
+  app.appendChild(h("h2", null, "Canali ", h("small", null, canali.length), h("button", { class: "btn", onclick: function () { apriNuovo("canali"); } }, "+ Aggiungi canale")));
+  var gruppi = toArr(d.gruppi).slice();
+  canali.forEach(function (c) { if (c && c.gruppo && gruppi.indexOf(c.gruppo) < 0) gruppi.push(c.gruppo); });
+  var senza = canali.some(function (c) { return c && !c.gruppo; });
+  if (senza) gruppi.push("");
+  gruppi.forEach(function (g) {
+    var qui = canali.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && (x.c.gruppo || "") === g; });
+    if (!qui.length) return;
+    app.appendChild(h("h3", null, (g || "Senza gruppo") + " · " + qui.length));
+    qui.forEach(function (x) { app.appendChild(scheda("canali", x.c, x.i, gruppi)); });
+  });
+  app.appendChild(h("div", { style: "display:flex;justify-content:center;padding:18px 0" },
+    h("button", { class: "btn", onclick: function () { window.scrollTo(0, 0); } }, "↑ Torna in cima")));
+  return app;
+}
+
+/* ---------------- voce nuova ---------------- */
+function apriNuovo(tipo) {
+  var f = { nome: "", url: "", gruppo: toArr(S.data.gruppi)[0] || "", sigla: "", rai: false, pillola: "" };
+  S.scroll = window.scrollY; S.edit = { tipo: tipo, f: f };
+  S.view = "edit"; setMsg(""); render(); window.scrollTo(0, 0);
+}
+function chiudiEdit() { setMsg(""); S.edit = null; S.view = "lista"; render(); window.scrollTo(0, S.scroll); }
+function applicaNuovo() {
+  var E = S.edit, f = E.f, ch = E.tipo === "canali";
+  f.nome = f.nome.trim(); f.url = f.url.trim(); f.sigla = f.sigla.trim();
+  if (!f.nome || !/^https?:\/\/\S+$/.test(f.url)) { setMsg("Servono un nome e un indirizzo che inizi con https://", "err"); return; }
+  var arr = S.data[E.tipo] = toArr(S.data[E.tipo]), id = mkId(f.nome, arr), o = { id: id };
+  if (!ch && !f.pillola) { setMsg("Scegli la categoria: senza, il sito non ha una pillola", "err"); return; }
+  (ch ? ["nome", "url", "gruppo", "sigla", "rai"] : ["nome", "url"]).forEach(function (k) { o[k] = f[k]; });
+  if (!ch && f.pillola) o.pillola = f.pillola;
+  if (ch) { if (!o.sigla) o.sigla = f.nome.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4); o.epg = id; }
+  arr.push(o);
+  S.edit = null; S.view = "lista"; setMsg(""); render(); vaiA(E.tipo, arr.length - 1);
+}
+function campoNuovo(label, key, url) {
+  var E = S.edit;
+  var inp = h("input", { type: "text", id: "f_" + key, autocomplete: "off", autocapitalize: "none", spellcheck: "false",
+    inputmode: url ? "url" : null, oninput: function () { E.f[key] = this.value; } });
+  inp.value = E.f[key];
+  return [h("label", { for: "f_" + key }, label), inp];
+}
+function vistaNuovo() {
+  var E = S.edit, ch = E.tipo === "canali", f = E.f;
+  var form = h("div", { class: "form" }, h("h1", null, ch ? "Nuovo canale" : "Nuovo sito"));
+  campoNuovo("Nome", "nome").forEach(function (n) { form.appendChild(n); });
+  campoNuovo("Indirizzo", "url", true).forEach(function (n) { form.appendChild(n); });
+  if (ch) {
+    form.appendChild(h("label", null, "Gruppo"));
+    var gr = toArr(S.data.gruppi).slice();
+    var chips = h("div", { class: "chips" });
+    gr.forEach(function (g) { chips.appendChild(h("button", { class: "btn" + (f.gruppo === g ? " on" : ""), onclick: function () { f.gruppo = g; render(); } }, g)); });
+    form.appendChild(chips);
+    campoNuovo("Sigla (si vede finché manca il logo)", "sigla").forEach(function (n) { form.appendChild(n); });
+    form.appendChild(h("label", null, "Indirizzo Rai"));
+    form.appendChild(h("button", { class: "btn" + (f.rai ? " on" : ""), onclick: function () { f.rai = !f.rai; render(); } }, f.rai ? "Rai: sì" : "Rai: no"));
+    form.appendChild(h("p", { class: "hint" }, "Sì per i canali Rai: Muflone chiede l'indirizzo a Rai al momento della visione."));
+  }
+  if (!ch) {
+    form.appendChild(h("label", null, "Categoria (la pillola sotto cui compare)"));
+    var cats = h("div", { class: "chips" });
+    CATEGORIE.forEach(function (c) { cats.appendChild(h("button", { class: "btn" + (f.pillola === c[0] ? " on" : ""), onclick: function () { f.pillola = c[0]; render(); } }, c[1].replace("Categoria: ", ""))); });
+    form.appendChild(cats);
+  }
+  form.appendChild(h("p", { class: "hint" }, "«Fatto» aggiunge la voce all'elenco; per scriverla nel database si preme Salva."));
+  return form;
+}
+
+/* ---------------- accesso: schermata ---------------- */
+function vistaLogin() {
+  var em = h("input", { type: "email", id: "em", autocomplete: "username", autocapitalize: "none", spellcheck: "false" });
+  em.value = lsGet("ilregno.adminEmail") || "";
+  var pw = h("input", { type: "password", id: "pw", autocomplete: "current-password" });
+  return h("form", { class: "form", onsubmit: function (ev) {
+      ev.preventDefault();
+      if (S.occupato) return;
+      accedi(em.value.trim(), pw.value);
+    } },
+    h("h1", null, "Accesso"),
+    h("label", { for: "em" }, "Email"), em,
+    h("label", { for: "pw" }, "Password"), pw,
+    h("div", { class: "azioni" }, h("button", { class: "btn rosso", type: "submit" }, "Entra"), h("a", { class: "btn", href: "index.html" }, "← Il Regno")));
+}
+
+function render() {
+  var app = document.getElementById("app"), barra = document.getElementById("barra");
+  app.textContent = ""; barra.textContent = "";
+  barra.style.display = "flex"; barra.style.gap = "10px";
+  if (S.view === "lista" && S.data) {
+    app.appendChild(vistaLista());
+    barra.appendChild(h("button", { class: "btn rosso" + (dirty() ? " sporco" : ""), id: "salva", disabled: S.occupato, onclick: salva }, "Salva"));
+    barra.appendChild(h("button", { class: "btn", disabled: S.occupato, onclick: function () { setMsg("Carico…"); carica().then(function (ok) { if (ok) setMsg("Dati ricaricati"); render(); }); } }, "Ricarica"));
+    barra.appendChild(h("button", { class: "btn", onclick: esci }, "Esci"));
+  } else if (S.view === "edit" && S.edit) {
+    app.appendChild(vistaNuovo());
+    barra.appendChild(h("button", { class: "btn rosso", onclick: applicaNuovo }, "Fatto"));
+    barra.appendChild(h("button", { class: "btn", onclick: chiudiEdit }, "Annulla"));
+  } else {
+    S.view = "login";
+    app.appendChild(vistaLogin());
+  }
+}
+document.addEventListener("keydown", function (ev) {
+  if (ev.key === "Escape" && S.view === "edit") chiudiEdit();
+});
+render();
+</script>
+</body>
+</html>

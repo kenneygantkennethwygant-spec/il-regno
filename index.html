@@ -1,269 +1,467 @@
-<!DOCTYPE html>
-<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IL REGNO</title><script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Il Regno</title>
 <style>
-:root{--bg:#07080b;--panel:#101217;--text:#f6f7f9;--muted:#9b9eaa;--red:#ff3048;--line:rgba(255,255,255,.09)}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0%,rgba(255,48,72,.08),transparent 30%),var(--bg);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}
-button,a{font:inherit}.container{width:min(1380px,calc(100% - 36px));margin:auto}header{position:sticky;top:0;z-index:50;background:rgba(7,8,11,.86);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
-.nav{height:70px;display:flex;align-items:center;gap:28px}.logo{font-size:22px;font-weight:950;text-decoration:none;color:white}.logo span{color:var(--red)}.navlinks{display:flex;gap:20px}.navlinks a{color:#cfd1d7;text-decoration:none;font-size:14px}.actions{margin-left:auto}
-.btn{border:1px solid var(--line);background:#11131a;color:white;border-radius:11px;padding:9px 13px;cursor:pointer}.primary{background:var(--red);border-color:var(--red);font-weight:800}
-.section{padding:17px 0}.section-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:14px}.section h2{margin:0;font-size:22px}.kicker{color:var(--red);font-size:10px;font-weight:900;letter-spacing:1.5px;margin-bottom:4px}
-.live-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.live-card{background:#0d0f14;border:1px solid var(--line);border-radius:17px;overflow:hidden;cursor:pointer;transition:.2s;min-width:0}.live-card:hover{transform:translateY(-4px);border-color:#ff304877}.preview{aspect-ratio:16/9;background:#090a0d;position:relative;overflow:hidden}.preview img,.preview video{width:100%;height:100%;object-fit:cover;display:block}.livebadge{position:absolute;z-index:2;left:9px;top:9px;background:var(--red);font-size:9px;font-weight:900;padding:5px 7px;border-radius:7px}.liveinfo{padding:11px 12px 13px}.liveinfo b{font-size:14px}.liveinfo small{display:block;color:var(--muted);margin-top:4px}
-.rail{display:flex;gap:13px;overflow-x:auto;scrollbar-width:none;padding-bottom:12px}.rail::-webkit-scrollbar{display:none}.card{flex:0 0 184px;background:var(--panel);border:1px solid var(--line);border-radius:15px;overflow:hidden}.thumb{aspect-ratio:16/9;background:#15171e;display:grid;place-items:center}.thumb img{width:100%;height:100%;object-fit:cover}.play{width:42px;height:42px;border-radius:50%;background:var(--red);display:grid;place-items:center}.card-body{padding:11px 12px}.title{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{color:var(--muted);font-size:11px;margin-top:5px}
-.modal{display:none;position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,.82);z-index:9999;align-items:center;justify-content:center;padding:24px;overflow:hidden}.modal.open{display:flex}.player{position:relative;width:min(72vw,900px);height:min(58vh,520px);max-width:900px;max-height:520px;background:#000;border:1px solid #ffffff22;border-radius:12px;overflow:hidden;box-shadow:0 20px 70px rgba(0,0,0,.7)}.player>div{width:100%;height:100%}.bar{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:linear-gradient(#000b,transparent);pointer-events:none}.bar strong{font-size:16px;text-shadow:0 2px 5px #000}.bar .btn{pointer-events:auto;background:#111c;border:1px solid #ffffff33;font-size:20px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center}.player video{width:100%;height:100%;display:block;background:#000;object-fit:contain}
-.search{display:none;position:fixed;inset:0;background:#05060aee;z-index:100;padding:90px 20px}.search.open{display:block}.search input{width:min(800px,100%);display:block;margin:auto;padding:17px;border-radius:15px;border:1px solid var(--line);background:#14161d;color:#fff;font-size:18px}
-@media(max-width:900px){.live-grid{grid-template-columns:repeat(2,1fr)}.navlinks{display:none}}@media(max-width:560px){.container{width:calc(100% - 22px)}.live-grid{gap:9px}.card{flex-basis:158px}}
+/* Il Regno: pagina per la Fire TV Stick (Muflone, 960x540 CSS). Aspetto dalla bozza «R-sfondo-1».
+   Pulsanti alti almeno 64 px, testo almeno 16 px, nessuno scorrimento orizzontale. */
+:root{--bg:#07080b;--panel:#101217;--card:#0d0f14;--plate:#181b22;--text:#f6f7f9;--muted:#a3a6b2;
+  --red:#ff3048;--yel:#ffc531;--line:rgba(255,255,255,.10);--gut:24px}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.2 Roboto,system-ui,sans-serif;overflow-x:hidden}
+body.pl{overflow:hidden}
+/* sfondo «Luci»: aloni fermi su uno strato fisso, così non si ridisegnano mentre la pagina scorre */
+body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(ellipse 70% 55% at 8% 0%,rgba(255,48,72,.22),transparent 70%),radial-gradient(ellipse 60% 50% at 100% 100%,rgba(140,20,60,.30),transparent 70%),radial-gradient(ellipse 50% 40% at 85% 10%,rgba(90,40,160,.16),transparent 70%),linear-gradient(180deg,#0b0a10,#07080b)}
+button{font:inherit;color:inherit;cursor:pointer;margin:0}
+a{color:inherit;text-decoration:none}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+
+/* barra alta: logo, recenti, cerca, admin */
+.top{display:flex;align-items:center;gap:14px;padding:2px var(--gut) 0;height:66px}
+.logo{font-size:27px;font-weight:900;letter-spacing:.5px;white-space:nowrap}
+.logo span{color:var(--red)}
+.recenti{display:flex;align-items:center;gap:10px;flex:1 1 0;min-width:0}
+.lbl{color:var(--muted);font-size:16px}
+.chip{height:64px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:17px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.chip.sito::after{content:" \2197";color:var(--muted);font-weight:400}
+.cerca{height:64px;width:140px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:14px;
+  border:1px solid rgba(255,255,255,.18);background:#0b0c10;color:var(--muted);font-size:17px;margin-left:auto}
+.ricerca{display:flex;flex:1 1 0;min-width:0;gap:10px}
+.ricerca input{flex:1 1 0;min-width:0;height:64px;padding:0 18px;border-radius:14px;border:1px solid var(--red);background:#0b0c10;
+  color:var(--text);font:inherit;font-size:20px}
+.ricerca button{flex:0 0 64px;height:64px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-size:22px}
+.admin{height:64px;padding:0 12px;display:flex;align-items:center;color:#6f7280;font-size:16px;border-radius:12px;flex:0 0 auto}
+
+/* pillole delle categorie */
+/* le pillole stanno a metà tra la barra alta e il primo gruppo (38 px sopra e sotto) */
+.cats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:38px var(--gut) 34px}
+.pill{height:64px;border-radius:999px;border:1px solid var(--line);background:#11131a;color:#e4e6eb;font-size:19px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.pill.on{background:var(--red);border-color:var(--red);color:#fff}
+/* il pallino compare solo quando stato.json ha risposto (o è mancato): finché non si sa, il posto è vuoto e il verde non si afferma */
+.stato,.sp{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:9px}
+.stato.ok{background:#2fd06b;box-shadow:0 0 0 3px rgba(47,208,107,.18)}
+.stato.ko{background:var(--yel);box-shadow:0 0 0 3px rgba(255,197,49,.18)}
+
+/* scelta del sito (categoria con più siti): strato sopra la pagina, un pulsante grande per sito */
+#scelta{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(7,8,11,.9)}
+.sc{display:flex;flex-direction:column;gap:14px;width:min(460px,100% - 48px)}
+#scLista{display:flex;flex-direction:column;gap:14px}
+.sc p{margin:0 0 4px;font-size:22px;font-weight:800}
+.sc button{height:64px;display:flex;align-items:center;padding:0 22px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-size:22px;font-weight:700}
+.sc button:hover{border-color:rgba(255,48,72,.6)}
+.sc .sito::after{content:"\2197";margin-left:auto;color:var(--muted);font-weight:400}
+
+/* gruppi e schede dei canali */
+.gruppi{padding:0 var(--gut)}
+.gruppo{padding-top:4px}
+.gruppo h2{display:flex;align-items:center;gap:10px;margin:0 0 4px;font-size:20px;line-height:24px;font-weight:800}
+.gruppo h2::before{content:"";width:4px;height:18px;background:var(--red);border-radius:2px}
+.griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:5px 10px}
+.ch{height:64px;display:flex;align-items:center;gap:10px;padding:0 8px 0 4px;text-align:left;background:var(--card);
+  border:1px solid var(--line);border-radius:14px;min-width:0}
+/* targa: il logo, o la sigla se manca */
+.plate{flex:0 0 auto;width:58px;height:54px;border-radius:10px;background:var(--plate);display:flex;align-items:center;
+  justify-content:center;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1}
+.plate.s1{font-size:28px}.plate.s3{font-size:20px}.plate.s4{font-size:17px}.plate.s5{font-size:16px;letter-spacing:-.6px}
+.plate img{display:none;width:50px;height:46px;object-fit:contain}
+.plate.ok img{display:block}
+.info{display:flex;flex-direction:column;min-width:0;line-height:1.15}
+.info b,.live,.prog{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info b{font-size:17px;font-weight:700}
+.live{font-size:16px;font-weight:800;letter-spacing:1px;color:var(--red)}
+.prog{font-size:16px;color:var(--muted)}
+.prog:empty{display:none}
+/* canale segnalato come non funzionante: scheda gialla, ma si può cliccare lo stesso */
+.ch.off{background:transparent;border-style:dashed;border-color:rgba(255,197,49,.5)}
+.ch.off .plate{background:#121318;color:#8a7a4a}
+.ch.off b{color:#c9c2a8}
+.ch.off .live{color:var(--yel);letter-spacing:0;font-weight:600}
+.sk{height:64px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.msg{padding:12px var(--gut);font-size:20px;color:var(--muted)}
+.fondo{display:flex;justify-content:center;padding:8px 0 24px}
+.su{height:64px;padding:0 26px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:17px;font-weight:600}
+.chip:hover,.pill:hover,.ch:hover,.su:hover,.cerca:hover{border-color:rgba(255,48,72,.6)}
+.ch.off:hover{border-color:var(--yel)}
+.admin:hover{color:#c9ccd4}
+
+/* lettore: strato a tutto schermo, senza angoli arrotondati né ritagli attorno al video */
+#modal{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:9999}
+#modal.open{display:block}
+#video{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;object-fit:contain}
+.barra{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px var(--gut);pointer-events:none}
+.barra{align-items:flex-start}
+.nome{flex:1 1 0;min-width:0}
+.barra strong{font-size:20px;text-shadow:0 2px 6px #000}
+/* in onda ora (R16): riga sotto il nome, senza riquadro, e barretta di avanzamento; spariscono con la barra */
+#inonda{margin-top:2px;font-size:18px;font-weight:500;color:rgba(255,255,255,.8);text-shadow:0 0 4px #000,0 2px 6px #000;white-space:pre;overflow:hidden;text-overflow:ellipsis}
+#avanza{width:220px;height:3px;margin-top:8px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
+#avanza i{display:block;height:100%;width:0;background:var(--red)}
+/* titolo e X spariscono come il puntatore di Muflone (3 s senza movimento) con la sola opacità: l'elemento resta nella pagina,
+   perché Indietro di Muflone esegue closePlayer.click() anche a controlli nascosti; nascosti non prendono i clic.
+   Il pannello d'errore non si nasconde mai, e con lui restano i controlli. */
+.barra{transition:opacity .2s}
+#modal.nasc:not(.errore) .barra{opacity:0}
+#modal.nasc:not(.errore) #closePlayer{pointer-events:none}
+#closePlayer{flex:none;pointer-events:auto;width:64px;height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);font-size:24px}
+#dopo{position:absolute;left:var(--gut);bottom:var(--gut);text-shadow:0 0 4px #000,0 2px 6px #000;font-size:20px;font-weight:600}
+#err{display:none;position:absolute;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:24px;
+  background:#000;text-align:center;padding:0 var(--gut)}
+#modal.errore #err{display:flex}
+#modal.errore #video{visibility:hidden}
+#err p{margin:0;font-size:28px;font-weight:700}
+#err div{display:flex;gap:16px}
+#err button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:20px;font-weight:700}
+#err #riprova{background:var(--red);border-color:var(--red)}
+
+/* schermi stretti (telefono): le righe vanno a capo */
+@media(max-width:700px){
+  .top{height:auto;flex-wrap:wrap;padding-top:8px}
+  .recenti{flex:1 1 100%;order:3;flex-wrap:wrap}
+  .cats{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+}
 </style>
-<style id="horizontal-category-nav">
-.category-nav{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;padding:4px 2px 16px}
-.category-nav::-webkit-scrollbar{display:none}
-.category-nav a{flex:0 0 auto;text-decoration:none;color:#cfd1d7;background:#11131a;border:1px solid rgba(255,255,255,.09);padding:13px 23px;border-radius:999px;font-size:15px;font-weight:800;transition:.2s;min-width:120px;text-align:center}
-.category-nav a:hover,.category-nav a.active{color:#fff;background:#ff3048;border-color:#ff3048}
-@media(max-width:560px){.category-nav{gap:7px}.category-nav a{font-size:13px;padding:11px 18px;min-width:105px}}
-</style>
-</head><body>
-<header><div class="container nav"><a class="logo" href="#home">IL <span>REGNO</span></a><nav class="navlinks"><a href="#home">Home</a><a href="#live">Live TV</a><a href="#categorie">Categorie</a></nav><div class="actions"><button class="admin-btn" id="adminBtn">Admin</button><button class="btn" id="searchBtn">⌕</button></div></div></header>
-<main id="home" class="container">
-<div class="category-nav" id="categoryNav">
-  <a class="active" href="#live">Live TV</a>
-  <a href="#cat-film">Film</a>
-  <a href="#cat-serie-tv">Serie TV</a>
-  <a href="#cat-sport">Sport</a>
-  <a href="#cat-cartoni">Cartoni</a>
-  <a href="#cat-anime">Anime</a>
-</div>
-<section id="live" class="section"><div class="section-head"><div><div class="kicker">LIVE TV</div><h2>Canali in anteprima</h2></div><button class="btn" id="allLive">Tutti i canali</button></div><div id="liveGrid" class="live-grid"></div></section>
-
-<section id="categoryContent" class="section category-content" style="display:none"></section>
-
-</main>
-
-<div class="admin-panel" id="adminPanel">
-  <div class="admin-box">
-    <div class="admin-head">
-      <div><div class="kicker">AMMINISTRAZIONE</div><h2>Gestisci URL e contenuti</h2></div>
-      <button class="btn" id="adminClose">✕</button>
-    </div>
-    <div id="adminLogin">
-      <div class="admin-status">Inserisci la password amministratore per modificare i dati.</div>
-      <div class="admin-login">
-        <input id="adminPassword" type="password" placeholder="Password">
-        <button class="btn primary" id="adminLoginBtn">Accedi</button>
-      </div>
-    </div>
-    <div id="adminEditor" style="display:none">
-      <div class="admin-status" id="adminStatus">Seleziona una categoria.</div>
-      <select class="btn" id="adminCategory" style="width:100%;margin-bottom:12px">
-        <option value="live-tv">Live TV</option><option value="film">Film</option>
-        <option value="serie-tv">Serie TV</option><option value="sport">Sport</option>
-        <option value="cartoni">Cartoni</option><option value="anime">Anime</option>
-      </select>
-      <div id="adminRows"></div>
-      <div class="admin-actions">
-        <button class="btn" id="adminAdd">+ Aggiungi canale</button>
-        <button class="btn admin-save" id="adminSave">Salva modifiche</button>
-      </div>
-    </div>
+</head>
+<body>
+<header class="top">
+  <div class="logo">IL <span>REGNO</span></div>
+  <nav class="recenti" id="recenti" aria-label="Aperti di recente" hidden></nav>
+  <button class="cerca" id="cerca">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff3048" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+    Cerca
+  </button>
+  <div class="ricerca" id="ricerca" hidden>
+    <input id="q" type="text" placeholder="Cerca un canale" autocomplete="off" enterkeyhint="search" aria-label="Cerca un canale">
+    <button id="chiudiRicerca" aria-label="Esci dalla ricerca">&#10005;</button>
   </div>
+  <a class="admin" href="admin.html">Admin</a>
+</header>
+
+<nav class="cats" aria-label="Categorie">
+  <button class="pill on" id="live">Live TV</button>
+  <button class="pill" data-sito="film"><i class="sp"></i>Film</button>
+  <button class="pill" data-sito="serie"><i class="sp"></i>Serie TV</button>
+  <button class="pill" data-sito="sport"><i class="sp"></i>Sport</button>
+  <button class="pill" data-sito="anime"><i class="sp"></i>Anime</button>
+</nav>
+
+<div id="scelta" hidden role="dialog" aria-label="Scegli il sito"><div class="sc"><p id="scTit">Scegli il sito</p><div id="scLista"></div><button id="scChiudi">Chiudi</button></div></div>
+<div class="msg" id="avviso" hidden></div>
+<main class="gruppi" id="gruppi"><section class="gruppo"><div class="griglia"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div></section></main>
+<div class="fondo"><button class="su" id="su">&#8593; Torna in cima</button></div>
+
+<div id="modal">
+  <video id="video" playsinline></video>
+  <div class="barra"><div class="nome"><strong id="titolo"></strong><div id="inonda" hidden></div><div id="avanza" hidden><i></i></div></div><button id="closePlayer" aria-label="Esci">&#10005;</button></div>
+  <div id="dopo" hidden></div>
+  <div id="err"><p id="errmsg"></p><div><button id="riprova">Riprova</button><button id="chiudi">Chiudi</button></div></div>
 </div>
 
-<div class="search" id="search"><button class="btn" id="closeSearch" style="float:right">✕</button><input id="searchInput" placeholder="Cerca canali, film, serie..."><div id="searchResults" style="max-width:800px;margin:18px auto"></div></div>
-<div class="modal" id="modal"><div class="player"><div style="width:100%"><div class="bar"><strong id="playerTitle">Live TV</strong><button class="btn" id="closePlayer">✕</button></div><video id="video" controls playsinline></video></div></div></div>
 <script>
-const DEFAULT_DATA={
-            'live-tv': [
-                { name: 'Rai 1', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=2606803&output=7', icon: '📺', type: 'live' },
-                { name: 'Rai 2', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308718&output=7', icon: '📺', type: 'live' },
-                { name: 'Rai 3', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=308709&output=7', icon: '📺', type: 'live' },
-                { name: 'Rete 4', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-r4/r4-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Canale 5', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-c5/c5-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Italia 1', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-i1/i1-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'La7', url: 'https://d1chghleocc9sm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-evfku205gqrtf/Live.m3u8', icon: '📺', type: 'live' },
-                { name: 'TV8', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11223/tv8web/master.m3u8', icon: '📺', type: 'live' },
-                { name: 'Nove', url: 'https://d31mw7o1gs0dap.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-y5pbi2sq9r609/NOVE_IT.m3u8', icon: '📺', type: 'live' },
-                { name: '20 Mediaset', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-lb/lb-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai 4', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746966&output=7', icon: '📺', type: 'live' },
-                { name: 'Iris', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-ki/ki-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai 5', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=395276&output=7', icon: '📺', type: 'live' },
-                { name: 'Rai Movie', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=747002&output=7', icon: '🎬', type: 'live' },
-                { name: 'Rai Premium', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746992&output=7', icon: '📺', type: 'live' },
-                { name: 'Cielo', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/11219/cieloweb/master.m3u8', icon: '📺', type: 'live' },
-                { name: 'TV2000', url: 'https://hls-live-tv2000.akamaized.net/hls/live/2028510/tv2000/master.m3u8', icon: '📺', type: 'live' },
-                { name: 'La5', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-ka/ka-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Real Time', url: 'https://d3562mgijzx0zq.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-kizqtzpvvl3i8/Realtime_IT.m3u8', icon: '📺', type: 'live' },
-                { name: 'Cine34', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-b6/b6-clr.isml/index.m3u8', icon: '🎬', type: 'live' },
-                { name: 'Focus', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-fu/fu-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Top Crime', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-lt/lt-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Boing', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kb/kb-clr.isml/index.m3u8', icon: '🧒', type: 'live' },
-                { name: 'K2', url: 'https://d1pmpe0hs35ka5.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-39hsskpppgf72/K2_IT.m3u8', icon: '🧒', type: 'live' },
-                { name: 'Rai Gulp', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746953&output=7', icon: '🧒', type: 'live' },
-                { name: 'Rai YoYo', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7', icon: '🧒', type: 'live' },
-                { name: 'Cartoonito', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-la/la-clr.isml/index.m3u8', icon: '🧒', type: 'live' },
-                { name: 'Rai News 24', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=1&output=7', icon: '📰', type: 'live' },
-                { name: 'Sky TG24', url: 'https://hlslive-web-gcdn-skycdn-it.akamaized.net/TACT/12221/web/master.m3u8', icon: '📰', type: 'live' },
-                { name: 'TGCOM 24', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kf/kf-clr.isml/index.m3u8', icon: '📰', type: 'live' },
-                { name: 'DMAX', url: 'https://d2j2nqgg7bzth.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-02k1gv1j0ufwn/DMAX_IT.m3u8', icon: '📺', type: 'live' },
-                { name: 'Italia 2', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-i2/i2-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai Storia', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746990&output=7', icon: '📺', type: 'live' },
-                { name: 'Mediaset Extra', url: 'https://live02-seg.msf.cdn.mediaset.net/live/ch-kq/kq-clr.isml/index.m3u8', icon: '📺', type: 'live' },
-                { name: 'Rai Sport', url: 'https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=358025&output=7', icon: '⚽', type: 'live' },
-                { name: 'Sportitalia', url: 'https://sportsitalia-samsungitaly.amagi.tv/playlist.m3u8', icon: '⚽', type: 'live' },
-                { name: 'SuperTennis', url: 'https://live-embed.supertennix.hiway.media/restreamer/supertennix_client/gpu-a-c0-16/restreamer/outgest/aa3673f1-e178-44a9-a947-ef41db73211a/manifest.m3u8', icon: '🎾', type: 'live' },
-                { name: 'Radio 105', url: 'https://live02-seg.msr.cdn.mediaset.net/live/ch-ec/ec-clr.isml/index.m3u8', icon: '🎵', type: 'live' },
-                { name: 'R101 TV', url: 'https://live02-seg.msr.cdn.mediaset.net/live/ch-er/er-clr.isml/index.m3u8', icon: '🎵', type: 'live' },
-                { name: 'Deejay TV', url: 'https://4c4b867c89244861ac216426883d1ad0.msvdn.net/live/S85984808/sMO0tz9Sr2Rk/playlist.m3u8', icon: '🎵', type: 'live' },
-                { name: 'Radio Italia TV', url: 'https://radioitaliatv.akamaized.net/hls/live/2093117/RadioitaliaTV/master.m3u8', icon: '🎵', type: 'live' },
-                { name: 'RDS Social TV', url: 'https://stream.rdstv.radio/index.m3u8', icon: '🎵', type: 'live' },
-                { name: 'RTL 102.5', url: 'https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/playlist.m3u8', icon: '🎵', type: 'live' },
-                { name: 'Food Network', url: 'https://dk3okdd5036kz.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-o4pw0nc02sthz/Foodnetwork_IT.m3u8', icon: '🍳', type: 'live' },
-                { name: 'HGTV', url: 'https://d1tidto9vz737l.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-joaw4f4kh2en1/HGTV_IT.m3u8', icon: '🏠', type: 'live' },
-                { name: 'Motor Trend', url: 'https://d205m6k582pec4.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-asg5puyzdtnqu/Motortrend_IT.m3u8', icon: '🏎️', type: 'live' },
-                { name: 'Giallo', url: 'https://d9fqo6nfqlv2h.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-ulukbrgm1n3yb/Giallo_IT.m3u8', icon: '🔍', type: 'live' },
-                { name: 'Radio TV Serie A', url: 'https://stream.radioseriea.com/50773f0d0070476a8612d9984c6059d8/index.m3u8', icon: '⚽', type: 'live' },
-                { name: 'Gambero Rosso', url: 'https://2018f6355a15442ebb37007fa4f6c064.msvdn.net/live/S7530969/XWerenuxbSdW/playlist.m3u8', icon: '🍳', type: 'live' }
-            ],
-            'film': [
-                { name: 'StreamingCommunity', url: 'https://streamingcommunityz.tech/', icon: '🎬', type: 'link' }
-            ],
-            'serie-tv': [
-                { name: 'StreamingCommunity', url: 'https://streamingcommunityz.tech/it/tv-shows', icon: '📺', type: 'link' }
-            ],
-            'sport': [
-                { name: 'FCTV33HD', url: 'https://www.fctv33hd.mom/it', icon: '⚽', type: 'link' }
-            ],
-            'cartoni': [
-                { name: 'Loonex', url: 'https://loonex.eu/cartoni/', icon: '🐱', type: 'link' }
-            ],
-            'anime': [
-                { name: 'AnimeWorld', url: 'https://www.animeworld.ac/', icon: '🐉', type: 'link' }
-            ]
-        };
-const NAMES={"live-tv":"Live TV","film":"Film","serie-tv":"Serie TV","sport":"Sport","cartoni":"Cartoni","anime":"Anime"};
-const S={hls:null};
-const arr=k=>{const x=DEFAULT_DATA?.[k];return Array.isArray(x)?x:Object.values(x||{})};
-const pick=(o,ks)=>{for(const k of ks)if(o?.[k]!=null&&String(o[k]).trim())return o[k];return""};
-const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-function openPlayer(x){const url=pick(x,["url","stream","src","link","m3u8"]);document.getElementById("playerTitle").textContent=pick(x,["name","title","channel","nome"])||"Live TV";const modal=document.getElementById("modal");modal.classList.add("open");document.body.classList.add("player-open");const v=document.getElementById("video");if(S.hls)S.hls.destroy();v.removeAttribute("src");if(url&&window.Hls&&Hls.isSupported()&&/\.m3u8/i.test(url)){S.hls=new Hls();S.hls.loadSource(url);S.hls.attachMedia(v);S.hls.on(Hls.Events.MANIFEST_PARSED,()=>{v.play().catch(()=>{});})}else{v.src=url||"";if(url)v.play().catch(()=>{});}}
-function closePlayer(){const v=document.getElementById("video");v.pause();v.removeAttribute("src");v.load();if(S.hls){S.hls.destroy();S.hls=null}const modal=document.getElementById("modal");modal.classList.remove("open");document.body.classList.remove("player-open");}
-function liveCard(x,i){const name=pick(x,["name","title","channel","nome"])||"Canale "+(i+1),img=pick(x,["logo","image","poster","thumb","thumbnail"]);const c=document.createElement("article");c.className="live-card";c.innerHTML='<div class="preview"><span class="livebadge">● LIVE</span>'+(img?'<img src="'+esc(img)+'" onerror="this.style.display=\'none\'">':'<div style="height:100%;display:grid;place-items:center;font-size:34px">▶</div>')+'</div><div class="liveinfo"><b>'+esc(name)+'</b><small>Guarda ora</small></div>';c.onclick=()=>openPlayer(x);return c}
-function renderLive(all=false){const g=document.getElementById("liveGrid");g.innerHTML="";const items=arr("live-tv");if(!items.length){g.innerHTML='<div style="grid-column:1/-1;color:#999;padding:30px">Nessun canale disponibile.</div>';return}items.slice(0,all?999:8).forEach((x,i)=>g.appendChild(liveCard(x,i)));}
-function contentCard(x,category,i){const name=pick(x,["name","title","channel","nome"])||"Contenuto "+(i+1),img=pick(x,["logo","image","poster","thumb","thumbnail"]),url=pick(x,["url","stream","src","link","m3u8"]);const c=document.createElement("article");c.className="content-card";c.innerHTML='<div class="content-thumb">'+(img?'<img src="'+esc(img)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">':'')+'<div class="content-icon" '+(img?'style="display:none"':'')+'>'+(x.icon||"🎬")+'</div></div><div class="content-body"><b>'+esc(name)+'</b><small>'+esc(NAMES[category]||category)+(url?' · Apri':'')+'</small></div>';c.onclick=()=>{if(url)window.open(url,"_blank","noopener,noreferrer")};return c}
-function showCategory(category){document.querySelectorAll('.category-nav a').forEach(a=>a.classList.toggle('active',a.dataset.category===category));const live=document.getElementById('live');const box=document.getElementById('categoryContent');if(category==='live-tv'){live.style.display='block';box.style.display='none';window.scrollTo({top:0,behavior:'smooth'});return}live.style.display='none';box.style.display='block';const items=arr(category);box.innerHTML='<div class="category-panel"><div class="category-panel-head"><div><div class="kicker">'+esc(NAMES[category]||category)+'</div><h2>'+esc(NAMES[category]||category)+'</h2><p>'+items.length+' contenut'+(items.length===1?'o':'i')+' disponibili</p></div><button class="btn category-back">← Live TV</button></div><div class="content-grid" id="contentGrid"></div></div>';const grid=document.getElementById('contentGrid');if(!items.length){grid.innerHTML='<div style="grid-column:1/-1;color:#999;padding:25px">Nessun contenuto disponibile in questa categoria.</div>';}else items.forEach((x,i)=>grid.appendChild(contentCard(x,category,i)));box.querySelector('.category-back').onclick=()=>showCategory('live-tv');window.scrollTo({top:0,behavior:'smooth'});}
-function initCategories(){document.querySelectorAll('.category-nav a').forEach(a=>{const map={'Live TV':'live-tv','Film':'film','Serie TV':'serie-tv','Sport':'sport','Cartoni':'cartoni','Anime':'anime'};const key=map[a.textContent.trim()];a.dataset.category=key;a.addEventListener('click',e=>{e.preventDefault();if(key==='live-tv'){showCategory('live-tv');return}const items=arr(key);const url=items.length?pick(items[0],['url','stream','src','link','m3u8']):'';if(url){window.location.href=url;}});});}
-initCategories();renderLive();
-document.getElementById('allLive').onclick=()=>renderLive(true);
-document.getElementById('closePlayer').addEventListener('click', closePlayer);
-document.getElementById('modal').addEventListener('click', e=>{ if(e.target.id==='modal') closePlayer(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePlayer(); });
-</script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-const firebaseConfig = {
-            apiKey: "AIzaSyByxULPVAzJObzhfDweMDw0Qtx1OumR_Bo",
-            databaseURL: "https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "il-regno-app",
-            appId: "1:816047392926:web:9de485468d75d7b4d8538f"
-        };
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-window.__ILREGNO_FB = {db, ref, onValue, set};
-</script>
+// Dati: una sola richiesta REST a Firebase; l'ultima copia buona resta sul dispositivo e si disegna subito.
+const DB="https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app/v2.json";
+const $=s=>document.querySelector(s);
+const MESI="gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre".split(" ");
+const arr=x=>Array.isArray(x)?x.filter(Boolean):x?Object.values(x):[];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const mem={
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+};
+let D=null, STATO={}, GUIDA={}, secondari=false, statoNoto=false;
 
+// ---------- copia sul dispositivo ----------
+function leggiCache(){
+  try{
+    const o=JSON.parse(mem.get("ilregno.v2")), v=o.canali?o:Object.values(o).find(x=>x&&x.canali);
+    const d=new Date(o.d||o.data||o.ts||o.date||0);   // forma scritta da salvaCache; il resto per tolleranza
+    return v?{v,d:isNaN(d)?null:d}:null;
+  }catch(e){return null}
+}
+const salvaCache=v=>mem.set("ilregno.v2",JSON.stringify({d:new Date().toISOString(),v}));
 
-<script>
-window.addEventListener('load',()=>{if(window.__ILREGNO_FB){window.__ILREGNO_FB.onValue(window.__ILREGNO_FB.ref(window.__ILREGNO_FB.db,'data'),snap=>{const d=snap.val();if(d&&typeof d==='object'){Object.keys(d).forEach(k=>DEFAULT_DATA[k]=d[k]);renderLive();}});}});
-</script>
-<style id="category-content-ui">
-.category-content{padding-top:8px}.category-panel{background:linear-gradient(145deg,#11131a,#0b0c10);border:1px solid var(--line);border-radius:18px;padding:20px}.category-panel-head{display:flex;align-items:end;justify-content:space-between;gap:15px;margin-bottom:18px}.category-panel-head h2{margin:0;font-size:25px}.category-panel-head p{margin:5px 0 0;color:var(--muted);font-size:13px}.content-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}.content-card{background:#0d0f14;border:1px solid var(--line);border-radius:15px;overflow:hidden;cursor:pointer;transition:.2s}.content-card:hover{transform:translateY(-4px);border-color:#ff304877}.content-thumb{aspect-ratio:16/10;background:linear-gradient(145deg,#1a1c23,#090a0d);display:grid;place-items:center;overflow:hidden}.content-thumb img{width:100%;height:100%;object-fit:cover}.content-icon{font-size:42px}.content-body{padding:12px}.content-body b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.content-body small{display:block;color:var(--muted);margin-top:5px}.category-back{margin-top:18px}@media(max-width:1100px){.content-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:800px){.content-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:560px){.content-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.category-panel{padding:14px}.category-panel-head{align-items:flex-start;flex-direction:column}}
-</style>
-<style id="admin-ui">
-.admin-btn{border:1px solid rgba(255,255,255,.1);background:#11131a;color:#fff;border-radius:11px;padding:9px 13px;cursor:pointer}
-.admin-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:120;align-items:center;justify-content:center;padding:18px}
-.admin-panel.open{display:flex}.admin-box{width:min(1050px,100%);max-height:90vh;overflow:auto;background:#101217;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;box-shadow:0 18px 60px #0008}
-.admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.admin-head h2{margin:0}
-.admin-login{display:flex;gap:10px}.admin-login input,.admin-row input,.admin-row textarea{width:100%;padding:10px 11px;background:#0a0b0f;border:1px solid rgba(255,255,255,.1);border-radius:9px;color:#fff}
-.admin-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.admin-row{display:grid;grid-template-columns:1fr 2fr auto;gap:9px;align-items:center;margin:8px 0}.admin-row label{font-size:12px;color:#aaa}
-.admin-status{color:#9b9eaa;font-size:12px;margin:10px 0}.admin-save{background:#ff3048!important;border-color:#ff3048!important}
-@media(max-width:650px){.admin-row{grid-template-columns:1fr}.admin-login{flex-direction:column}}
-</style>
+// ---------- programmi (guida): quello in onda e il successivo ----------
+function programmi(c){
+  const l=arr(GUIDA.canali&&GUIDA.canali[c.epg||c.id]), n=Date.now();
+  // le voci possono sovrapporsi (21:20 inizia prima che finisca il programma delle 20:39): in onda è quella partita per ultima,
+  // la successiva è la prima che inizia dopo adesso
+  let ora,dopo;
+  l.forEach(p=>{
+    const i=Date.parse(p.i), f=Date.parse(p.f);
+    if(i<=n&&n<f){if(!ora||i>Date.parse(ora.i))ora=p}
+    else if(i>n&&(!dopo||i<Date.parse(dopo.i)))dopo=p;
+  });
+  return {ora,dopo};
+}
 
-<script>
-(function(){
-  const ADMIN_PASSWORD = "regno2024";
-  let adminLogged = false;
+// ---------- disegno ----------
+function scheda(c){
+  const n=(c.sigla||"").length, z=n<=2?"s1":"s"+Math.min(n,5);
+  return `<button class="ch" data-t="canale" data-i="${esc(c.id)}"><span class="plate ${z}">`+
+    `<img data-src="loghi/${esc(c.id)}.webp" width="50" height="46" alt=""><span class="sg">${esc(c.sigla||"")}</span></span>`+
+    `<span class="info"><b>${esc(c.nome)}</b><span class="live">&#9679; LIVE</span><span class="prog"></span></span></button>`;
+}
+function disegna(){
+  const q=$("#q").value.trim().toLowerCase();
+  const gr=[...D.gruppi];
+  D.canali.forEach(c=>{c.gruppo=c.gruppo||"Altri"; if(!gr.includes(c.gruppo))gr.push(c.gruppo)});
+  let h="", n=0;
+  gr.forEach(g=>{
+    const l=D.canali.filter(c=>c.gruppo===g&&(!q||String(c.nome).toLowerCase().includes(q)));
+    if(!l.length)return;
+    n+=l.length;
+    h+=`<section class="gruppo"><h2>${esc(g)}</h2><div class="griglia">${l.map(scheda).join("")}</div></section>`;
+  });
+  $("#gruppi").innerHTML=n?h:'<div class="msg" style="padding-left:0">Nessun canale trovato</div>';
+  aggiorna(); recenti(); osservaLoghi();
+}
+// stato dei link e programma in onda: si applicano sulle schede già disegnate
+function aggiorna(){
+  if(statoNoto)document.querySelectorAll("[data-sito]").forEach(el=>{
+    // la pillola è verde se almeno uno dei suoi siti è ok
+    const ko=sitiDi(el.dataset.sito).every(x=>((STATO.siti||{})[x.id]||{}).ok===false);
+    el.firstElementChild.className="stato "+(ko?"ko":"ok");
+  });
+  if(!D)return;
+  document.querySelectorAll(".ch").forEach(el=>{
+    const c=trova("canale",el.dataset.i); if(!c)return;
+    const ko=((STATO.canali||{})[c.id]||{}).ok===false;
+    el.classList.toggle("off",ko); el.classList.toggle("ko",ko);
+    el.querySelector(".live").innerHTML=ko?"non disponibile":"&#9679; LIVE";
+    el.querySelector(".prog").textContent=ko?"":(programmi(c).ora||{}).t||"";
+  });
+}
+// logo: si chiede solo quando la scheda è nella schermata o vicina (200 px); finché non arriva si vede la sigla, e se manca resta la sigla
+const vista=window.IntersectionObserver&&new IntersectionObserver(l=>l.forEach(o=>{
+  if(!o.isIntersecting)return;
+  vista.unobserve(o.target); caricaLogo(o.target);
+}),{rootMargin:"200px"});
+function caricaLogo(el){
+  const i=el.querySelector("img[data-src]"); if(!i)return;
+  i.onload=()=>{i.parentNode.classList.add("ok"); const s=i.parentNode.querySelector(".sg"); if(s)s.remove()};   // il load non arriva a window: si ascolta sull'immagine
+  i.src=i.dataset.src; i.removeAttribute("data-src");
+}
+function osservaLoghi(){
+  if(vista)vista.disconnect();
+  document.querySelectorAll(".ch").forEach(el=>vista?vista.observe(el):caricaLogo(el));
+}
+addEventListener("error",e=>{
+  const i=e.target;
+  if(i.tagName==="IMG"&&i.parentNode.classList.contains("plate"))i.remove();
+},true);
 
-  const panel=document.getElementById("adminPanel");
-  const rows=document.getElementById("adminRows");
-  const cat=document.getElementById("adminCategory");
-  const status=document.getElementById("adminStatus");
+// ---------- recenti (ultime 3 cose aperte) ----------
+const trova=(tipo,id)=>D&&(tipo==="sito"?D.siti:D.canali).find(x=>x.id===id);
+function leggiRecenti(){try{return JSON.parse(mem.get("ilregno.recenti"))||[]}catch(e){return[]}}
+function recenti(){
+  const v=leggiRecenti().map(x=>({x,o:trova(x.tipo,x.id)})).filter(a=>a.o), el=$("#recenti");
+  el.innerHTML=v.length?'<span class="lbl">Recenti</span>'+v.map(a=>
+    `<button class="chip ${a.x.tipo}" data-t="${a.x.tipo}" data-i="${esc(a.x.id)}">${esc(a.o.nome)}</button>`).join(""):"";
+  el.hidden=!v.length||!$("#ricerca").hidden;
+}
+// i siti di una categoria (pillola): quelli con "pillola" uguale, o senza "pillola" e con quell'id
+const sitiDi=cat=>D?D.siti.filter(x=>(x.pillola||x.id)===cat):[{id:cat}];
+function categoria(cat){
+  const l=sitiDi(cat);
+  if(l.length>1)scelta(cat,l);
+  else if(l.length)apri("sito",l[0].id);
+}
+// Indietro di Muflone chiude la scelta come la ricerca: una voce di cronologia in più, tolta se la scelta si chiude in altro modo
+// o prima di aprire il sito, così dal sito si torna a Il Regno senza un Indietro a vuoto
+let voceScelta=false, attesa=0, vaA=null;
+function scelta(cat,l){
+  const nome=$(`[data-sito="${cat}"]`).textContent.trim();
+  $("#scTit").textContent=nome;
+  $("#scLista").innerHTML=l.map(x=>`<button class="sito" data-t="sito" data-i="${esc(x.id)}"><i class="stato ${((STATO.siti||{})[x.id]||{}).ok===false?"ko":"ok"}"></i>${esc(x.nome)}</button>`).join("");
+  $("#scelta").hidden=false; $("#scLista button").focus();
+  if(!voceScelta){history.pushState(null,"");voceScelta=true}
+}
+function chiudiScelta(dalBack){
+  if(!voceScelta)return;
+  $("#scelta").hidden=true; voceScelta=false;
+  if(!dalBack){attesa++; history.back()}
+}
+// apre il sito in questa schermata; con la scelta aperta prima toglie la sua voce di cronologia
+function vai(url){
+  if(!voceScelta)return void(location.href=url);
+  vaA=url; chiudiScelta(false); setTimeout(vaPoi,500);
+}
+function vaPoi(){if(vaA){const u=vaA;vaA=null;location.href=u}}
+function apri(tipo,id){
+  const o=trova(tipo,id); if(!o)return;
+  mem.set("ilregno.recenti",JSON.stringify([{tipo,id},...leggiRecenti().filter(x=>!(x.tipo===tipo&&x.id===id))].slice(0,3)));
+  recenti();
+  if(tipo==="canale")riproduci(o);
+  else if(o.url)vai(o.url);
+}
 
-  function adminItems(){
-    const x=DEFAULT_DATA?.[cat.value];
-    return Array.isArray(x)?x:(x&&typeof x==="object"?Object.values(x):[]);
+// ---------- lettore ----------
+const M=$("#modal"), V=$("#video");
+let tok=0, hls=null, tm=[], cur=null, pos=0, rai=null, nrai=0;
+const entro=(f,ms)=>tm.push(setTimeout(f,ms));
+function ferma(){
+  tok++; tm.forEach(clearTimeout); tm=[]; rai=null;
+  V.onerror=V.onplaying=null;
+  if(hls){hls.destroy();hls=null}
+  V.pause(); V.removeAttribute("src"); V.load();
+}
+function chiudiLettore(){
+  ferma(); M.className=""; clearTimeout(tb);
+  document.body.classList.remove("pl"); $("#dopo").hidden=true; clearInterval(ti);
+  if(scrollY!==pos)scrollTo(0,pos);
+}
+// V01 manca l'indirizzo o hls.js non parte, V02 non parte entro 10 s o errore del video, V03 indirizzo Rai non ottenuto
+function fallito(k,cod){
+  if(k!==tok)return;
+  ferma(); console.warn("lettore",cur.id,cod);
+  $("#errmsg").textContent=`${cur.nome} non disponibile ora (codice ${cod})`;
+  M.classList.add("errore"); $("#riprova").focus();
+}
+function riproduci(c){
+  if(!M.classList.contains("open"))pos=scrollY;
+  ferma(); cur=c;
+  M.className="open"; document.body.classList.add("pl"); mostraBarra(true);
+  $("#titolo").textContent=c.nome; $("#dopo").hidden=true;
+  inOnda(c); clearInterval(ti); ti=setInterval(()=>inOnda(c),60000);
+  const k=tok;
+  V.onplaying=()=>{if(k===tok){V.onplaying=null;partito(c)}};   // solo la prima partenza: dopo uno scatto «Dopo» non ricompare
+  entro(()=>fallito(k,"V02"),10000);
+  if(!c.url)return fallito(k,"V01");
+  if(c.rai)return chiediRai(c,k);
+  let usato=false;
+  const conHls=()=>{if(usato||k!==tok)return;usato=true;V.removeAttribute("src");V.load();suHls(c.url,k)};
+  V.onerror=conHls;            // il lettore nativo non sa leggere il flusso
+  entro(conHls,6000);          // o non avanza: si riprova una volta con hls.js
+  V.src=c.url; V.play().catch(()=>{});
+}
+// titolo e X: visibili all'apertura e a ogni movimento o clic nel lettore, spariscono 3 s dopo l'ultimo (come il puntatore di Muflone,
+// che alla pagina manda solo il movimento del mouse e i clic). A controlli nascosti la X non prende il clic (pointer-events:none):
+// il clic cade sul video e li mostra soltanto; dopo la pressione la X torna cliccabile, ma pressione e rilascio sono su elementi
+// diversi e il browser non genera il clic sulla X.
+let tb=0, ti=0;
+// cosa va in onda adesso sul canale aperto: «HH:MM – HH:MM  Titolo» e quanto ne è passato; senza guida la riga e la barretta non ci sono
+function inOnda(c){
+  const p=programmi(c).ora, ok=!!p;
+  $("#inonda").hidden=$("#avanza").hidden=!ok;
+  if(!ok)return;
+  const i=Date.parse(p.i), f=Date.parse(p.f);
+  $("#inonda").textContent=p.i.slice(11,16)+" \u2013 "+p.f.slice(11,16)+"  "+p.t;
+  $("#avanza i").style.width=Math.max(0,Math.min(100,(Date.now()-i)/(f-i)*100)).toFixed(1)+"%";
+}
+function mostraBarra(forza){
+  if(!forza&&!M.classList.contains("open"))return;
+  M.classList.remove("nasc"); clearTimeout(tb);
+  tb=setTimeout(()=>M.classList.add("nasc"),3000);
+}
+["mousemove","pointermove","pointerdown","click"].forEach(t=>M.addEventListener(t,()=>mostraBarra()));
+// il video è partito: si fermano i controlli di tempo e per qualche secondo si legge cosa viene dopo
+function partito(c){
+  tm.forEach(clearTimeout); tm=[];
+  const p=programmi(c).dopo;
+  if(!p)return;
+  $("#dopo").textContent="Dopo: "+p.i.slice(11,16)+" "+p.t; $("#dopo").hidden=false;
+  entro(()=>$("#dopo").hidden=true,6000);
+}
+function suHls(url,k){
+  const pronto=()=>{
+    if(k!==tok)return;
+    if(!Hls.isSupported())return fallito(k,"V01");
+    hls=new Hls();
+    hls.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal)fallito(k,"V02")});
+    V.onerror=()=>fallito(k,"V02");
+    hls.attachMedia(V); hls.loadSource(url);
+    V.play().catch(()=>{});
+  };
+  if(window.Hls)return pronto();
+  const s=document.createElement("script");   // hls.js si scarica solo quando serve
+  s.src="hls.light.min.js"; s.onload=pronto; s.onerror=()=>fallito(k,"V01");
+  document.head.append(s);
+}
+// Rai: l'indirizzo con gettone lo chiede Muflone al momento (risposta in ilRegnoRai); poi lo legge hls.js
+function chiediRai(c,k){
+  if(!(window.Muflone&&Muflone.risolviRai))return fallito(k,"V03");
+  rai=u=>{rai=null;u?suHls(u,k):fallito(k,"V03")};
+  rai.id=String(++nrai);
+  entro(()=>{if(rai)fallito(k,"V03")},5000);
+  try{Muflone.risolviRai(rai.id,c.url)}catch(e){fallito(k,"V03")}
+}
+window.ilRegnoRai=(id,u)=>{if(rai&&rai.id===String(id))rai(u)};
+
+// ---------- ricerca ----------
+// Indietro di Muflone torna alla pagina precedente (non manda Esc): aprendo la ricerca si aggiunge una voce alla cronologia,
+// così Indietro la chiude; chiudendola in altro modo (✕, Esc, Live TV) quella voce si toglie, senza lasciare un Indietro a vuoto
+let voceRicerca=false;
+function ricerca(on,dalBack){
+  if(on===!$("#ricerca").hidden)return;
+  $("#cerca").hidden=on; $("#ricerca").hidden=!on;
+  if(on){$("#q").focus(); if(!voceRicerca){history.pushState(null,"");voceRicerca=true}}
+  else{
+    $("#q").value="";
+    if(voceRicerca){voceRicerca=false; if(!dalBack)history.back()}
   }
-  function renderAdmin(){
-    const items=adminItems();
-    rows.innerHTML="";
-    if(!items.length){
-      rows.innerHTML='<div class="admin-status">Nessun elemento in questa categoria.</div>';
-      return;
-    }
-    items.forEach((item,i)=>{
-      const name=pick(item,["name","title","channel","nome"])||"";
-      const url=pick(item,["url","stream","src","link","m3u8"])||"";
-      const div=document.createElement("div");
-      div.className="admin-row";
-      div.innerHTML='<input class="aname" placeholder="Nome canale/contenuto"><input class="aurl" placeholder="URL stream o contenuto"><button class="btn" title="Elimina">✕</button>';
-      div.querySelector(".aname").value=name;
-      div.querySelector(".aurl").value=url;
-      div.querySelector("button").onclick=()=>{items.splice(i,1);renderAdmin()};
-      rows.appendChild(div);
-    });
+  if(D)disegna();
+}
+addEventListener("popstate",()=>{
+  if(attesa){attesa--; vaPoi(); return}
+  if(voceScelta)chiudiScelta(true);
+  else if(voceRicerca)ricerca(false,true);
+});
+
+// ---------- eventi ----------
+document.addEventListener("click",e=>{
+  if(e.target.id==="scelta")return chiudiScelta();
+  const b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.t)return apri(b.dataset.t,b.dataset.i);
+  if(b.dataset.sito)return categoria(b.dataset.sito);
+  switch(b.id){
+    case "live": if(!$("#ricerca").hidden)ricerca(false); return scrollTo(0,0);
+    case "su": return scrollTo(0,0);
+    case "cerca": return ricerca(true);
+    case "chiudiRicerca": return ricerca(false);
+    case "scChiudi": return chiudiScelta();
+    case "closePlayer": case "chiudi": return chiudiLettore();
+    case "riprova": return riproduci(cur);
   }
-  function openAdmin(){panel.classList.add("open")}
-  document.getElementById("adminBtn").onclick=openAdmin;
-  document.getElementById("adminClose").onclick=()=>panel.classList.remove("open");
-  panel.onclick=e=>{if(e.target===panel)panel.classList.remove("open")};
+});
+$("#q").addEventListener("input",()=>D&&disegna());
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  if(voceScelta)chiudiScelta();
+  else if(M.classList.contains("open"))chiudiLettore();
+  else if(!$("#ricerca").hidden)ricerca(false);
+});
+addEventListener("pageshow",recenti);   // tornando indietro da un sito
+setInterval(aggiorna,60000);            // il programma in onda cambia
 
-  document.getElementById("adminLoginBtn").onclick=()=>{
-    if(document.getElementById("adminPassword").value===ADMIN_PASSWORD){
-      adminLogged=true;
-      document.getElementById("adminLogin").style.display="none";
-      document.getElementById("adminEditor").style.display="block";
-      renderAdmin();
-    }else alert("Password non corretta.");
-  };
-  cat.onchange=renderAdmin;
-
-  document.getElementById("adminAdd").onclick=()=>{
-    const x=DEFAULT_DATA[cat.value];
-    if(Array.isArray(x)) x.push({name:"Nuovo canale",url:""});
-    else if(x && typeof x==="object") x["new_"+Date.now()]={name:"Nuovo canale",url:""};
-    else DEFAULT_DATA[cat.value]=[{name:"Nuovo canale",url:""}];
-    renderAdmin();
-  };
-
-  document.getElementById("adminSave").onclick=async()=>{
-    if(!adminLogged)return;
-    const items=adminItems();
-    const newItems=[];
-    document.querySelectorAll(".admin-row").forEach(r=>{
-      newItems.push({name:r.querySelector(".aname").value.trim(),url:r.querySelector(".aurl").value.trim()});
-    });
-    DEFAULT_DATA[cat.value]=newItems;
-    status.textContent="Modifiche applicate.";
-    renderLive();
-    try{
-      if(window.__ILREGNO_FB?.db){
-        await window.__ILREGNO_FB.set(window.__ILREGNO_FB.ref(window.__ILREGNO_FB.db,"data"),DEFAULT_DATA);
-        status.textContent="Modifiche salvate su Firebase.";
-      }
-    }catch(e){
-      status.textContent="Modifiche applicate localmente. Firebase non disponibile.";
-    }
-  };
-})();
+// ---------- avvio ----------
+function mostra(v){
+  D={gruppi:arr(v.gruppi),canali:arr(v.canali),siti:arr(v.siti)};
+  $("#avviso").hidden=true; disegna(); dopoPrimaSchermata();
+}
+// stato dei link e guida si chiedono solo dopo che i canali sono visibili
+function dopoPrimaSchermata(){
+  if(secondari)return; secondari=true;
+  fetch("stato.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(s=>{STATO=s}).catch(()=>{}).then(()=>{statoNoto=true;aggiorna()});   // senza stato.json: tutti ok (sconosciuto)
+  fetch("guida.json").then(r=>r.json()).then(g=>{GUIDA=g;aggiorna()}).catch(()=>{});
+}
+const cache=leggiCache();
+if(cache)mostra(cache.v);
+fetch(DB,{signal:AbortSignal.timeout(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(v=>{
+  if(!v||!v.canali)throw 0;
+  salvaCache(v); mostra(v);
+}).catch(()=>{
+  console.warn("D01 database non raggiungibile");
+  const a=$("#avviso"), d=cache&&cache.d;
+  a.textContent="Nessuna connessione"+(d?`: dati del ${d.getDate()} ${MESI[d.getMonth()]}`:"");
+  a.hidden=false;
+  if(!cache){$("#gruppi").innerHTML=""; dopoPrimaSchermata()}
+});
 </script>
-
-</body></html>
+</body>
+</html>

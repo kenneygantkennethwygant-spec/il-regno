@@ -1,0 +1,43 @@
+name: Controllo giornaliero
+
+# Ogni giorno prova i flussi dei canali e i siti e rifà la guida dei programmi; salva stato.json e guida.json.
+# Non serve nessun segreto: il database si legge in sola lettura e si scrive solo nel repository, col GITHUB_TOKEN.
+# L'orario di cron è in UTC: 03:30 UTC = 05:30 a Roma con l'ora legale (fine marzo - fine ottobre),
+# 04:30 a Roma con l'ora solare (fine ottobre - fine marzo). Mai dopo le 05:30 di Roma.
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: controllo
+  cancel-in-progress: false
+
+jobs:
+  controllo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      IL_REGNO_DB: https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Controllo di canali, siti e guida
+        run: node strumenti/controllo.mjs
+      - name: Salva stato.json e guida.json
+        run: |
+          git config user.name "controllo-giornaliero"
+          git config user.email "controllo-giornaliero@users.noreply.github.com"
+          git add stato.json guida.json
+          if git diff --cached --quiet; then
+            echo "Nessuna novità da salvare."
+          else
+            git commit -m "Controllo giornaliero: stato dei link e guida dei programmi"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
