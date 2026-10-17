@@ -141,8 +141,12 @@ export function oraEDopo(voci, adesso) {
 // «www.» davanti non fa un sito nuovo: animeworld.ac e www.animeworld.ac sono lo stesso posto.
 const hostDi = (u) => new URL(u).hostname.toLowerCase().replace(/^www\./, '');
 
-/** Esito della prova di un sito: ok se risponde con stato < 400; `nuovo` se dopo i rimandi l'host è diverso. */
+/**
+ * Esito della prova di un sito: ok se risponde con stato < 400; `nuovo` se dopo i rimandi l'host è diverso. Un 403
+ * dal server all'estero (siti che chiudono la porta ai server stranieri) vale null: non verificabile, mostrato come ok.
+ */
 export function classificaSito(prova) {
+  if (!prova.errore && prova.stato === 403) return { ok: null };
   const ok = !prova.errore && typeof prova.stato === 'number' && prova.stato < 400;
   if (!ok) return { ok: false };
   const out = { ok: true };
@@ -476,7 +480,7 @@ async function main() {
   log(`Siti:`);
   for (const s of siti) {
     const v = s.voce;
-    log(`  ${s.id}: ${v.ok ? 'ok' : 'NON ok'} (${s.dettaglio})${v.nuovo ? ` -> ${v.sostituisce ? 'sostituito da sé con' : 'nuovo indirizzo'} ${v.nuovo}` : ''}`);
+    log(`  ${s.id}: ${v.ok ? 'ok' : v.ok === null ? "non verificabile dall'estero" : 'NON ok'} (${s.dettaglio})${v.nuovo ? ` -> ${v.sostituisce ? 'sostituito da sé con' : 'nuovo indirizzo'} ${v.nuovo}` : ''}`);
   }
   const senza = v2.canali.filter((x) => !guida.canali[x.epg || x.id]).map((x) => x.id);
   log(`Guida: ${Object.keys(guida.canali).length} canali su ${v2.canali.length} con programmi (tivùsat ${Object.keys(tiv.guida).length}/${tiv.richiesti}, epgshare01 ${Object.keys(xml.guida).length}/${xml.richiesti})`);
