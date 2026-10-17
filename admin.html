@@ -242,21 +242,28 @@ function dataControllo() {
   return " (controllo del " + z(d.getDate()) + "/" + z(d.getMonth() + 1) + " " + z(d.getHours()) + ":" + z(d.getMinutes()) + ")";
 }
 // il sito risponde ma il vecchio indirizzo rimanda da sé a un altro (stato.json: nuovo)
+// una sostituzione (sostituisce) vale solo per l'indirizzo che sostituisce: se Mattia l'ha cambiato non propone nulla
 function nuovoIndirizzo(e) {
   var s = S.stato && S.stato.siti && S.stato.siti[e.id];
-  return s && s.nuovo && s.nuovo !== e.url ? s.nuovo : null;
+  return s && s.nuovo && s.nuovo !== e.url && (!s.sostituisce || s.sostituisce === e.url) ? s.nuovo : null;
+}
+// il controllo ha già sostituito da sé il vecchio indirizzo con il nuovo: la pagina apre il nuovo
+function sostituitoDaSe(e) {
+  var s = S.stato && S.stato.siti && S.stato.siti[e.id];
+  return s && s.nuovo && s.sostituisce === e.url ? s.nuovo : null;
 }
 function pannelloProblemi() {
   if (!S.stato) return null;
   var canali = toArr(S.data.canali), siti = toArr(S.data.siti);
   var pc = canali.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && problema("canali", x.c.id); });
-  var ps = siti.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && (problema("siti", x.c.id) || nuovoIndirizzo(x.c)); });
+  var ps = siti.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && (problema("siti", x.c.id) || nuovoIndirizzo(x.c) || sostituitoDaSe(x.c)); });
   var box = h("div", { class: "problemi" }, h("h3", null, "Da controllare" + dataControllo()));
   if (!pc.length && !ps.length) { box.appendChild(h("p", { class: "ok" }, "Nessun problema segnalato")); return box; }
   ps.forEach(function (x) {
-    var nuovo = nuovoIndirizzo(x.c), ko = problema("siti", x.c.id);
+    var nuovo = nuovoIndirizzo(x.c), ko = problema("siti", x.c.id), daSe = sostituitoDaSe(x.c);
     var riga = h("div", { class: "sitoko" },
       h("button", { class: "voce ko", onclick: function () { vaiA("siti", x.i); } }, h("i", { class: "stato ko" }), h("b", { class: "nome" }, x.c.nome), h("small", null, ko ? "sito non risponde" : "indirizzo cambiato")));
+    if (daSe) riga.appendChild(h("small", { class: "hint" }, "Sostituito da sé con " + daSe));
     if (nuovo) {
       riga.appendChild(h("small", { class: "hint" }, "Rimanda a " + nuovo));
       riga.appendChild(h("button", { class: "btn giallo", onclick: function () { x.c.url = nuovo; setMsg("Indirizzo cambiato: premi Salva"); render(); vaiA("siti", x.i); } }, "Usa il nuovo indirizzo"));

@@ -152,10 +152,57 @@ export function classificaSito(prova) {
   return out;
 }
 
-/** Esito della prova di un canale: 200 e una playlist che comincia con #EXTM3U. */
-export function classificaCanale(prova) {
-  return { ok: !prova.errore && prova.stato === 200 && /^\s*#EXTM3U/.test(prova.corpo || '') };
+/** Il nome del sito: l'etichetta prima dell'estensione (www.fctv33hd.mom -> fctv33hd). '' per IP, host a una sola etichetta, indirizzo illeggibile. */
+export function nomeSito(url) {
+  let host;
+  try { host = new URL(url).hostname.toLowerCase().replace(/\.$/, ''); } catch { return ''; }
+  if (/^[\d.]+$/.test(host) || /[:[\]]/.test(host)) return '';
+  const etichette = host.split('.');
+  return etichette.length < 2 ? '' : etichette[etichette.length - 2];
 }
+
+/** Stesso sito sotto un'altra estensione: nome uguale, o uno comincia con l'altro e il più corto ha almeno 6 lettere. */
+export function stessoNome(a, b) {
+  const na = nomeSito(a), nb = nomeSito(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  const [corto, lungo] = na.length <= nb.length ? [na, nb] : [nb, na];
+  return corto.length >= 6 && lungo.startsWith(corto);
+}
+
+/** Il nuovo indirizzo ricordato da ieri da riprovare oggi, o null: serve che i dati abbiano ancora l'indirizzo sostituito e che oggi non risponda. */
+export function daRiprovare(url, oggi, prima) {
+  if (!prima || prima.sostituisce !== url || !prima.nuovo) return null;
+  return oggi && oggi.ok === true ? null : prima.nuovo;
+}
+
+/**
+ * Cosa va in stato.siti[id]. Un rimando verso lo stesso sito (stessoNome) diventa una sostituzione legata
+ * all'indirizzo esatto; ogni altro rimando resta una proposta per il pannello. Con `ricordo` ({url, esito}: la prova
+ * del nuovo indirizzo di ieri) la sostituzione si porta avanti se risponde ancora, seguendo un suo rimando allo stesso sito.
+ */
+export function voceSito(url, esito, ricordo) {
+  if (ricordo) {
+    const raggiunto = ricordo.esito.nuovo || ricordo.url;
+    return ricordo.esito.ok && stessoNome(url, raggiunto) ? { ok: true, nuovo: raggiunto, sostituisce: url } : { ok: false };
+  }
+  return esito.ok && esito.nuovo && stessoNome(url, esito.nuovo) ? { ...esito, sostituisce: url } : { ...esito };
+}
+
+/**
+ * Esito della prova di un canale: ok con 200 e una playlist che comincia con #EXTM3U. Il controllo gira su un server
+ * all'estero: un 403, o per la Rai un 200 senza playlist, non si distingue da un blocco per paese e vale null
+ * (non verificabile), che la pagina mostra come ok.
+ */
+export function classificaCanale(prova, canale) {
+  if (prova.errore) return { ok: false };
+  if (prova.stato === 403) return { ok: null };
+  if (prova.stato !== 200) return { ok: false };
+  if (/^\s*#EXTM3U/.test(prova.corpo || '')) return { ok: true };
+  return { ok: canale && canale.rai === true ? null : false };
+}
+
+const ESTERO = "non verificabile dall'estero";
 
 /** L'indirizzo dell'API pubblica di Sky che dà il flusso di un canale (TV8 7, Cielo 2, Sky TG24 10). */
 export const urlSky = (n) => `https://video.sky.it/api/v1/getLivestream?id=${encodeURIComponent(n)}&isMobile=false`;
@@ -176,6 +223,12 @@ export function unisciGuida(ieri, oggi) {
     canali[id] = structuredClone(o && o.length ? o : (i && i.length ? i : (o || [])));
   }
   return { aggiornato: oggi.aggiornato, canali };
+}
+
+/** Le voci che finiscono dopo `adesso` e cominciano prima di 36 ore dopo: la guida copre fino al giro successivo, con margine. */
+export function ritagliaGuida(voci, adesso) {
+  const t = adesso.getTime(), fine = t + 36 * 3600 * 1000;
+  return voci.filter((v) => Date.parse(v.f) > t && Date.parse(v.i) < fine);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -290,11 +343,13 @@ export async function controllaCanale(c) {
       try { json = JSON.parse(r.corpo); } catch { /* non è JSON */ }
       return { ...r, json };
     });
+    if (!a.errore && a.stato === 403) return { id: c.id, ok: null, dettaglio: ESTERO };
     url = a.stato === 200 ? leggiSky(a.json) : null;
     if (!url) return { id: c.id, ok: false, dettaglio: `API Sky ${a.errore || (a.stato === 200 ? 'senza streaming_url' : 'HTTP ' + a.stato)}` };
   }
   const r = await conRiprova(() => prendi(url, TEMPO_CANALE, 65536));
-  const esito = classificaCanale(r);
+  const esito = classificaCanale(r, c);
+  if (esito.ok === null) return { id: c.id, ok: null, dettaglio: ESTERO };
   if (!esito.ok) return { id: c.id, ...esito, dettaglio: r.errore || `HTTP ${r.stato}` };
   const guasto = await provaPezzo(r).catch((e) => `pezzo del video ${msg(e)}`);
   return { id: c.id, ok: !guasto, dettaglio: guasto || `HTTP ${r.stato}` };
@@ -302,10 +357,17 @@ export async function controllaCanale(c) {
 
 const controllaCanali = (canali) => inParallelo(canali, PARALLELI, controllaCanale);
 
-async function controllaSiti(siti) {
+/** Prova un sito; se ieri era stato sostituito da sé e oggi il vecchio indirizzo non risponde, prova anche il nuovo ricordato. */
+async function controllaSiti(siti, statoIeri) {
+  const prova = async (url) => {
+    const r = await conRiprova(() => prendi(url, TEMPO_SITO));
+    return { esito: classificaSito({ url, finale: r.finale, stato: r.stato, errore: r.errore }), dettaglio: r.errore || `HTTP ${r.stato}` };
+  };
   return inParallelo(siti, 4, async (s) => {
-    const r = await conRiprova(() => prendi(s.url, TEMPO_SITO));
-    return { id: s.id, ...classificaSito({ url: s.url, finale: r.finale, stato: r.stato, errore: r.errore }), dettaglio: r.errore || `HTTP ${r.stato}` };
+    const { esito, dettaglio } = await prova(s.url);
+    const riprova = daRiprovare(s.url, esito, statoIeri.siti && statoIeri.siti[s.id]);
+    const ricordo = riprova ? { url: riprova, esito: (await prova(riprova)).esito } : undefined;
+    return { id: s.id, voce: voceSito(s.url, esito, ricordo), dettaglio };
   });
 }
 
@@ -364,30 +426,29 @@ async function main() {
   const cartella = join(qui, '..'); // sito/: ci stanno stato.json e guida.json
   const adesso = new Date();
 
+  let statoIeri = {};
+  try { statoIeri = JSON.parse(readFileSync(join(cartella, 'stato.json'), 'utf8')) || {}; } catch { /* manca o è illeggibile: come se fosse vuoto */ }
+
   const v2 = await leggiV2();
   if (!v2 || !Array.isArray(v2.canali) || !Array.isArray(v2.siti)) throw new Error('v2 non c\'è o non ha la forma attesa (canali e siti)');
   log(`Il Regno, controllo del ${isoRoma(adesso.getTime())}: ${v2.canali.length} canali, ${v2.siti.length} siti`);
 
   const [canali, siti, tiv, xml] = await Promise.all([
     controllaCanali(v2.canali),
-    controllaSiti(v2.siti),
+    controllaSiti(v2.siti, statoIeri),
     guidaTivusat(v2.canali, adesso, log).catch((e) => { log(`tivùsat non risponde: ${msg(e)}`); return { guida: {}, richiesti: 0 }; }),
     guidaXmltv(v2.canali).catch((e) => { log(`epgshare01 non risponde: ${msg(e)}`); return { guida: {}, richiesti: 0 }; }),
   ]);
 
   // Se nulla risponde il guasto è del collegamento di chi esegue, non dei canali: non si scrive uno stato tutto giallo.
-  if (!canali.some((c) => c.ok) && !siti.some((s) => s.ok)) throw new Error('nessun canale e nessun sito risponde: collegamento assente? Non scrivo nulla.');
+  if (!canali.some((c) => c.ok) && !siti.some((s) => s.voce.ok)) throw new Error('nessun canale e nessun sito risponde: collegamento assente? Non scrivo nulla.');
 
   const stato = { aggiornato: isoRoma(adesso.getTime()), canali: {}, siti: {} };
   for (const c of canali) stato.canali[c.id] = { ok: c.ok };
-  for (const s of siti) stato.siti[s.id] = s.nuovo ? { ok: s.ok, nuovo: s.nuovo } : { ok: s.ok };
+  for (const s of siti) stato.siti[s.id] = s.voce;
 
-  // Guida: oggi e domani (ora di Roma). Una fonte vuota lascia quella di ieri.
-  const c = campiRoma(adesso.getTime());
-  const inizio = msDaRoma(c.year, c.month, c.day);
-  const d2 = sommaGiorni(dataIso(c.year, c.month, c.day), 2).split('-').map(Number);
-  const fine = msDaRoma(d2[0], d2[1], d2[2]);
-  const nellaFinestra = (v) => Date.parse(v.f) > inizio && Date.parse(v.i) < fine;
+  // Guida: le prossime 36 ore dall'istante scritto in `aggiornato`. Una fonte vuota lascia quella di ieri.
+  const generata = new Date(Date.parse(stato.aggiornato));
   const percorsoGuida = join(cartella, 'guida.json');
   let ieri = null;
   try { if (existsSync(percorsoGuida)) ieri = JSON.parse(readFileSync(percorsoGuida, 'utf8')); } catch (e) { log(`guida.json di ieri illeggibile: ${msg(e)}`); }
@@ -398,7 +459,7 @@ async function main() {
   const tenutiDiIeri = [];
   for (const [id, voci] of Object.entries(unita.canali)) {
     if (!epgNoti.has(id)) continue; // un canale tolto dai dati non resta nella guida
-    const dentro = voci.filter(nellaFinestra);
+    const dentro = ritagliaGuida(voci, generata);
     if (dentro.length) guida.canali[id] = dentro;
     if (dentro.length && !(oggi.canali[id] && oggi.canali[id].length)) tenutiDiIeri.push(id);
   }
@@ -407,11 +468,16 @@ async function main() {
   writeFileSync(percorsoGuida, JSON.stringify(guida) + '\n');
 
   // Riassunto
-  const ko = canali.filter((x) => !x.ok);
-  log(`\nCanali: ${canali.length - ko.length} ok, ${ko.length} non ok`);
+  const ko = canali.filter((x) => x.ok === false);
+  const estero = canali.filter((x) => x.ok === null);
+  log(`\nCanali: ${canali.length - ko.length - estero.length} ok, ${estero.length} non verificabili dall'estero, ${ko.length} non ok`);
+  if (estero.length) log(`  non verificabili: ${estero.map((x) => x.id).join(', ')}`);
   for (const k of ko) log(`  non ok: ${k.id} (${k.dettaglio})`);
   log(`Siti:`);
-  for (const s of siti) log(`  ${s.id}: ${s.ok ? 'ok' : 'NON ok'} (${s.dettaglio})${s.nuovo ? ` -> nuovo indirizzo ${s.nuovo}` : ''}`);
+  for (const s of siti) {
+    const v = s.voce;
+    log(`  ${s.id}: ${v.ok ? 'ok' : 'NON ok'} (${s.dettaglio})${v.nuovo ? ` -> ${v.sostituisce ? 'sostituito da sé con' : 'nuovo indirizzo'} ${v.nuovo}` : ''}`);
+  }
   const senza = v2.canali.filter((x) => !guida.canali[x.epg || x.id]).map((x) => x.id);
   log(`Guida: ${Object.keys(guida.canali).length} canali su ${v2.canali.length} con programmi (tivùsat ${Object.keys(tiv.guida).length}/${tiv.richiesti}, epgshare01 ${Object.keys(xml.guida).length}/${xml.richiesti})`);
   if (senza.length) log(`  senza guida: ${senza.join(', ')}`);

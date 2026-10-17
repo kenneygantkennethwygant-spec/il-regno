@@ -64,8 +64,9 @@ a{color:inherit;text-decoration:none}
 .gruppo h2{display:flex;align-items:center;gap:10px;margin:0 0 4px;font-size:20px;line-height:24px;font-weight:800}
 .gruppo h2::before{content:"";width:4px;height:18px;background:var(--red);border-radius:2px}
 .griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:5px 10px}
-.ch{height:64px;display:flex;align-items:center;gap:10px;padding:0 8px 0 4px;text-align:left;background:var(--card);
+.ch{content-visibility:auto;contain-intrinsic-size:auto 210px auto 64px;height:64px;display:flex;align-items:center;gap:10px;padding:0 8px 0 4px;text-align:left;background:var(--card);
   border:1px solid var(--line);border-radius:14px;min-width:0}
+/* le schede fuori schermo non si disegnano (content-visibility); la misura è quella vera della scheda, così la pagina non salta */
 /* targa: il logo, o la sigla se manca */
 .plate{flex:0 0 auto;width:58px;height:54px;border-radius:10px;background:var(--plate);display:flex;align-items:center;
   justify-content:center;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1}
@@ -223,22 +224,24 @@ function disegna(){
   $("#gruppi").innerHTML=n?h:'<div class="msg" style="padding-left:0">Nessun canale trovato</div>';
   aggiorna(); recenti(); osservaLoghi();
 }
-// stato dei link e programma in onda: si applicano sulle schede già disegnate
+// stato dei link e programma in onda: si applicano sulle schede già disegnate; ogni minuto si scrive solo ciò che è cambiato
 function aggiorna(){
   if(statoNoto)document.querySelectorAll("[data-sito]").forEach(el=>{
     // la pillola è verde se almeno uno dei suoi siti è ok
     const ko=sitiDi(el.dataset.sito).every(x=>((STATO.siti||{})[x.id]||{}).ok===false);
-    el.firstElementChild.className="stato "+(ko?"ko":"ok");
+    const p=el.firstElementChild, cl="stato "+(ko?"ko":"ok");
+    if(p.className!==cl)p.className=cl;
   });
   if(!D)return;
   document.querySelectorAll(".ch").forEach(el=>{
     const c=trova("canale",el.dataset.i); if(!c)return;
     const ko=((STATO.canali||{})[c.id]||{}).ok===false;
-    el.classList.toggle("off",ko); el.classList.toggle("ko",ko);
-    el.querySelector(".live").innerHTML=ko?"non disponibile":"&#9679; LIVE";
-    el.querySelector(".prog").textContent=ko?"":(programmi(c).ora||{}).t||"";
+    if(el.classList.contains("off")!==ko){el.classList.toggle("off",ko); el.classList.toggle("ko",ko)}
+    scrivi(el.querySelector(".live"),ko?"non disponibile":"\u25CF LIVE");
+    scrivi(el.querySelector(".prog"),ko?"":(programmi(c).ora||{}).t||"");
   });
 }
+const scrivi=(el,t)=>{if(el.textContent!==t)el.textContent=t};
 // logo: si chiede solo quando la scheda è nella schermata o vicina (200 px); finché non arriva si vede la sigla, e se manca resta la sigla
 const vista=window.IntersectionObserver&&new IntersectionObserver(l=>l.forEach(o=>{
   if(!o.isIntersecting)return;
@@ -300,7 +303,12 @@ function apri(tipo,id){
   mem.set("ilregno.recenti",JSON.stringify([{tipo,id},...leggiRecenti().filter(x=>!(x.tipo===tipo&&x.id===id))].slice(0,3)));
   recenti();
   if(tipo==="canale")riproduci(o);
-  else if(o.url)vai(o.url);
+  else if(o.url)vai(indirizzo(o));
+}
+// il controllo notturno può aver trovato che il vecchio indirizzo rimanda da sé al nuovo: vale solo se i dati hanno ancora esattamente quello
+function indirizzo(o){
+  const s=(STATO.siti||{})[o.id];
+  return s&&s.nuovo&&s.sostituisce===o.url?s.nuovo:o.url;
 }
 
 // ---------- lettore ----------
