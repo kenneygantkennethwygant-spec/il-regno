@@ -157,6 +157,15 @@ export function classificaCanale(prova) {
   return { ok: !prova.errore && prova.stato === 200 && /^\s*#EXTM3U/.test(prova.corpo || '') };
 }
 
+/** L'indirizzo dell'API pubblica di Sky che dà il flusso di un canale (TV8 7, Cielo 2, Sky TG24 10). */
+export const urlSky = (n) => `https://video.sky.it/api/v1/getLivestream?id=${encodeURIComponent(n)}&isMobile=false`;
+
+/** L'indirizzo del flusso (con gettone di 5 minuti) in una risposta dell'API di Sky, o null se manca. */
+export function leggiSky(risposta) {
+  const u = risposta && risposta.streaming_url;
+  return typeof u === 'string' && /^https?:\/\/\S+$/.test(u) ? u : null;
+}
+
 /** Guida di oggi con, per i canali la cui fonte oggi è vuota, quella di ieri. Non modifica gli argomenti. */
 export function unisciGuida(ieri, oggi) {
   const canali = {};
@@ -268,16 +277,30 @@ async function provaPezzo(r) {
   return p.errore || p.stato !== 200 ? `pezzo del video ${p.errore || 'HTTP ' + p.stato}` : null;
 }
 
-async function controllaCanali(canali) {
-  const esiti = await inParallelo(canali, PARALLELI, async (c) => {
-    const r = await conRiprova(() => prendi(c.url, TEMPO_CANALE, 65536));
-    const esito = classificaCanale(r);
-    if (!esito.ok) return { id: c.id, ...esito, dettaglio: r.errore || `HTTP ${r.stato}` };
-    const guasto = await provaPezzo(r).catch((e) => `pezzo del video ${msg(e)}`);
-    return { id: c.id, ok: !guasto, dettaglio: guasto || `HTTP ${r.stato}` };
-  });
-  return esiti;
+/**
+ * Un canale. Se ha "sky" l'indirizzo con gettone (5 minuti) si chiede prima all'API di Sky, come fa la pagina; poi
+ * playlist e primo pezzo si provano con lo stesso User-Agent (il pezzo è legato a quello che ha chiesto la playlist).
+ */
+export async function controllaCanale(c) {
+  let url = c.url;
+  if (c.sky) {
+    const a = await conRiprova(async () => {
+      const r = await prendi(urlSky(c.sky), TEMPO_CANALE, 65536);
+      let json = null;
+      try { json = JSON.parse(r.corpo); } catch { /* non è JSON */ }
+      return { ...r, json };
+    });
+    url = a.stato === 200 ? leggiSky(a.json) : null;
+    if (!url) return { id: c.id, ok: false, dettaglio: `API Sky ${a.errore || (a.stato === 200 ? 'senza streaming_url' : 'HTTP ' + a.stato)}` };
+  }
+  const r = await conRiprova(() => prendi(url, TEMPO_CANALE, 65536));
+  const esito = classificaCanale(r);
+  if (!esito.ok) return { id: c.id, ...esito, dettaglio: r.errore || `HTTP ${r.stato}` };
+  const guasto = await provaPezzo(r).catch((e) => `pezzo del video ${msg(e)}`);
+  return { id: c.id, ok: !guasto, dettaglio: guasto || `HTTP ${r.stato}` };
 }
+
+const controllaCanali = (canali) => inParallelo(canali, PARALLELI, controllaCanale);
 
 async function controllaSiti(siti) {
   return inParallelo(siti, 4, async (s) => {

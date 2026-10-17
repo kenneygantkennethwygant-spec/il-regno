@@ -316,7 +316,8 @@ function chiudiLettore(){
   document.body.classList.remove("pl"); $("#dopo").hidden=true; clearInterval(ti);
   if(scrollY!==pos)scrollTo(0,pos);
 }
-// V01 manca l'indirizzo o hls.js non parte, V02 non parte entro 10 s o errore del video, V03 indirizzo Rai non ottenuto
+// V01 manca l'indirizzo o hls.js non parte, V02 non parte entro 10 s o errore del video, V03 indirizzo Rai non ottenuto,
+// V04 indirizzo Sky non ottenuto
 function fallito(k,cod){
   if(k!==tok)return;
   ferma(); console.warn("lettore",cur.id,cod);
@@ -332,13 +333,28 @@ function riproduci(c){
   const k=tok;
   V.onplaying=()=>{if(k===tok){V.onplaying=null;partito(c)}};   // solo la prima partenza: dopo uno scatto «Dopo» non ricompare
   entro(()=>fallito(k,"V02"),10000);
+  if(c.sky)return chiediSky(c,k);
   if(!c.url)return fallito(k,"V01");
   if(c.rai)return chiediRai(c,k);
+  suona(c.url,k);
+}
+// canale normale: prima il lettore nativo, se non sa leggere il flusso o non avanza si riprova una volta con hls.js
+function suona(url,k){
   let usato=false;
-  const conHls=()=>{if(usato||k!==tok)return;usato=true;V.removeAttribute("src");V.load();suHls(c.url,k)};
-  V.onerror=conHls;            // il lettore nativo non sa leggere il flusso
-  entro(conHls,6000);          // o non avanza: si riprova una volta con hls.js
-  V.src=c.url; V.play().catch(()=>{});
+  const conHls=()=>{if(usato||k!==tok)return;usato=true;V.removeAttribute("src");V.load();suHls(url,k)};
+  V.onerror=conHls;
+  entro(conHls,6000);
+  V.src=url; V.play().catch(()=>{});
+}
+// Sky: l'indirizzo ha un gettone di 5 minuti, quindi non sta nei dati; lo si chiede all'API pubblica di Sky a ogni apertura
+// (e a ogni «Riprova») e poi si suona come un canale normale. La pagina scarica solo il JSON: playlist e pezzi li chiede il lettore.
+function chiediSky(c,k){
+  fetch("https://video.sky.it/api/v1/getLivestream?id="+encodeURIComponent(c.sky)+"&isMobile=false",{signal:AbortSignal.timeout(5000)})
+    .then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{
+      if(k!==tok)return;
+      if(!(j&&typeof j.streaming_url==="string"&&j.streaming_url))throw 0;
+      suona(j.streaming_url,k);
+    }).catch(()=>fallito(k,"V04"));
 }
 // titolo e X: visibili all'apertura e a ogni movimento o clic nel lettore, spariscono 3 s dopo l'ultimo (come il puntatore di Muflone,
 // che alla pagina manda solo il movimento del mouse e i clic). A controlli nascosti la X non prende il clic (pointer-events:none):
