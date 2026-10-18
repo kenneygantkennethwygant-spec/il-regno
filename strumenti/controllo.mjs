@@ -235,6 +235,23 @@ export function ritagliaGuida(voci, adesso) {
   return voci.filter((v) => Date.parse(v.f) > t && Date.parse(v.i) < fine);
 }
 
+// Le code di data che fanno tagliare i titoli sulle schede; vale la prima che si trova.
+const CODE_TITOLO = [
+  /\s*[-–—]\s*Puntata del \d{1,2}\/\d{1,2}\/\d{4}\s*$/i,
+  /\s+del \d{1,2}\/\d{1,2}\/\d{4}\s*$/i,
+  /\s*[-–—]\s*\d{1,2}\/\d{1,2}\/\d{4}\s*$/,
+];
+/** Il titolo di un programma senza la data in coda («- Puntata del 17/10/2026», « del 17/10/2026», «- 17/10/2026»). Se non resterebbe nulla, com'è. */
+export function pulisciTitolo(t) {
+  if (typeof t !== 'string') return t;
+  for (const coda of CODE_TITOLO) {
+    if (!coda.test(t)) continue;
+    const pulito = t.replace(coda, '');
+    return /^(Puntata)?$/i.test(pulito.trim()) ? t : pulito;
+  }
+  return t;
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Rete e programma principale
 // ---------------------------------------------------------------------------------------------------------------
@@ -464,7 +481,7 @@ async function main() {
   for (const [id, voci] of Object.entries(unita.canali)) {
     if (!epgNoti.has(id)) continue; // un canale tolto dai dati non resta nella guida
     const dentro = ritagliaGuida(voci, generata);
-    if (dentro.length) guida.canali[id] = dentro;
+    if (dentro.length) guida.canali[id] = dentro.map((v) => ({ ...v, t: pulisciTitolo(v.t) }));
     if (dentro.length && !(oggi.canali[id] && oggi.canali[id].length)) tenutiDiIeri.push(id);
   }
 
