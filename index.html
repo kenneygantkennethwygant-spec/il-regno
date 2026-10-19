@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Il Regno</title>
+<link rel="preconnect" href="https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
 <style>
 /* Il Regno: pagina per la Fire TV Stick (Muflone, 960x540 CSS). Aspetto dalla bozza «R-sfondo-1».
    Pulsanti alti almeno 64 px; testo almeno 12 px salvo «LIVE», 3 px sotto la scritta più piccola; niente scorrimento orizzontale.
@@ -150,9 +151,9 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 #ritardo{position:absolute;top:10px;transform:translateX(-50%);white-space:nowrap}
 #ritardo.vivo{color:#ff6b7c}
 /* «In pausa» e «Riconnessione…» al centro del video, senza prendere i clic */
-#inpausa,#riconnessione{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:10px 24px;border-radius:999px;background:rgba(0,0,0,.6);
+#inpausa,#riconnessione,#lenta{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:10px 24px;border-radius:999px;background:rgba(0,0,0,.6);
   font-size:20px;font-weight:700;white-space:nowrap;pointer-events:none}
-#riconnessione{font-size:16px;font-weight:600}
+#riconnessione,#lenta{font-size:16px;font-weight:600}
 #err{display:none;position:absolute;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:24px;
   background:#000;text-align:center;padding:0 var(--gut)}
 #modal.errore #err{display:flex}
@@ -160,7 +161,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 #err p{margin:0;font-size:22px;font-weight:700}
 #err #errcod{margin-top:-12px;font-size:15px;font-weight:500;color:var(--muted)}
 #err #errcod:empty{display:none}
-#modal.errore #pausa,#modal.errore #audio,#modal.errore #audioScelte,#modal.errore #diretta,#modal.errore #inpausa,#modal.errore #riconnessione,
+#modal.errore #pausa,#modal.errore #audio,#modal.errore #audioScelte,#modal.errore #diretta,#modal.errore #inpausa,#modal.errore #riconnessione,#modal.errore #lenta,
 #modal.errore #tempo,#modal.errore #ricomincia,#modal.errore #indietro30,#modal.errore #avanti30{display:none}
 #err div{display:flex;gap:16px}
 #err button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:17px;font-weight:700}
@@ -196,7 +197,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
   <button class="pill" data-sito="film"><i class="sp"></i>Film</button>
   <button class="pill" data-sito="serie"><i class="sp"></i>Serie TV</button>
   <button class="pill" data-sito="sport"><i class="sp"></i>Sport</button>
-  <button class="pill" data-sito="anime"><i class="sp"></i>Animazione</button>
+  <button class="pill" data-sito="anime"><i class="sp"></i>Anime</button>
 </nav>
 
 <div id="scelta" hidden role="dialog" aria-label="Scegli il sito"><div class="sc"><p id="scTit">Scegli il sito</p><div id="scLista"></div><button id="scChiudi">Chiudi</button></div></div>
@@ -210,6 +211,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
   <div id="audioScelte" hidden></div>
   <div id="inpausa" hidden>In pausa</div>
   <div id="riconnessione" hidden>Riconnessione&hellip;</div>
+  <div id="lenta" hidden>Linea lenta, sto caricando&hellip;</div>
   <div id="basso">
     <div id="tempo" hidden><span id="lineaInizio"></span><div id="linea"><span id="ritardo"></span><div class="binario"><i id="rivedibile"></i><i id="visto"></i><i id="vivo"></i><i id="punto"></i></div></div><span id="lineaFine"></span></div>
     <div class="riga">
@@ -235,7 +237,7 @@ const mem={
   get(k){try{return localStorage.getItem(k)}catch(e){return null}},
   set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 };
-let D=null, STATO={}, GUIDA={}, secondari=false, statoNoto=false;
+let D=null, STATO={}, ST={}, GUIDA={}, secondari=false, statoNoto=false;
 
 // ---------- copia sul dispositivo ----------
 function leggiCache(){
@@ -282,6 +284,7 @@ function disegna(){
 }
 // stato dei link e programma in onda: si applicano sulle schede già disegnate; ogni minuto si scrive solo ciò che è cambiato
 function aggiorna(){
+  if(window.unisci)unisci();   // ponte.js
   if(statoNoto)document.querySelectorAll("[data-sito]").forEach(el=>{
     // la pillola è verde se almeno uno dei suoi siti è ok
     const ko=sitiDi(el.dataset.sito).every(x=>((STATO.siti||{})[x.id]||{}).ok===false);
@@ -378,6 +381,8 @@ let avviato=false, ricon=false, lunga=false, trc=[], tp=0, vg=0;
 let finiti=false, provv=null, vigilato=null, fermi=0;
 // daHls = il canale suona con hls.js (Rai, o nativo non riuscito): i tentativi usano lo stesso lettore; traccia = audio scelto dallo spettatore
 let daHls=false, traccia="";
+// ultimi pezzi ricevuti: qualsiasi, e di video
+let dato=0, pezzo=0;
 // voluta = ultima cosa vista sul video è una pausa data da qualcuno (non un errore né la fine): gli errori durante la pausa non sono cadute
 let voluta=false;
 const entro=(f,ms)=>tm.push(setTimeout(f,ms));
@@ -395,7 +400,7 @@ function ferma(){
   fermaFlusso();
   avviato=ricon=lunga=finiti=daHls=voluta=false; provv=null; traccia="";
   trc.forEach(clearTimeout); trc=[]; clearTimeout(tp); clearInterval(vg);
-  $("#riconnessione").hidden=$("#diretta").hidden=true; aggiornaPausa();
+  $("#riconnessione").hidden=$("#diretta").hidden=$("#lenta").hidden=true; aggiornaPausa();
   clearInterval(tt); senzaTempo();
 }
 function chiudiLettore(){
@@ -403,7 +408,7 @@ function chiudiLettore(){
   document.body.classList.remove("pl"); document.documentElement.classList.remove("pl"); clearInterval(ti);
   if(scrollY!==pos)scrollTo(0,pos);
 }
-// V01 manca l'indirizzo o hls.js non parte, V02 non parte entro 10 s o errore del video, V03 indirizzo Rai non ottenuto,
+// V01 manca l'indirizzo o hls.js non parte, V02 8 s senza pezzi o errore del video, V03 indirizzo Rai non ottenuto,
 // V04 indirizzo Sky non ottenuto, V05 partito ma caduto e tre riconnessioni riuscite a vuoto
 function fallito(k,cod){
   if(k!==tok||ricon)return;   // durante la riconnessione il fallimento di un tentativo non si mostra
@@ -425,12 +430,22 @@ function riproduci(c){
 function apriFlusso(c){
   const k=tok;
   V.onplaying=()=>{if(k===tok){V.onplaying=null;ricon?ripreso(k):partito(k)}};   // solo la prima partenza, non dopo ogni scatto
-  entro(()=>fallito(k,"V02"),10000);
   if(c.sky)return chiediSky(c,k);
   if(!c.url)return fallito(k,"V01");
   if(c.rai)return chiediRai(c,k);
-  if(SEMPRE_HLS.includes(c.id))return suHls(c.url,k);
+  aspettaDati(k);
+  if(SEMPRE_HLS.includes(c.id)||MS.test(c.url))return suHls(c.url,k);
   suona(c.url,k);
+}
+// V02 dopo 8 s senza pezzi (40 in tutto), «Linea lenta…» dopo 10 s senza immagine
+function aspettaDati(k){
+  const t0=Date.now(); dato=0;
+  (function giro(){
+    const ora=Date.now(), n=ora-t0;
+    if(ora-(dato||t0)>=8e3||n>=4e4)return fallito(k,"V02");
+    $("#lenta").hidden=n<1e4||ricon;
+    entro(giro,500);
+  })();
 }
 // canale normale: prima il lettore nativo, se non sa leggere il flusso o non avanza si riprova una volta con hls.js
 function suona(url,k){
@@ -443,11 +458,11 @@ function suona(url,k){
 }
 // Sky: l'indirizzo ha un gettone di 5 minuti: lo si chiede all'API pubblica di Sky a ogni apertura e si suona come un canale normale
 function chiediSky(c,k){
-  fetch("https://video.sky.it/api/v1/getLivestream?id="+encodeURIComponent(c.sky)+"&isMobile=false",{signal:scade(5000)})
+  fetch("https://video.sky.it/api/v1/getLivestream?id="+encodeURIComponent(c.sky)+"&isMobile=false",{signal:scade(15000)})
     .then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{
       if(k!==tok)return;
       if(!(j&&typeof j.streaming_url==="string"&&j.streaming_url))throw 0;
-      suona(j.streaming_url,k);
+      aspettaDati(k); suona(j.streaming_url,k);
     }).catch(()=>fallito(k,"V04"));
 }
 // titolo, X e comandi: visibili all'apertura e a ogni movimento o clic, spariscono 3 s dopo l'ultimo (come il puntatore di Muflone).
@@ -476,7 +491,7 @@ function mostraBarra(forza){
 ["mousemove","pointermove","pointerdown","click"].forEach(t=>M.addEventListener(t,()=>mostraBarra()));
 // il video è partito: si fermano i controlli di tempo dell'apertura
 function partito(k){
-  tm.forEach(clearTimeout); tm=[];
+  tm.forEach(clearTimeout); tm=[]; $("#lenta").hidden=true;
   avviato=true; V.onerror=()=>guasto(k); vigila(); aggiornaPausa(); aggiornaTempo();
 }
 // pausa: «In pausa» resta sullo schermo finché dura, chiunque l'abbia data (anche il tasto Play/Pausa di Muflone, che ferma il video);
@@ -503,7 +518,7 @@ function vigila(){
     // uno spostamento nel tempo non è una caduta, fino a 15 s
     if(V.paused||V.ended||prima===null||V.seeking&&Date.now()-salto<15000){fermi=0; return}
     if(t!==prima){fermi=0; if(ricon)provvisorio(t); return}
-    if(++fermi>=6){fermi=0; cade(tok)}
+    if(++fermi>=6&&Date.now()-pezzo>3000){fermi=0; cade(tok)}
   },1000);
 }
 const guasto=k=>avviato?cade(k):fallito(k,"V02");
@@ -521,7 +536,7 @@ function cade(k){
   if(voluta)return;
   ricon=true; finiti=false; provv=null; aggiornaPausa();
   $("#riconnessione").hidden=false;
-  trc=[0,5000,10000].map(ms=>setTimeout(()=>{if(provv===null){fermaFlusso(); apriFlusso(cur)}},ms));   // se l'immagine va già, non si riapre
+  trc=[0,5000,10000].map(ms=>setTimeout(()=>{if(provv===null&&!(ms&&dato&&Date.now()-dato<8000)){fermaFlusso(); apriFlusso(cur)}},ms));   // non si riapre se l'immagine va già o arrivano pezzi
   trc.push(setTimeout(()=>{finiti=true; if(provv===null)nonRisponde()},15000), setTimeout(nonRisponde,35000));
 }
 const nonRisponde=()=>{ricon=false; fallito(tok,"V05")};
@@ -536,14 +551,17 @@ function ripreso(k){
   provvisorio(V.currentTime);
 }
 // hls.js per la chiavetta (1 GB di RAM, Muflone già in swap): del video già visto se ne tengono 90 s e di quello in anticipo 30 s
-// o 30 MB, invece di tutto il visto e 60 MB; la partenza dalla qualità non si tocca
-const CONFIG_HLS={backBufferLength:90,maxBufferLength:30,maxMaxBufferLength:30,maxBufferSize:30*1000*1000};
+// o 30 MB, invece di tutto il visto e 60 MB; parte dalla qualità più bassa (startLevel 0) e sale da sola;
+// xhrSetup: «dato» = byte di un pezzo con risposta 2xx
+const CONFIG_HLS={backBufferLength:90,maxBufferLength:30,maxMaxBufferLength:30,maxBufferSize:30*1000*1000,startLevel:0,
+  xhrSetup:(x,u)=>x.addEventListener("progress",()=>{if(x.status>199&&x.status<300&&!/\.m3u8/.test(x.responseURL||u))dato=Date.now()})};
 function suHls(url,k){
   daHls=true;
   const pronto=()=>{
     if(k!==tok)return;
     if(!Hls.isSupported())return fallito(k,"V01");
     hls=new Hls(CONFIG_HLS);
+    hls.on(Hls.Events.FRAG_LOADED,(e,d)=>{dato=Date.now(); if(d.frag.type=="main")pezzo=dato});
     hls.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal)guasto(k)});
     hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,riapplicaAudio);
     hls.on(Hls.Events.AUDIO_TRACK_SWITCHED,aggiornaAudio);
@@ -551,11 +569,14 @@ function suHls(url,k){
     hls.attachMedia(V); hls.loadSource(url);
     V.play().catch(()=>{});
   };
-  if(window.Hls)return pronto();
-  const s=document.createElement("script");   // hls.js si scarica solo quando serve
-  s.src="hls.min.js"; s.onload=pronto; s.onerror=()=>fallito(k,"V01");
-  document.head.append(s);
+  carica("hls.min.js").then(ok=>ok?MS.test(url)?carica("archivio.js").then(pronto):pronto():fallito(k,"V01"));
 }
+// un solo caricamento per file (0 se manca)
+const carica=f=>carica[f]||(carica[f]=new Promise(ok=>{
+  const s=document.head.appendChild(document.createElement("script"));
+  s.src=f; s.onload=ok; s.onerror=()=>{delete carica[f]; ok(0)};
+}));
+V.onprogress=()=>{if(!hls)dato=pezzo=Date.now()};
 // tracce audio: se il flusso ne offre più d'una (Rai: Italiano, Lingua Originale, Audiodescrizione) «Audio: …» apre la scelta
 function aggiornaAudio(){
   const t=hls?hls.audioTracks:[], vari=t.length>1;
@@ -578,18 +599,18 @@ function scegliAudio(n){
 // Rai: l'indirizzo con gettone lo chiede Muflone al momento (risposta in ilRegnoRai); poi lo legge hls.js
 function chiediRai(c,k){
   if(!(window.Muflone&&Muflone.risolviRai))return fallito(k,"V03");
-  rai=u=>{rai=null;u?suHls(u,k):fallito(k,"V03")};
+  rai=u=>{rai=null;if(u){aspettaDati(k);suHls(u,k)}else fallito(k,"V03")};
   rai.id=String(++nrai);
-  entro(()=>{if(rai)fallito(k,"V03")},5000);
+  entro(()=>{if(rai)fallito(k,"V03")},15000);
   try{Muflone.risolviRai(rai.id,c.url)}catch(e){fallito(k,"V03")}
 }
 window.ilRegnoRai=(id,u)=>{if(rai&&rai.id===String(id))rai(u)};
 
 // ---------- tempo (V5): indietro e avanti nel programma in onda (misure e trappole in prova-tempo.md) ----------
-// Solo se hls.js legge almeno 5 minuti di flusso. Il nativo della chiavetta ignora gli spostamenti: La7, SuperTennis e Radio Italia
+// Solo con 60 s di spazio vero. Il nativo della chiavetta ignora gli spostamenti: La7, SuperTennis, Radio Italia e Mediaset
 // suonano con hls.js. Inizio = primo pezzo + 3 pezzi (seekable parte da 0 e vicino all'inizio hls.js torna in diretta); ritardo da
 // liveSyncPosition; ora da PROGRAM-DATE-TIME o, senza (SuperTennis), da adesso. Mai prima dell'inizio del programma che si guarda.
-const SEMPRE_HLS=["la7","supertennis","radioitaliatv"];
+const SEMPRE_HLS=["la7","supertennis","radioitaliatv"], MS=/\.mediaset\.net\/live\//;
 let tt=0, salto=0, tempo=null, ultimo=null;   // tempo = capi della linea, mentre i comandi ci sono; ultimo = dove si guardava prima di un salto
 V.addEventListener("timeupdate",()=>{if(!V.seeking)ultimo=V.currentTime});
 // Un salto che non viene dalla pagina (i tasti ±10 s di Muflone scrivono currentTime) non esce dal programma che si guardava
@@ -601,7 +622,7 @@ V.addEventListener("seeking",()=>{
 function finestra(){
   const l=hls&&hls.levels&&hls.levels[hls.currentLevel>=0?hls.currentLevel:0], d=l&&l.details;
   if(!d||!d.live||!d.fragments.length)return null;
-  const f=d.fragments, da=f[0].start, a=f[f.length-1].start+f[f.length-1].duration, g=f[0].programDateTime||0;
+  const f=d.fragments.slice(d.vero-d.startSN||0), da=f[0].start, a=f[f.length-1].start+f[f.length-1].duration, g=f[0].programDateTime||0;
   return {da,a,min:da+3*d.targetduration,vivo:hls.liveSyncPosition||a-3*d.targetduration,
     ora:p=>g?g+(p-da)*1000:Date.now()-(a-p)*1000, pos:ms=>g?da+(ms-g)/1000:a-(Date.now()-ms)/1000};   // posizione <-> ora
 }
@@ -618,7 +639,7 @@ const oraMin=ms=>new Date(ms).toLocaleTimeString("it-IT",{hour:"2-digit",minute:
 const metti=(s,k,v)=>{const e=$(s).style; if(e[k]!==v)e[k]=v};
 function aggiornaTempo(){
   const w=avviato&&!ricon&&finestra();
-  if(!w||w.a-w.da<300){if(tempo){senzaTempo(); if(!lunga)$("#diretta").hidden=true} return}
+  if(!w||w.vivo-w.min<60){if(tempo){senzaTempo(); if(!lunga)$("#diretta").hidden=true} return}
   const l=limiti(w), t=V.currentTime, dietro=Math.max(0,w.vivo-t), indietro=dietro>=15, ora=w.ora(t), adesso=Date.now();
   // senza guida la linea va dal punto più vecchio alla diretta
   const i=l.p?Date.parse(l.p.i):w.ora(w.min), f=l.p?Date.parse(l.p.f):adesso;
@@ -707,14 +728,17 @@ function mostra(v){
 // stato dei link e guida si chiedono solo dopo che i canali sono visibili
 function dopoPrimaSchermata(){
   if(secondari)return; secondari=true;
-  fetch("stato.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(s=>{STATO=s}).catch(()=>{}).then(()=>{statoNoto=true;aggiorna()});   // senza stato.json: tutti ok (sconosciuto)
+  const sj=fetch("stato.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(s=>{STATO=ST=s}).catch(()=>{});   // senza stato.json: tutti ok (sconosciuto)
+  // col ponte di Muflone 0.6 si carica anche ponte.js; i pallini si scrivono quando c'è tutto
+  Promise.all([sj,window.Muflone&&Muflone.provaLink?carica("ponte.js"):0]).then(()=>{statoNoto=true;aggiorna()});
+  ["hls.min.js","archivio.js"].forEach(carica);
   fetch("guida.json").then(r=>r.json()).then(g=>{GUIDA=g;aggiorna()}).catch(()=>{});
 }
-const cache=leggiCache();
+const cache=leggiCache(), copia=cache&&JSON.stringify(cache.v);   // prima di mostra(), che cambia i canali
 if(cache)mostra(cache.v);
 fetch(DB,{signal:scade(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(v=>{
   if(!v||!v.canali)throw 0;
-  salvaCache(v); mostra(v);
+  salvaCache(v); if(JSON.stringify(v)!==copia)mostra(v);   // dati uguali: schede ferme
 }).catch(()=>{
   console.warn("D01 database non raggiungibile");
   const a=$("#avviso"), d=cache&&cache.d;

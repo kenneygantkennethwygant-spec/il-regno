@@ -183,15 +183,45 @@ export function daRiprovare(url, oggi, prima) {
 /**
  * Cosa va in stato.siti[id]. Un rimando verso lo stesso sito (stessoNome) diventa una sostituzione legata
  * all'indirizzo esatto; ogni altro rimando resta una proposta per il pannello. Con `ricordo` ({url, esito}: la prova
- * del nuovo indirizzo di ieri) la sostituzione si porta avanti se risponde ancora, seguendo un suo rimando allo stesso sito.
+ * del nuovo indirizzo di ieri) la sostituzione si porta avanti se risponde ancora, seguendo un suo rimando allo stesso sito;
+ * se ieri aveva una `fonte` (la pagina ufficiale del sito) la tiene.
  */
 export function voceSito(url, esito, ricordo) {
   if (ricordo) {
     const raggiunto = ricordo.esito.nuovo || ricordo.url;
-    return ricordo.esito.ok && stessoNome(url, raggiunto) ? { ok: true, nuovo: raggiunto, sostituisce: url } : { ok: false };
+    if (!ricordo.esito.ok || !stessoNome(url, raggiunto)) return { ok: false };
+    return ricordo.fonte ? { ok: true, nuovo: raggiunto, sostituisce: url, fonte: ricordo.fonte } : { ok: true, nuovo: raggiunto, sostituisce: url };
   }
   return esito.ok && esito.nuovo && stessoNome(url, esito.nuovo) ? { ...esito, sostituisce: url } : { ...esito };
 }
+
+/**
+ * I siti che pubblicano un elenco ufficiale dei loro indirizzi (id del sito -> pagina dell'elenco e impronta: testo che la
+ * pagina vera contiene e una pagina di parcheggio o di blocco no). Serve solo quando l'indirizzo dei dati non risponde.
+ */
+export const FONTI_UFFICIALI = {
+  anime: { pagina: 'https://www.animeworlditalia.com', impronta: '<title>AnimeWorld' },
+};
+
+/** Gli host dei soli link `<a href>` di una pagina, puliti (https, solo lettere cifre trattini e punti, nessuna porta né utente), minuscoli, senza ripetizioni, in ordine di pagina. Il testo e gli altri elementi non contano. */
+export function hostDaLink(html) {
+  const host = [];
+  for (const m of String(html || '').matchAll(/<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)) {
+    const a = /^https:\/\/([^/?#\s]+)/i.exec((m[1] ?? m[2]).trim());
+    const h = a && a[1].toLowerCase();
+    if (h && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(h) && !host.includes(h)) host.push(h);
+  }
+  return host;
+}
+
+/** Stesso nome esatto: la stessa etichetta prima dell'estensione (animeworld-clone.cc non è animeworld.ac, come invece accetta stessoNome per un rimando). */
+export function nomeUguale(a, b) {
+  const na = nomeSito(a);
+  return na !== '' && na === nomeSito(b);
+}
+
+/** L'indirizzo che prende il posto di `url`: l'host del candidato (com'è) con il percorso di `url`. */
+export const indirizzoSostituto = (url, host) => `https://${host}${new URL(url).pathname}`;
 
 /**
  * Esito della prova di un canale: ok con 200 e una playlist che comincia con #EXTM3U. Il controllo gira su un server
@@ -378,6 +408,29 @@ export async function controllaCanale(c) {
 
 const controllaCanali = (canali) => inParallelo(canali, PARALLELI, controllaCanale);
 
+/**
+ * L'indirizzo che sostituisce `url` secondo l'elenco ufficiale del sito, o null. Dalla pagina dell'elenco si leggono solo
+ * gli host dei link; vale il primo, nell'ordine della pagina, con lo stesso nome dell'indirizzo dei dati, diverso dal suo
+ * host, che risponde 200 con l'impronta del sito e senza rimandare altrove. Dell'elenco non si segue altro: nessun testo
+ * diventa un'istruzione e nessun messaggio riporta la pagina.
+ */
+async function daElencoUfficiale(url, fonte) {
+  const elenco = await conRiprova(() => prendi(fonte.pagina, TEMPO_SITO, 262144));
+  if (elenco.errore || elenco.stato !== 200) return null;
+  let proprio;
+  try { proprio = hostDi(url); } catch { return null; }
+  for (const host of hostDaLink(elenco.corpo)) {
+    const candidato = `https://${host}/`;
+    if (host.replace(/^www\./, '') === proprio || !nomeUguale(url, candidato)) continue;
+    const nuovo = indirizzoSostituto(url, host);
+    const r = await conRiprova(() => prendi(nuovo, TEMPO_SITO, 262144));
+    let stessoHost = false;
+    try { stessoHost = hostDi(r.finale) === hostDi(nuovo); } catch { /* indirizzo illeggibile: non vale */ }
+    if (!r.errore && r.stato === 200 && stessoHost && r.corpo.includes(fonte.impronta)) return nuovo;
+  }
+  return null;
+}
+
 /** Prova un sito; se ieri era stato sostituito da sé e oggi il vecchio indirizzo non risponde, prova anche il nuovo ricordato. */
 async function controllaSiti(siti, statoIeri) {
   const prova = async (url) => {
@@ -387,8 +440,14 @@ async function controllaSiti(siti, statoIeri) {
   return inParallelo(siti, 4, async (s) => {
     const { esito, dettaglio } = await prova(s.url);
     const riprova = daRiprovare(s.url, esito, statoIeri.siti && statoIeri.siti[s.id]);
-    const ricordo = riprova ? { url: riprova, esito: (await prova(riprova)).esito } : undefined;
-    return { id: s.id, voce: voceSito(s.url, esito, ricordo), dettaglio };
+    const fonteIeri = statoIeri.siti && statoIeri.siti[s.id] && statoIeri.siti[s.id].fonte === 'ufficiale' ? 'ufficiale' : undefined;
+    const ricordo = riprova ? { url: riprova, esito: (await prova(riprova)).esito, fonte: fonteIeri } : undefined;
+    let voce = voceSito(s.url, esito, ricordo);
+    if (voce.ok === false && Object.hasOwn(FONTI_UFFICIALI, s.id)) {
+      const nuovo = await daElencoUfficiale(s.url, FONTI_UFFICIALI[s.id]).catch(() => null);
+      if (nuovo) voce = { ok: true, nuovo, sostituisce: s.url, fonte: 'ufficiale' };
+    }
+    return { id: s.id, voce, dettaglio };
   });
 }
 
@@ -497,7 +556,7 @@ async function main() {
   log(`Siti:`);
   for (const s of siti) {
     const v = s.voce;
-    log(`  ${s.id}: ${v.ok ? 'ok' : v.ok === null ? "non verificabile dall'estero" : 'NON ok'} (${s.dettaglio})${v.nuovo ? ` -> ${v.sostituisce ? 'sostituito da sé con' : 'nuovo indirizzo'} ${v.nuovo}` : ''}`);
+    log(`  ${s.id}: ${v.ok ? 'ok' : v.ok === null ? "non verificabile dall'estero" : 'NON ok'} (${s.dettaglio})${v.nuovo ? ` -> ${v.sostituisce ? 'sostituito da sé con' : 'nuovo indirizzo'} ${v.nuovo}${v.fonte === 'ufficiale' ? ' (elenco ufficiale del sito)' : ''}` : ''}`);
   }
   const senza = v2.canali.filter((x) => !guida.canali[x.epg || x.id]).map((x) => x.id);
   log(`Guida: ${Object.keys(guida.canali).length} canali su ${v2.canali.length} con programmi (tivùsat ${Object.keys(tiv.guida).length}/${tiv.richiesti}, epgshare01 ${Object.keys(xml.guida).length}/${xml.richiesti})`);

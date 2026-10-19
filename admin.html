@@ -64,6 +64,9 @@ h3{margin:14px 0 8px;font-size:17px;font-weight:700;color:var(--muted)}
 .griglia .voce{padding:0 12px}
 .sitoko{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
 .sitoko .voce{flex:1 1 280px}
+.righe{flex:1 1 280px;min-width:0;color:var(--muted);font-size:16px;overflow-wrap:anywhere}
+.cella{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cella .voce{flex:0 0 auto}
 
 .form{max-width:640px;margin:0 auto;padding-top:20px}
 .form h1{font-size:24px;margin:0 0 14px}
@@ -100,7 +103,7 @@ input:focus{outline:2px solid var(--red);outline-offset:0}
 // Accesso e dati via REST (nessun SDK). Le credenziali restano solo in memoria della pagina.
 var DB = "https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app";
 var KEY = "AIzaSyByxULPVAzJObzhfDweMDw0Qtx1OumR_Bo";
-var S = { auth: null, data: null, orig: "", etag: null, stato: null, view: "login", edit: null, conferma: null, scroll: 0, timer: null, occupato: false };
+var S = { auth: null, data: null, orig: "", etag: null, stato: null, prova: null, view: "login", edit: null, conferma: null, scroll: 0, timer: null, occupato: false };
 
 function h(tag, attrs) {
   var el = document.createElement(tag);
@@ -192,7 +195,7 @@ function carica() {
       if (d.gruppi !== undefined && !Array.isArray(d.gruppi)) d.gruppi = toArr(d.gruppi);
       S.data = d; S.orig = JSON.stringify(d); S.etag = etag;
       return fetch("stato.json", { cache: "no-store" }).then(function (x) { return x.ok ? x.json() : null; }).catch(function () { return null; })
-        .then(function (st) { S.stato = st; return true; });
+        .then(function (st) { S.stato = st; S.prova = provaDispositivo(); return true; });
     });
   }, function () { setMsg("Nessuna connessione", "err"); return false; });
 }
@@ -252,20 +255,59 @@ function sostituitoDaSe(e) {
   var s = S.stato && S.stato.siti && S.stato.siti[e.id];
   return s && s.nuovo && s.sostituisce === e.url ? s.nuovo : null;
 }
+// L'ultimo giro di prova di questo dispositivo, se il pannello è aperto dentro Muflone 0.6 (ultimaProva()): l'oggetto del
+// giro, o null se il ponte manca, non risponde, non dà JSON o il giro non ha un'ora valida.
+function provaDispositivo() {
+  try {
+    var t = window.Muflone && window.Muflone.ultimaProva ? window.Muflone.ultimaProva() : "";
+    var p = t ? JSON.parse(t) : null;
+    return p && typeof p === "object" && !isNaN(new Date(p.quando)) ? p : null;
+  } catch (e) { return null; }
+}
+// la voce del giro di questo dispositivo per un sito o canale, solo se è stata provata sull'indirizzo di adesso
+function voceDispositivo(tipo, e) {
+  var m = S.prova && S.prova[tipo];
+  var v = m && typeof m === "object" && Object.prototype.hasOwnProperty.call(m, e.id) ? m[e.id] : null;
+  return v && typeof v === "object" && v.url === e.url ? v : null;
+}
+function oraProva() {
+  var d = new Date(S.prova.quando);
+  function z(n) { return (n < 10 ? "0" : "") + n; }
+  return z(d.getHours()) + ":" + z(d.getMinutes());
+}
+// ciò che una voce (di stato.json o del dispositivo) dice di un indirizzo, a parole
+function descrivi(v, url) {
+  if (!v) return "non controllato";
+  if (v.nuovo && v.sostituisce === url)
+    return "sostituito da sé con " + v.nuovo + " (" + (v.fonte === "ufficiale" ? "elenco ufficiale del sito" : "rimando del vecchio indirizzo") + ")";
+  if (v.nuovo && !v.sostituisce && v.nuovo !== url) return "rimanda a " + v.nuovo;
+  return v.ok === false ? "non risponde" : v.ok === true ? "risponde" : "non verificabile";
+}
+// un problema visto dal dispositivo: non risponde, o un indirizzo nuovo (sostituito da sé o rimando)
+function problemaDispositivo(v, url) {
+  return !!v && (v.ok === false || (!!v.nuovo && v.nuovo !== url && (!v.sostituisce || v.sostituisce === url)));
+}
+// le righe «Stanotte da GitHub» e, se c'è il giro di questo dispositivo, «Da questo dispositivo alle HH:MM»
+function righeStato(tipo, e) {
+  var box = h("div", { class: "righe" }, h("div", null, "Stanotte da GitHub: " + descrivi(S.stato[tipo] && S.stato[tipo][e.id], e.url)));
+  var d = voceDispositivo(tipo, e);
+  if (d) box.appendChild(h("div", null, "Da questo dispositivo alle " + oraProva() + ": " + descrivi(d, e.url)));
+  return box;
+}
 function pannelloProblemi() {
   if (!S.stato) return null;
   var canali = toArr(S.data.canali), siti = toArr(S.data.siti);
-  var pc = canali.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && problema("canali", x.c.id); });
-  var ps = siti.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && (problema("siti", x.c.id) || nuovoIndirizzo(x.c) || sostituitoDaSe(x.c)); });
+  var pc = canali.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && (problema("canali", x.c.id) || problemaDispositivo(voceDispositivo("canali", x.c), x.c.url)); });
+  var ps = siti.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c && (problema("siti", x.c.id) || nuovoIndirizzo(x.c) || sostituitoDaSe(x.c) || problemaDispositivo(voceDispositivo("siti", x.c), x.c.url)); });
   var box = h("div", { class: "problemi" }, h("h3", null, "Da controllare" + dataControllo()));
   if (!pc.length && !ps.length) { box.appendChild(h("p", { class: "ok" }, "Nessun problema segnalato")); return box; }
   ps.forEach(function (x) {
-    var nuovo = nuovoIndirizzo(x.c), ko = problema("siti", x.c.id), daSe = sostituitoDaSe(x.c);
-    var riga = h("div", { class: "sitoko" },
-      h("button", { class: "voce ko", onclick: function () { vaiA("siti", x.i); } }, h("i", { class: "stato ko" }), h("b", { class: "nome" }, x.c.nome), h("small", null, ko ? "sito non risponde" : "indirizzo cambiato")));
-    if (daSe) riga.appendChild(h("small", { class: "hint" }, "Sostituito da sé con " + daSe));
+    var nuovo = nuovoIndirizzo(x.c), disp = voceDispositivo("siti", x.c);
+    var ko = problema("siti", x.c.id) || (disp && disp.ok === false);
+    var riga = h("div", { class: "sitoko", "data-problema": "siti/" + x.c.id },
+      h("button", { class: "voce ko", onclick: function () { vaiA("siti", x.i); } }, h("i", { class: "stato ko" }), h("b", { class: "nome" }, x.c.nome), h("small", null, ko ? "sito non risponde" : "indirizzo cambiato")),
+      righeStato("siti", x.c));
     if (nuovo) {
-      riga.appendChild(h("small", { class: "hint" }, "Rimanda a " + nuovo));
       riga.appendChild(h("button", { class: "btn giallo", onclick: function () { x.c.url = nuovo; setMsg("Indirizzo cambiato: premi Salva"); render(); vaiA("siti", x.i); } }, "Usa il nuovo indirizzo"));
     }
     box.appendChild(riga);
@@ -274,7 +316,9 @@ function pannelloProblemi() {
     box.appendChild(h("h3", null, "Canali che non rispondono: " + pc.length));
     var g = h("div", { class: "griglia" });
     pc.forEach(function (x) {
-      g.appendChild(h("button", { class: "voce ko", onclick: function () { vaiA("canali", x.i); } }, h("i", { class: "stato ko" }), h("b", { class: "nome" }, x.c.nome)));
+      g.appendChild(h("div", { class: "cella", "data-problema": "canali/" + x.c.id },
+        h("button", { class: "voce ko", onclick: function () { vaiA("canali", x.i); } }, h("i", { class: "stato ko" }), h("b", { class: "nome" }, x.c.nome)),
+        righeStato("canali", x.c)));
     });
     box.appendChild(g);
   }
