@@ -284,7 +284,7 @@ function disegna(){
 }
 // stato dei link e programma in onda: si applicano sulle schede già disegnate; ogni minuto si scrive solo ciò che è cambiato
 function aggiorna(){
-  if(window.unisci)unisci();   // ponte.js
+  if(window.unisci)unisci();
   if(statoNoto)document.querySelectorAll("[data-sito]").forEach(el=>{
     // la pillola è verde se almeno uno dei suoi siti è ok
     const ko=sitiDi(el.dataset.sito).every(x=>((STATO.siti||{})[x.id]||{}).ok===false);
@@ -617,22 +617,24 @@ V.addEventListener("timeupdate",()=>{if(!V.seeking)ultimo=V.currentTime});
 V.addEventListener("seeking",()=>{
   salto=Date.now(); fermi=0;
   const w=avviato&&!ricon&&ultimo!==null&&finestra(), rif=w&&w.ora(ultimo)+1000;   // +1 s: dopo un salto al limite l'ora cade un soffio prima
-  if(w&&V.currentTime<limiti(w,rif).da-0.5)vaiA(-Infinity,rif);
+  if(w&&V.currentTime<limiti(w,rif).da-0.5)vaiA(-Infinity,0,rif);
 });
 function finestra(){
   const l=hls&&hls.levels&&hls.levels[hls.currentLevel>=0?hls.currentLevel:0], d=l&&l.details;
   if(!d||!d.live||!d.fragments.length)return null;
   const f=d.fragments.slice(d.vero-d.startSN||0), da=f[0].start, a=f[f.length-1].start+f[f.length-1].duration, g=f[0].programDateTime||0;
-  return {da,a,min:da+3*d.targetduration,vivo:hls.liveSyncPosition||a-3*d.targetduration,
-    ora:p=>g?g+(p-da)*1000:Date.now()-(a-p)*1000, pos:ms=>g?da+(ms-g)/1000:a-(Date.now()-ms)/1000};   // posizione <-> ora
+  return {f,da,a,min:da+3*d.targetduration,vivo:hls.liveSyncPosition||a-3*d.targetduration,
+    ora:p=>g?g+(p-da)*1000:Date.now()-(a-p)*1000, pos:ms=>g?da+(ms-g)/1000:a-(Date.now()-ms)/1000};
 }
 function limiti(w,ora=w.ora(V.currentTime)){
   const p=programma(cur,ora);
   return {p,da:p?Math.max(w.min,w.pos(Date.parse(p.i))):w.min};
 }
-function vaiA(t,rif){
+function vaiA(t,a,rif){
   const w=finestra(); if(!w)return;
-  V.currentTime=Math.min(w.vivo,Math.max(limiti(w,rif).da,t)); aggiornaTempo();
+  const da=limiti(w,rif).da, f=a&&w.f.find(x=>x.start+x.duration/2>t);
+  t=f&&f.start>=da&&f.start<w.vivo?f.start+.1:Math.min(w.vivo,Math.max(da,t));
+  if(Math.abs(t-V.currentTime)>.5)V.currentTime=t; aggiornaTempo();
 }
 function senzaTempo(){tempo=null; ["#tempo","#ricomincia","#indietro30","#avanti30"].forEach(x=>$(x).hidden=true)}
 const oraMin=ms=>new Date(ms).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Rome"});
@@ -704,8 +706,8 @@ document.addEventListener("click",e=>{
     // «In diretta»: sui canali col tempo (V5) ci si sposta al vivo; sugli altri si riapre da capo, come Riprova
     case "diretta": if(tempo){vaiA(Infinity); if(V.paused)V.play().catch(()=>{}); return} return riproduci(cur);
     case "ricomincia": return vaiA(-Infinity);
-    case "indietro30": return vaiA(V.currentTime-30);
-    case "avanti30": return vaiA(V.currentTime+30);
+    case "indietro30": return vaiA(V.currentTime-30,1);
+    case "avanti30": return vaiA(V.currentTime+30,1);
     case "pausa": if(avviato)V.paused?V.play().catch(()=>{}):V.pause(); return;
     case "audio": $("#audioScelte").hidden=!$("#audioScelte").hidden; return;
   }
@@ -736,16 +738,18 @@ function dopoPrimaSchermata(){
 }
 const cache=leggiCache(), copia=cache&&JSON.stringify(cache.v);   // prima di mostra(), che cambia i canali
 if(cache)mostra(cache.v);
-fetch(DB,{signal:scade(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(v=>{
+const prendi=n=>fetch(DB,{signal:scade(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(v=>{
   if(!v||!v.canali)throw 0;
   salvaCache(v); if(JSON.stringify(v)!==copia)mostra(v);   // dati uguali: schede ferme
-}).catch(()=>{
+}).catch(e=>{
+  if(!n&&e.name=="TypeError")return setTimeout(prendi,2e3,1);
   console.warn("D01 database non raggiungibile");
   const a=$("#avviso"), d=cache&&cache.d;
   a.textContent="Nessuna connessione"+(d?`: dati del ${d.getDate()} ${MESI[d.getMonth()]}`:"");
   a.hidden=false;
   if(!cache){$("#gruppi").innerHTML=""; dopoPrimaSchermata()}
 });
+prendi()
 </script>
 </body>
 </html>
