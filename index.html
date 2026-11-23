@@ -91,7 +91,7 @@ a{color:inherit;text-decoration:none}
 .ch.off .live{color:var(--yel)}
 .sk{height:64px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
 .msg{padding:12px var(--gut);font-size:16px;color:var(--muted)}
-.fondo{display:flex;justify-content:center;padding:8px 0 24px}
+.fondo{display:flex;flex-wrap:wrap;justify-content:center;padding:8px 0 24px}
 .su{height:64px;padding:0 26px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:15px;font-weight:600}
 .chip:hover,.pill:hover,.ch:hover,.su:hover,.cerca:hover{border-color:rgba(255,48,72,.6)}
 .ch.off:hover{border-color:var(--yel)}
@@ -171,7 +171,8 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 @media(max-width:700px){
   .top{height:auto;flex-wrap:wrap;padding-top:8px}
   .recenti{flex:1 1 100%;order:3;flex-wrap:wrap}
-  .cats{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+  .cats{grid-template-columns:repeat(6,1fr)}
+  .pill{grid-column:span 2}.pill:nth-child(n+4){grid-column:span 3}
   .cmd{padding:0 14px}
   .riga{gap:8px}
 }
@@ -189,7 +190,6 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
     <input id="q" type="text" placeholder="Cerca un canale" autocomplete="off" enterkeyhint="search" aria-label="Cerca un canale">
     <button id="chiudiRicerca" aria-label="Esci dalla ricerca">&#10005;</button>
   </div>
-  <a class="admin" href="admin.html">Admin</a>
 </header>
 
 <nav class="cats" aria-label="Categorie">
@@ -203,7 +203,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 <div id="scelta" hidden role="dialog" aria-label="Scegli il sito"><div class="sc"><p id="scTit">Scegli il sito</p><div id="scLista"></div><button id="scChiudi">Chiudi</button></div></div>
 <div class="msg" id="avviso" hidden></div>
 <main class="gruppi" id="gruppi"><section class="gruppo"><div class="griglia"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div></section></main>
-<div class="fondo"><button class="su" id="su">&#8593; Torna in cima</button></div>
+<div class="fondo"><button class="su" id="su">&#8593; Torna in cima</button><a class="admin" href="admin.html">Admin</a></div>
 
 <div id="modal">
   <video id="video" playsinline></video>
@@ -272,7 +272,9 @@ function disegna(){
   const q=$("#q").value.trim().toLowerCase();
   const gr=[...D.gruppi];
   D.canali.forEach(c=>{c.gruppo=c.gruppo||"Altri"; if(!gr.includes(c.gruppo))gr.push(c.gruppo)});
-  let h="", n=0;
+  // preferiti (stella nel lettore, visione.js): un gruppo in cima, i canali restano anche al loro posto
+  const pf=jx("ilregno.preferiti",[]).map(i=>trova("canale",i)).filter(c=>c&&(!q||String(c.nome).toLowerCase().includes(q)));
+  let h=pf.length?`<section class="gruppo"><h2>Preferiti</h2><div class="griglia">${pf.map(scheda).join("")}</div></section>`:"", n=pf.length;
   gr.forEach(g=>{
     const l=D.canali.filter(c=>c.gruppo===g&&(!q||String(c.nome).toLowerCase().includes(q)));
     if(!l.length)return;
@@ -322,7 +324,8 @@ addEventListener("error",e=>{
 
 // ---------- recenti (ultime 3 cose aperte) ----------
 const trova=(tipo,id)=>D&&(tipo==="sito"?D.siti:D.canali).find(x=>x.id===id);
-function leggiRecenti(){try{return JSON.parse(mem.get("ilregno.recenti"))||[]}catch(e){return[]}}
+const jx=(k,d)=>{try{return JSON.parse(mem.get(k))||d}catch(e){return d}};
+const leggiRecenti=()=>jx("ilregno.recenti",[]);
 function recenti(){
   const v=leggiRecenti().map(x=>({x,o:trova(x.tipo,x.id)})).filter(a=>a.o), el=$("#recenti");
   el.innerHTML=v.length?'<span class="lbl">Recenti</span>'+v.map(a=>
@@ -361,6 +364,7 @@ function apri(tipo,id){
   const o=trova(tipo,id); if(!o)return;
   mem.set("ilregno.recenti",JSON.stringify([{tipo,id},...leggiRecenti().filter(x=>!(x.tipo===tipo&&x.id===id))].slice(0,3)));
   recenti();
+  if(tipo==="canale")mem.set("ilregno.ct",JSON.stringify({...jx("ilregno.ct",{}),[id]:Date.now()}));   // quando, per la fila «Continua» (continua.js)
   if(tipo==="canale")guarda(o);
   else if(o.url)vai(indirizzo(o));
 }
@@ -491,6 +495,7 @@ function dopoPrimaSchermata(){
   const sj=fetch("stato.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(s=>{STATO=ST=s}).catch(()=>{});   // senza stato.json: tutti ok (sconosciuto)
   // col ponte di Muflone 0.6 si carica anche ponte.js; i pallini si scrivono quando c'è tutto
   Promise.all([sj,window.Muflone&&Muflone.provaLink?carica("ponte.js"):0]).then(()=>{statoNoto=true;aggiorna()});
+  if(window.Muflone)carica("continua.js");   // «Continua», Cronologia, «Come si usa», avviso di versione: solo dentro Muflone
   ["visione.js","hls.min.js","archivio.js"].forEach(carica);
   fetch("guida.json").then(r=>r.json()).then(g=>{GUIDA=g;aggiorna()}).catch(()=>{});
 }

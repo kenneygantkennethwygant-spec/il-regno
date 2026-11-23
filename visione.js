@@ -51,7 +51,7 @@ function riproduci(c){
   $("#titolo").textContent=c.nome;
   inOnda(c); clearInterval(ti); ti=setInterval(()=>inOnda(c),60000);
   tt=setInterval(()=>{if(!M.classList.contains("nasc")||M.classList.contains("inpausa"))aggiornaTempo()},1000);   // la linea si ridisegna solo se si vede, o in pausa per «In diretta»
-  apriFlusso(c);
+  aggiornaStella(); apriFlusso(c);
 }
 // chiede il flusso del canale e aspetta la prima immagine
 function apriFlusso(c){
@@ -275,3 +275,40 @@ document.addEventListener("click",e=>{
     case "audio": $("#audioScelte").hidden=!$("#audioScelte").hidden; return;
   }
 });
+
+// ---------- preferiti: la stella nella fila dei comandi ----------
+// Vuota o piena (rossa) secondo il canale aperto; un tocco mette o toglie il canale da «ilregno.preferiti» e per 2 s dice cosa è successo.
+// Dietro al lettore non si ridisegna nulla (fermerebbe hls.js): il gruppo «Preferiti» in cima si ridisegna alla chiusura.
+(()=>{
+  const st=document.createElement("button"), pa=document.createElement("div");
+  st.id="stella"; st.className="cmd"; pa.id="avvisoPref"; pa.hidden=true;
+  st.style.cssText="width:64px;padding:0;display:flex;align-items:center;justify-content:center";
+  pa.style.cssText="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:10px 24px;border-radius:999px;background:rgba(0,0,0,.6);font-size:16px;font-weight:600;white-space:nowrap;pointer-events:none";
+  st.innerHTML='<svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 2.8l2.75 5.9 6.45.75-4.8 4.4 1.3 6.35L12 17l-5.7 3.2 1.3-6.35-4.8-4.4 6.45-.75z" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+  $(".riga").insertBefore(st,$("#diretta")); M.appendChild(pa);
+  const st2=document.createElement("style");
+  st2.textContent="#modal.errore #stella,#modal.errore #avvisoPref{display:none}";
+  document.head.appendChild(st2);
+  let tpa=0, sporco=false;
+  const piena=()=>!!cur&&jx("ilregno.preferiti",[]).includes(cur.id);
+  window.aggiornaStella=()=>{
+    const p=piena(), v=st.firstElementChild;
+    v.style.fill=p?"#ff3048":"none"; v.style.stroke=p?"#ff3048":"#fff";
+    st.setAttribute("aria-label",p?"Togli dai preferiti":"Aggiungi ai preferiti"); st.setAttribute("aria-pressed",p);
+  };
+  st.addEventListener("click",()=>{
+    if(!cur)return;
+    const l=jx("ilregno.preferiti",[]), p=l.includes(cur.id);
+    mem.set("ilregno.preferiti",JSON.stringify(p?l.filter(x=>x!==cur.id):[...l,cur.id]));
+    sporco=true; aggiornaStella();
+    pa.textContent=p?"Tolto dai preferiti":"Aggiunto ai preferiti"; pa.hidden=false;
+    clearTimeout(tpa); tpa=setTimeout(()=>pa.hidden=true,2000);
+  });
+  const chiudi0=chiudiLettore;
+  chiudiLettore=function(){
+    chiudi0(); pa.hidden=true; clearTimeout(tpa);
+    if(!sporco)return;
+    sporco=false;
+    const g=$("#gruppi"), h=g.offsetHeight; disegna(); scrollBy(0,g.offsetHeight-h);   // il gruppo in cima non sposta ciò che si guardava
+  };
+})();
