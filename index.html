@@ -153,55 +153,9 @@ html.pl,html.pl body{overflow-x:hidden}
 .barra{position:absolute;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px var(--margine-lato);pointer-events:none}
 .nome{flex:1 1 0;min-width:0;padding-top:4px}
 .barra strong{font-size:17px;font-weight:700;text-shadow:0 2px 6px #000}
-#inonda{margin-top:3px;font-size:14px;font-weight:500;color:rgba(255,255,255,.8);text-shadow:0 0 4px #000,0 2px 6px #000;white-space:pre;overflow:hidden;text-overflow:ellipsis}
-#avanza{width:200px;max-width:100%;height:3px;margin-top:8px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
-#avanza i{display:block;height:100%;width:0;background:var(--red)}
-.barra,.cmd,#tempo,#audioScelte{transition:opacity .2s}
-#modal.nasc:not(.errore) .barra,#modal.nasc:not(.errore) .cmd,#modal.nasc:not(.errore) #tempo,#modal.nasc:not(.errore) #audioScelte{opacity:0}
-#modal.nasc:not(.errore) #closePlayer,#modal.nasc:not(.errore) .cmd,#modal.nasc:not(.errore) #linea{pointer-events:none}
-#modal.nasc.inpausa:not(.errore) #diretta{opacity:1;pointer-events:auto}
 #closePlayer{flex:none;pointer-events:auto;width:64px;height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);font-size:22px}
 /* lettore aperto: niente si ridisegna dietro (hls.js) */
 body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
-.cmd{flex:none;max-width:100%;height:64px;padding:0 20px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);
-  font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:auto}
-#audio{min-width:0;flex:0 1 auto}
-#audioScelte{position:absolute;top:80px;right:var(--margine-lato);z-index:3;display:flex;flex-direction:column;gap:6px;padding:6px;min-width:250px;border-radius:20px;border:1px solid var(--line);background:rgba(12,13,18,.94)}
-#audioScelte .cmd{display:flex;align-items:center;gap:12px;border-color:transparent;background:transparent;text-align:left}
-#audioScelte .cmd::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
-#audioScelte [aria-pressed=true]::before{background:var(--red);border-color:var(--red)}
-#basso{position:absolute;left:var(--margine-lato);right:var(--margine-lato);bottom:var(--gut);z-index:2;display:flex;flex-direction:column;pointer-events:none}
-.riga{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
-#pausa{width:64px;padding:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);border-color:transparent;color:#07080b}
-#pausa svg{width:26px;height:26px;fill:currentColor}
-#modal:not(.inpausa) #pausa .i-riprendi,#modal.inpausa #pausa .i-pausa{display:none}
-.tondo{min-width:64px;padding:0 14px}
-#diretta{margin-left:auto;background:var(--red);border-color:var(--red)}
-#tempo{display:flex;align-items:center;gap:14px;margin-bottom:6px}
-#lineaInizio,#lineaFine,#ritardo{flex:none;font-size:13px;font-weight:600;text-shadow:0 0 4px #000,0 2px 6px #000}
-#linea{position:relative;flex:1 1 0;min-width:0;height:64px;cursor:pointer;pointer-events:auto}
-#linea .binario{position:absolute;left:0;right:0;top:41px;height:5px;border-radius:3px;background:rgba(255,255,255,.22)}
-#linea i{position:absolute;top:0;bottom:0;border-radius:3px}
-#rivedibile{background:rgba(255,255,255,.45)}
-#visto{background:var(--red)}
-.binario #vivo{top:-6px;width:3px;height:17px;margin-left:-1.5px;border-radius:2px;background:var(--red)}
-.binario #punto{top:-7px;width:19px;height:19px;margin-left:-9.5px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.6)}
-#ritardo{position:absolute;top:10px;transform:translateX(-50%);white-space:nowrap}
-#ritardo.vivo{color:#ff6b7c}
-#inpausa,#riconnessione,#lenta{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:10px 24px;border-radius:999px;background:rgba(0,0,0,.6);
-  font-size:20px;font-weight:700;white-space:nowrap;pointer-events:none}
-#riconnessione,#lenta{font-size:16px;font-weight:600}
-#err{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#000;text-align:center;padding:0 var(--gut)}
-#modal.errore #err{display:flex}
-#modal.errore #video{visibility:hidden}
-#err p{margin:0;font-size:22px;font-weight:700}
-#err #errcod{margin-top:-12px;font-size:15px;font-weight:500;color:var(--muted)}
-#err #errcod:empty{display:none}
-#modal.errore #pausa,#modal.errore #audio,#modal.errore #audioScelte,#modal.errore #diretta,#modal.errore #inpausa,#modal.errore #riconnessione,#modal.errore #lenta,
-#modal.errore #tempo,#modal.errore #ricomincia,#modal.errore #indietro30,#modal.errore #avanti30{display:none}
-#err div{display:flex;gap:16px}
-#err button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:17px;font-weight:700}
-#err #riprova{background:var(--red);border-color:var(--red)}
 @media(max-width:700px){
   .top{height:60px;padding:0 12px 0 16px}
   .marchio svg{height:22px}
@@ -233,8 +187,6 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
   #avviso{padding:0 16px 8px}
   .griglia{grid-template-columns:1fr}
   .fondo{margin:24px 16px 28px}
-  .cmd{padding:0 14px}
-  .riga{gap:8px}
 }
 @media(max-height:450px) and (min-width:701px){
   .top{height:52px;padding:0 20px 0 24px}
@@ -315,18 +267,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 
 <div id="modal">
   <video id="video" playsinline></video>
-  <div class="barra"><div class="nome"><strong id="titolo"></strong><div id="inonda" hidden></div><div id="avanza" hidden><i></i></div></div><button class="cmd" id="audio" hidden></button><button id="closePlayer" aria-label="Esci">&#10005;</button></div>
-  <div id="audioScelte" hidden></div>
-  <div id="inpausa" hidden>In pausa</div>
-  <div id="riconnessione" hidden>Riconnessione&hellip;</div>
-  <div id="lenta" hidden>Linea lenta, sto caricando&hellip;</div>
-  <div id="basso">
-    <div id="tempo" hidden><span id="lineaInizio"></span><div id="linea"><span id="ritardo"></span><div class="binario"><i id="rivedibile"></i><i id="visto"></i><i id="vivo"></i><i id="punto"></i></div></div><span id="lineaFine"></span></div>
-    <div class="riga">
-<button class="cmd" id="ricomincia" hidden>Ricomincia</button><button class="cmd tondo" id="indietro30" hidden>&minus;30 s</button><button class="cmd" id="pausa" aria-label="Pausa"><svg class="i-pausa" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg><svg class="i-riprendi" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg></button><button class="cmd tondo" id="avanti30" hidden>+30 s</button><button class="cmd" id="diretta" hidden>In diretta</button>
-    </div>
-  </div>
-  <div id="err"><p id="errmsg"></p><p id="errcod"></p><div><button id="riprova">Riprova</button><button id="chiudi">Chiudi</button></div></div>
+  <div class="barra"><div class="nome"><strong id="titolo"></strong></div><button id="closePlayer" aria-label="Esci">&#10005;</button></div>
 </div>
 
 <script>
@@ -364,7 +305,6 @@ function programma(c,n=Date.now()){
   return ora;
 }
 
-// palco: continua() è sincrono; dati di Muflone solo con esc() (K1)
 const B=window.Muflone, htt=u=>typeof u==="string"&&/^https?:\/\/[^\s/]+/i.test(u), num=x=>typeof x==="number"&&isFinite(x);
 const MONDI={film:["Film","s-film"],serie:["Serie TV","s-serie"],sport:["Sport","s-sport"],anime:["Anime","s-anime"]};
 const segno=(id,cl)=>`<svg class="s ${cl||""}" viewBox="0 0 48 48"><use href="#${id}"/></svg>`;
@@ -405,7 +345,6 @@ const quanto=e=>Math.max(0,Math.min(100,e.secondi/e.durata*100)).toFixed(1)+"%";
 const COP=/^(https:\/\/[^\s/]+\S*|data:image\/(webp|jpeg|png);base64,[\w+\/=]+)$/;
 const copertina=u=>typeof u==="string"&&u.length<=(u[0]==="d"?2e5:500)&&COP.test(u);
 const op=e=>e.sito==="pixeldrain.net"&&/^One Pace/.test(e.titolo)||lettere(e.sito||host(e.pagina)).includes("onepace");
-// copertina: sotto c'è la targa; nell'HTML solo la sua identità, l'indirizzo in COPS
 let COPS={};
 const hid=s=>{let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36)};
 function figura(e,c,cl){
@@ -458,7 +397,6 @@ function scheda(c){
 }
 const griglia=(t,n,l)=>`<div class="gruppo"><div class="titolo"><h2>${t}</h2>${n}</div><div class="griglia">${l.map(scheda).join("")}</div></div>`;
 const filtro=q=>c=>!q||String(c.nome).toLowerCase().includes(q);
-// #miei si rifà da solo (le schede sotto restano); preferiti, poi 3 canali partiti (ilregno.rc e i canali di ilregno.recenti)
 let tutti=0;
 const recC=()=>[...new Set([...jx("ilregno.rc",[]),...leggiRecenti().filter(x=>x&&x.tipo=="canale").map(x=>x.id)])].slice(0,3);
 function mieiH(q){
@@ -480,7 +418,6 @@ function tvH(q){
   return `<section class="tvz" id="tv">`+(n?`<div class="titolo"><h2>Live TV</h2><span>${D.canali.length} canali</span></div>`+h:'<div class="msg">Nessun canale trovato</div>')+"</section>";
 }
 
-// si sostituisce solo ciò che è cambiato
 const fatto={};
 function sostituisci(id,h){
   if(fatto[id]===h)return;
@@ -550,7 +487,6 @@ function apri(tipo,id){
   recenti(tipo,id);
   if(o.url)location.href=indirizzo(o);
 }
-// recente al primo fotogramma
 let segnato=null, fonte=null;
 $("#video").addEventListener("playing",()=>{
   if(!cur||cur===segnato||!M.classList.contains("open"))return;
@@ -573,16 +509,14 @@ function guarda(c){
   if(window.riproduci)return riproduci(c);
   if(!M.classList.contains("open"))pos=scrollY;
   atteso=cur=c;
-  M.className="open"; document.body.classList.add("pl"); document.documentElement.classList.add("pl"); mostraBarra(true);
+  M.className="open"; document.body.classList.add("pl"); document.documentElement.classList.add("pl");
   $("#titolo").textContent=c.nome;
-  inOnda(c); clearInterval(ti); ti=setInterval(()=>inOnda(c),60000);
   carica("visione.js").then(ok=>{
     if(atteso!==c)return;
     atteso=null;
     if(ok)return riproduci(c);
     console.warn("lettore",c.id,"V01");
-    $("#errmsg").textContent=`${c.nome} non disponibile ora (codice V01)`; $("#errcod").textContent="";
-    M.classList.add("errore"); $("#riprova").focus();
+    $("#titolo").textContent=`${c.nome} non disponibile ora (codice V01)`;
   });
 }
 function chiudiLettore(){
@@ -591,33 +525,12 @@ function chiudiLettore(){
   if(scrollY!==pos)scrollTo(0,pos);
   ora();
   if(!rinvio)return;
-  // la scheda da cui si era partiti resta ferma sullo schermo
+  // un solo compenso dello scorrimento (Chrome ancora già la pagina): si misura dopo il disegno; vale anche per la stella (visione.js)
   rinvio=0;
-  const a=fonte&&fonte.isConnected&&fonte, y=a&&a.getBoundingClientRect().top, g=$("#gruppi"), h=g.offsetHeight;
-  disegna(); scrollBy(0,a&&a.isConnected?a.getBoundingClientRect().top-y:g.offsetHeight-h);
+  const a=fonte&&fonte.isConnected&&fonte, y=a&&a.getBoundingClientRect().top, g=$("#gruppi"), h=g.offsetHeight, s=scrollY;
+  disegna(); scrollBy(0,a&&a.isConnected?a.getBoundingClientRect().top-y:g.offsetHeight-h-(scrollY-s));
 }
-let tb=0, ti=0, tocco=false;
-const nascosti=()=>M.classList.contains("nasc")&&!M.classList.contains("errore");
-M.addEventListener("pointerdown",()=>{tocco=nascosti()},true);
-M.addEventListener("click",e=>{if(tocco&&e.isTrusted){e.stopPropagation();e.preventDefault()} tocco=false},true);
-function inOnda(c){
-  const p=programma(c), ok=!!p;
-  $("#inonda").hidden=$("#avanza").hidden=!ok;
-  if(!ok)return;
-  const i=Date.parse(p.i), f=Date.parse(p.f);
-  $("#inonda").textContent=p.i.slice(11,16)+" – "+p.f.slice(11,16)+"  "+p.t;
-  $("#avanza i").style.width=Math.max(0,Math.min(100,(Date.now()-i)/(f-i)*100)).toFixed(1)+"%";
-}
-function mostraBarra(forza){
-  if(!forza&&!M.classList.contains("open"))return;
-  const nasc=M.classList.contains("nasc");
-  M.classList.remove("nasc"); clearTimeout(tb);
-  if(nasc&&window.aggiornaTempo)aggiornaTempo();
-  tb=setTimeout(()=>M.classList.add("nasc"),3000);
-}
-["mousemove","pointermove","pointerdown","click"].forEach(t=>M.addEventListener(t,()=>mostraBarra()));
-const CONFIG_HLS={backBufferLength:90,maxBufferLength:30,maxMaxBufferLength:30,maxBufferSize:30*1000*1000,startLevel:0,
-  xhrSetup:(x,u)=>x.addEventListener("progress",()=>{if(x.status>199&&x.status<300&&!/\.m3u8/.test(x.responseURL||u))dato=Date.now()})};
+let tb=0, ti=0;
 const carica=f=>carica[f]||(carica[f]=new Promise(ok=>{
   const s=document.head.appendChild(document.createElement("script"));
   s.src=f; s.onload=ok; s.onerror=()=>{delete carica[f]; ok(0)};
@@ -677,7 +590,6 @@ function mostra(v){
   D={gruppi:arr(v.gruppi),canali:arr(v.canali),siti:arr(v.siti)}; vS++;
   $("#avviso").hidden=true; if(aspetto)return; disegna(); dopoPrimaSchermata();
 }
-// il resto dopo un fotogramma vero
 let dopo=0, crDopo=0;
 function dopoPrimaSchermata(){
   if(secondari)return; secondari=true;
@@ -694,7 +606,6 @@ function dopo0(){
 ora();
 const cache=leggiCache(), copia=cache&&JSON.stringify(cache.v);
 function avvia(){aspetto=0; leggiStoria(); D?(disegna(),dopoPrimaSchermata()):cache?mostra(cache.v):disegna()}
-// storia in caricamento (storiaPronta() false): al più 1 s senza niente da premere
 const pronta=()=>{try{return B.storiaPronta()!==false}catch(e){return 1}}, t0=Date.now(), attendi=()=>pronta()||Date.now()-t0>1e3?avvia():setTimeout(attendi,25);
 if(B&&B.storiaPronta&&!pronta()){aspetto=1; setTimeout(attendi,25)}else avvia();
 const prendi=n=>fetch(DB,{signal:scade(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(v=>{
