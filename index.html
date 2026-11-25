@@ -3,134 +3,173 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Il Regno</title>
+<title>Muflone</title>
 <link rel="preconnect" href="https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
 <style>
-/* Il Regno: pagina per la Fire TV Stick (Muflone, 960x540 CSS). Aspetto dalla bozza «R-sfondo-1».
-   Pulsanti alti almeno 64 px; testo almeno 12 px salvo «LIVE», 3 px sotto la scritta più piccola; niente scorrimento orizzontale.
-   Scritte: 24 logo, 17 titolo del lettore, 16 pillole, 15 nomi e pulsanti, 14 in onda, 13 programma e orari, 12 non disponibile, 9 LIVE. */
-:root{--bg:#07080b;--panel:#101217;--card:#0d0f14;--plate:#181b22;--text:#f6f7f9;--muted:#a3a6b2;
-  --red:#ff3048;--yel:#ffc531;--line:rgba(255,255,255,.10);--gut:24px}
+/* Muflone, casa «a fasce» (tavole A del 25/11). TV 960x540, pulsanti alti almeno 64 px */
+:root{--bg:#07080b;--plate:#181b22;--text:#f6f7f9;--muted:#a3a6b2;--m3:#6f7280;--red:#ff3048;--verde:#2fd06b;--yel:#ffc531;
+  --line:rgba(255,255,255,.10);--gut:24px;--film:255,48,72;--serie:224,62,126;--anime:150,112,255;--sport:255,122,51}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--text);font:16px/1.2 Roboto,system-ui,sans-serif;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font:15px/1.3 Roboto,system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 body.pl{overflow:hidden}
-/* sfondo «Luci»: aloni fermi su uno strato fisso, così non si ridisegnano mentre la pagina scorre */
-body::before{content:"";position:fixed;inset:0;z-index:-1;
-  background:radial-gradient(ellipse 70% 55% at 8% 0%,rgba(255,48,72,.22),transparent 70%),radial-gradient(ellipse 60% 50% at 100% 100%,rgba(140,20,60,.30),transparent 70%),radial-gradient(ellipse 50% 40% at 85% 10%,rgba(90,40,160,.16),transparent 70%),linear-gradient(180deg,#0b0a10,#07080b)}
-button{font:inherit;color:inherit;cursor:pointer;margin:0}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse 62% 48% at 20% -8%,rgba(255,48,72,.16),transparent 70%),
+  radial-gradient(ellipse 50% 42% at 104% 110%,rgba(140,20,60,.20),transparent 70%),linear-gradient(180deg,#0b0a10,#07080b)}
+button{font:inherit;color:inherit;cursor:pointer;margin:0;border:0;background:none;padding:0}
 a{color:inherit;text-decoration:none}
 [hidden]{display:none!important}
-:focus-visible{outline:3px solid var(--red);outline-offset:2px}
-
-/* barra alta: logo, recenti, cerca, admin */
-.top{display:flex;align-items:center;gap:14px;padding:2px var(--gut) 0;height:66px}
-.logo{font-size:24px;font-weight:900;letter-spacing:.5px;white-space:nowrap}
-.logo span{color:var(--red)}
-.recenti{display:flex;align-items:center;gap:10px;flex:1 1 0;min-width:0}
-.lbl{color:var(--muted);font-size:14px}
-.chip{height:64px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:15px;font-weight:600;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
-.chip.sito::after{content:" \2197";color:var(--muted);font-weight:400}
-.cerca{height:64px;width:140px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:14px;
-  border:1px solid rgba(255,255,255,.18);background:#0b0c10;color:var(--muted);font-size:15px;margin-left:auto}
-.ricerca{display:flex;flex:1 1 0;min-width:0;gap:10px}
-.ricerca input{flex:1 1 0;min-width:0;height:64px;padding:0 18px;border-radius:14px;border:1px solid var(--red);background:#0b0c10;
-  color:var(--text);font:inherit;font-size:17px}
-.ricerca button{flex:0 0 64px;height:64px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-size:20px}
-.admin{height:64px;padding:0 12px;display:flex;align-items:center;color:#6f7280;font-size:14px;border-radius:12px;flex:0 0 auto}
-
-/* pillole delle categorie */
-/* le pillole stanno a metà tra la barra alta e il primo gruppo (38 px sopra e sotto) */
-.cats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:38px var(--gut) 34px}
-.pill{height:64px;border-radius:999px;border:1px solid var(--line);background:#11131a;color:#e4e6eb;font-size:16px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;white-space:nowrap}
-.pill.on{background:var(--red);border-color:var(--red);color:#fff}
-/* il pallino compare solo quando stato.json ha risposto (o è mancato): finché non si sa, il posto è vuoto e il verde non si afferma */
-.stato,.sp{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
-.stato.ok{background:#2fd06b;box-shadow:0 0 0 3px rgba(47,208,107,.18)}
-.stato.ko{background:var(--yel);box-shadow:0 0 0 3px rgba(255,197,49,.18)}
-
-/* scelta del sito (categoria con più siti): strato sopra la pagina, un pulsante grande per sito */
-#scelta{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(7,8,11,.9)}
-.sc{display:flex;flex-direction:column;gap:14px;width:min(460px,100% - 48px)}
-#scLista{display:flex;flex-direction:column;gap:14px}
-.sc p{margin:0 0 4px;font-size:19px;font-weight:800}
-.sc button{height:64px;display:flex;align-items:center;padding:0 22px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-size:18px;font-weight:700}
-.sc button:hover{border-color:rgba(255,48,72,.6)}
-.sc .sito::after{content:"\2197";margin-left:auto;color:var(--muted);font-weight:400}
-
-/* gruppi e schede dei canali */
-.gruppi{padding:0 var(--gut)}
-.gruppo{padding-top:4px}
-.gruppo h2{display:flex;align-items:center;gap:10px;margin:0 0 4px;font-size:15px;line-height:24px;font-weight:800}
-.gruppo h2::before{content:"";width:4px;height:18px;background:var(--red);border-radius:2px}
-.griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:5px 10px}
-.ch{content-visibility:auto;contain-intrinsic-size:auto 210px auto 64px;height:64px;display:flex;align-items:center;gap:10px;padding:0 8px 0 4px;text-align:left;background:var(--card);
-  border:1px solid var(--line);border-radius:14px;min-width:0}
-/* le schede fuori schermo non si disegnano (content-visibility); la misura è quella vera della scheda, così la pagina non salta */
-/* targa: il logo, o la sigla se manca */
-.plate{flex:0 0 auto;width:58px;height:54px;border-radius:10px;background:var(--plate);display:flex;align-items:center;
-  justify-content:center;font-weight:900;color:#fff;letter-spacing:-.3px;line-height:1}
+:focus{outline:none}
+:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#modal :focus-visible{outline-color:var(--red);outline-offset:2px}
+svg.s{fill:none;stroke:currentColor;stroke-width:4.2;stroke-linecap:round;stroke-linejoin:round;display:block}
+.top{height:80px;display:flex;align-items:center;padding:0 28px 0 32px}
+.marchio{margin-right:auto}
+.marchio svg{height:26px;width:auto;display:block}
+.marchio .m{fill:var(--red)}.marchio .resto{fill:#fff}
+#ora{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tasto{height:64px;display:flex;align-items:center;gap:8px;margin-left:14px;padding:0 18px 0 14px;border-radius:32px;background:rgba(255,255,255,.07);font-size:14px;font-weight:500}
+.tasto svg{width:17px;height:17px;stroke-width:5}
+.ricerca{display:flex;flex:1 1 0;min-width:0;gap:10px;margin-left:14px}
+.ricerca input{flex:1 1 0;min-width:0;height:64px;padding:0 18px;border-radius:14px;border:1px solid var(--red);background:#0b0c10;color:var(--text);font:inherit;font-size:17px}
+.ricerca button{flex:0 0 64px;height:64px;border-radius:14px;background:rgba(255,255,255,.07);font-size:20px}
+body.cerco #palco,body.cerco #porte,body.cerco #ora,body.cerco #crlink{display:none}
+.palco{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;height:224px;margin:0 32px}
+.palco.solo{grid-template-columns:minmax(0,1fr)}
+.eroe{position:relative;border-radius:14px 52px 14px 14px;overflow:hidden;background:#0c0d12;min-width:0}
+.eroe .quadro,.eroe .targa{position:absolute;right:0;top:0;width:100%;height:100%}
+.eroe .quadro{object-fit:cover;object-position:50% 28%}
+.velo{position:absolute;inset:0;background:linear-gradient(0deg,#0c0d12 0,rgba(12,13,18,.92) 38%,rgba(12,13,18,.35) 70%,rgba(12,13,18,.05) 100%),linear-gradient(90deg,rgba(12,13,18,.55),rgba(12,13,18,0) 60%)}
+.solo .eroe .quadro,.solo .eroe .targa{width:76%}
+.solo .velo{background:linear-gradient(90deg,#0c0d12 0,#0c0d12 26%,rgba(12,13,18,.85) 40%,rgba(12,13,18,.2) 66%,rgba(12,13,18,0) 84%)}
+.eroe .testo{position:absolute;left:22px;bottom:14px;right:18px;max-width:420px}
+.occhiello{font-size:12px;font-weight:700;letter-spacing:.11em;color:var(--red);text-transform:uppercase}
+.eroe h1{font-size:23px;line-height:1.14;font-weight:800;margin:5px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.eroe h1.lungo{font-size:19px}
+.meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px;color:var(--muted);min-width:0}
+.meta>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.meta b{color:var(--text);font-weight:600}
+.punt,.ver{flex:none;font-size:12px;font-weight:700;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.punt{color:#fff;background:rgba(var(--t),.42)}
+.ver{color:#0b0c10;background:#f3d27a}
+.linea{height:4px;border-radius:2px;background:rgba(255,255,255,.17);margin-top:10px;overflow:hidden}
+.linea i{display:block;height:100%;background:var(--red)}
+.azioni{display:flex;gap:12px;margin-top:12px}
+.bott{height:64px;padding:0 22px 0 18px;border-radius:32px;font-weight:600;display:inline-flex;align-items:center;gap:10px;white-space:nowrap}
+.bott svg{width:17px;height:17px}
+.bott.primo{background:#e0263d;color:#fff}
+.bott.primo:focus-visible{background:#fff;color:#0b0c10}
+.bott.secondo{background:rgba(255,255,255,.11);font-weight:500}
+.lista{display:flex;gap:12px}
+.voce{position:relative;display:flex;flex-direction:column;width:164px;height:100%;border-radius:12px;background:rgba(255,255,255,.055);overflow:hidden;text-align:left}
+.lista.n1 .voce{width:220px}.lista.n2 .voce{width:184px}
+.mini{flex:0 0 92px;position:relative;background:#15171e}
+.mini img,.mini .targa{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
+.gioca{position:absolute;left:8px;bottom:8px;width:28px;height:28px;border-radius:14px;background:rgba(7,8,11,.78);display:grid;place-items:center}
+.gioca svg{width:12px;height:12px;margin-left:2px}
+.voce .t{min-width:0;flex:1;padding:8px 10px 12px;display:flex;flex-direction:column;gap:3px}
+.sopra{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.voce b{font-size:15px;line-height:1.2;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.voce .meta{font-size:12px;margin-top:auto;gap:6px;flex-wrap:wrap}
+.voce .linea{position:absolute;left:0;right:0;bottom:0;margin:0;border-radius:0;background:rgba(255,255,255,.10)}
+.voce:focus-visible{background:rgba(255,255,255,.18)}
+.targa{background:linear-gradient(135deg,rgba(var(--t),.62),rgba(var(--t),.16) 72%),#14161d;display:grid;place-items:center;color:rgba(255,255,255,.92)}
+.targa svg{width:30px;height:30px;stroke-width:3.4}
+.eroe .targa{place-items:center end;padding-right:12%}
+.eroe .targa svg{width:120px;height:120px;opacity:.5;stroke-width:3}
+.palco:not(.solo) .eroe .targa svg:not(.op){display:none}
+.targa svg.op{opacity:1;stroke:none}
+.porte{display:grid;gap:12px;height:150px;margin:16px 32px 0}
+.porta{position:relative;isolation:isolate;border-radius:14px 46px 14px 14px;padding:14px 14px 12px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;border:2px solid transparent;
+  background:linear-gradient(158deg,rgba(var(--t),.34) 0%,rgba(var(--t),.12) 44%,rgba(255,255,255,.03) 100%) padding-box,#0e1015 padding-box}
+button.porta:focus-visible{background:linear-gradient(158deg,rgba(var(--t),.55),rgba(var(--t),.22) 70%) padding-box,#0e1015 padding-box}
+.segno{width:44px;height:44px;color:rgb(var(--t))}
+.piede{display:flex;align-items:flex-end;justify-content:space-between;gap:6px}
+.pn{display:block;font-size:17px;font-weight:700}
+.apri{width:18px;height:18px;flex:none;color:var(--muted);stroke-width:5;margin-bottom:2px}
+.punto{display:none;position:absolute;top:14px;right:18px;width:8px;height:8px;border-radius:4px;background:var(--verde)}
+.ok>.punto,.ko>.punto{display:block}
+.ko>.punto{background:var(--yel)}
+.porta.ko,.sito.ko{box-shadow:inset 0 0 0 1px rgba(255,197,49,.55)}
+.giu{display:none;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--yel);margin-top:2px;white-space:nowrap}
+.ko .giu{display:flex}
+.giu svg{width:13px;height:13px;flex:none;stroke-width:5}
+.porta.larga{padding:12px;display:grid;grid-template-rows:auto 1fr;gap:10px;justify-content:normal}
+.capo{display:flex;align-items:center;gap:11px}
+.capo .segno{width:40px;height:40px;flex:none}
+.siti{display:grid;gap:12px;align-self:end}
+.sito{position:relative;height:64px;border-radius:12px;background:rgba(255,255,255,.085);font-weight:600;font-size:13px;line-height:1.18;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 4px}
+.sito:focus-visible{background:rgba(255,255,255,.2)}
+.sito .punto{top:7px;right:8px;width:7px;height:7px}
+.sito .apri{position:absolute;right:6px;bottom:6px;width:13px;height:13px;margin:0}
+.ko.sito .giu{display:block;white-space:normal;line-height:1.15}
+.sito .giu svg{display:inline-block;vertical-align:-2px;margin-right:3px}
+.porta:hover,.sito:hover,.voce:hover,.ch:hover,.bott:hover,.tasto:hover{box-shadow:0 0 0 2px rgba(255,48,72,.6)}
+.porta.ko:hover,.sito.ko:hover,.ch.off:hover{box-shadow:0 0 0 2px var(--yel)}
+.admin:hover{color:#c9ccd4}
+.tvz{margin:24px 32px 0}
+.titolo{display:flex;align-items:baseline;gap:10px;height:22px;margin-bottom:8px}
+.titolo h2{font-size:15px;font-weight:700;margin:0;padding-left:12px;position:relative}
+.titolo h2:before{content:"";position:absolute;left:0;top:2px;width:4px;height:15px;border-radius:2px;background:var(--red)}
+.titolo span{font-size:12px;color:var(--m3)}
+.tvz>.titolo{height:26px;margin-bottom:4px}
+.tvz>.titolo h2{font-size:19px}
+.tvz>.titolo h2:before{top:3px;height:19px}
+.gruppo{margin-top:20px}
+.tvz>.gruppo:first-of-type{margin-top:10px}
+.griglia{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ch{content-visibility:auto;contain-intrinsic-size:auto 210px auto 64px;display:flex;align-items:center;gap:11px;height:64px;border-radius:14px;background:rgba(255,255,255,.04);
+  border:1px solid transparent;padding:0 10px 0 5px;min-width:0;width:100%;text-align:left}
+.ch:focus-visible{background:rgba(255,255,255,.16)}
+.tasto:focus-visible{background:rgba(255,255,255,.18)}
+.plate{flex:0 0 58px;height:54px;border-radius:10px;background:var(--plate);display:flex;align-items:center;justify-content:center;font-weight:900;color:#c9ccd6;letter-spacing:-.3px;line-height:1}
 .plate.s1{font-size:28px}.plate.s3{font-size:20px}.plate.s4{font-size:17px}.plate.s5{font-size:16px;letter-spacing:-.6px}
 .plate img{display:none;width:50px;height:46px;object-fit:contain}
 .plate.ok img{display:block}
 .info{display:flex;flex-direction:column;min-width:0;line-height:1.15}
-/* il nome del canale sta sempre intero su una riga */
 .info b,.live{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.info b{font-size:15px;font-weight:700}
+.info b{font-size:15px;font-weight:600}
 .live{font-size:12px;font-weight:600;color:var(--red)}
-.ch:not(.off) .live{font-size:9px;letter-spacing:.4px}
-/* programma in onda: al massimo due righe, poi «…» (scelta di Lorenzo, 18/10, per i titoli lunghi) */
+.ch:not(.off) .live{font-size:9px;letter-spacing:.05em}
 .prog{font-size:13px;color:var(--muted);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
 .prog:empty{display:none}
-/* canale segnalato come non funzionante: scheda gialla, ma si può cliccare lo stesso */
-.ch.off{background:transparent;border-style:dashed;border-color:rgba(255,197,49,.5)}
+.ch.off{background:transparent;border:1px dashed rgba(255,197,49,.5)}
 .ch.off .plate{background:#121318;color:#8a7a4a}
 .ch.off b{color:#c9c2a8}
 .ch.off .live{color:var(--yel)}
-.sk{height:64px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
-.msg{padding:12px var(--gut);font-size:16px;color:var(--muted)}
-.fondo{display:flex;flex-wrap:wrap;justify-content:center;padding:8px 0 24px}
-.su{height:64px;padding:0 26px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:15px;font-weight:600}
-.chip:hover,.pill:hover,.ch:hover,.su:hover,.cerca:hover{border-color:rgba(255,48,72,.6)}
-.ch.off:hover{border-color:var(--yel)}
-.admin:hover{color:#c9ccd4}
-
-/* lettore: strato a tutto schermo, senza angoli arrotondati né ritagli attorno al video.
-   --margine-lato: scritte e comandi dai lati (foro della fotocamera del telefono, 36,6 px, più respiro); da regolare sul telefono */
-#modal{--margine-lato:48px;display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:9999}
+.sk{height:64px;border-radius:14px;background:rgba(255,255,255,.04)}
+.msg{padding:12px 0;font-size:16px;color:var(--muted)}
+#avviso{padding:0 32px 8px}
+.fondo{display:flex;align-items:center;justify-content:center;gap:18px;margin:28px 32px 30px}
+.fondo .bott.secondo{background:rgba(255,255,255,.07)}
+.admin{height:64px;padding:0 16px;font-size:14px;color:var(--m3);display:inline-flex;align-items:center;border-radius:32px}
+body.vuota .porte{height:236px;margin-top:8px}
+body.vuota .porta .segno{width:64px;height:64px}
+body.vuota .capo .segno{width:52px;height:52px}
+body.vuota .sito{height:96px}
+#modal{--margine-lato:48px;display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:9999;font-size:16px;line-height:1.2}
 #modal.open{display:block}
-/* lettore aperto: nella finestrella del telefono la pagina più larga farebbe rimpicciolire tutto, video in un angolo */
 html.pl,html.pl body{overflow-x:hidden}
 #video{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;object-fit:contain}
 .barra{position:absolute;top:0;left:0;right:0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px var(--margine-lato);pointer-events:none}
 .nome{flex:1 1 0;min-width:0;padding-top:4px}
 .barra strong{font-size:17px;font-weight:700;text-shadow:0 2px 6px #000}
-/* in onda ora (R16): riga sotto il nome, senza riquadro, e barretta di avanzamento; spariscono con la barra */
 #inonda{margin-top:3px;font-size:14px;font-weight:500;color:rgba(255,255,255,.8);text-shadow:0 0 4px #000,0 2px 6px #000;white-space:pre;overflow:hidden;text-overflow:ellipsis}
 #avanza{width:200px;max-width:100%;height:3px;margin-top:8px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
 #avanza i{display:block;height:100%;width:0;background:var(--red)}
-/* titolo, X e comandi spariscono come il puntatore di Muflone (3 s senza movimento) con la sola opacità: l'elemento resta nella pagina,
-   perché Indietro di Muflone esegue closePlayer.click() anche a controlli nascosti; nascosti non prendono i clic.
-   Il pannello d'errore non si nasconde mai, e con lui restano i controlli. */
 .barra,.cmd,#tempo,#audioScelte{transition:opacity .2s}
 #modal.nasc:not(.errore) .barra,#modal.nasc:not(.errore) .cmd,#modal.nasc:not(.errore) #tempo,#modal.nasc:not(.errore) #audioScelte{opacity:0}
 #modal.nasc:not(.errore) #closePlayer,#modal.nasc:not(.errore) .cmd,#modal.nasc:not(.errore) #linea{pointer-events:none}
-/* in pausa «In diretta» non sparisce con gli altri comandi */
 #modal.nasc.inpausa:not(.errore) #diretta{opacity:1;pointer-events:auto}
 #closePlayer{flex:none;pointer-events:auto;width:64px;height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);font-size:22px}
 /* lettore aperto: niente si ridisegna dietro (sulla chiavetta il ridisegno sotto il video fa fermare hls.js) */
 body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 .cmd{flex:none;max-width:100%;height:64px;padding:0 20px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);
   font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:auto}
-/* «Audio: …» prima della X, la scelta sotto */
 #audio{min-width:0;flex:0 1 auto}
 #audioScelte{position:absolute;top:80px;right:var(--margine-lato);z-index:3;display:flex;flex-direction:column;gap:6px;padding:6px;min-width:250px;border-radius:20px;border:1px solid var(--line);background:rgba(12,13,18,.94)}
 #audioScelte .cmd{display:flex;align-items:center;gap:12px;border-color:transparent;background:transparent;text-align:left}
 #audioScelte .cmd::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
 #audioScelte [aria-pressed=true]::before{background:var(--red);border-color:var(--red)}
-/* in basso: linea del tempo e comandi; i clic passano al video salvo sui comandi */
 #basso{position:absolute;left:var(--margine-lato);right:var(--margine-lato);bottom:var(--gut);z-index:2;display:flex;flex-direction:column;pointer-events:none}
 .riga{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
 #pausa{width:64px;padding:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);border-color:transparent;color:#07080b}
@@ -138,7 +177,6 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 #modal:not(.inpausa) #pausa .i-riprendi,#modal.inpausa #pausa .i-pausa{display:none}
 .tondo{min-width:64px;padding:0 14px}
 #diretta{margin-left:auto;background:var(--red);border-color:var(--red)}
-/* V5: linea del programma; tutta la linea (64 px) prende il clic */
 #tempo{display:flex;align-items:center;gap:14px;margin-bottom:6px}
 #lineaInizio,#lineaFine,#ritardo{flex:none;font-size:13px;font-weight:600;text-shadow:0 0 4px #000,0 2px 6px #000}
 #linea{position:relative;flex:1 1 0;min-width:0;height:64px;cursor:pointer;pointer-events:auto}
@@ -150,12 +188,10 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 .binario #punto{top:-7px;width:19px;height:19px;margin-left:-9.5px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.6)}
 #ritardo{position:absolute;top:10px;transform:translateX(-50%);white-space:nowrap}
 #ritardo.vivo{color:#ff6b7c}
-/* «In pausa» e «Riconnessione…» al centro del video, senza prendere i clic */
 #inpausa,#riconnessione,#lenta{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:10px 24px;border-radius:999px;background:rgba(0,0,0,.6);
   font-size:20px;font-weight:700;white-space:nowrap;pointer-events:none}
 #riconnessione,#lenta{font-size:16px;font-weight:600}
-#err{display:none;position:absolute;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:24px;
-  background:#000;text-align:center;padding:0 var(--gut)}
+#err{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#000;text-align:center;padding:0 var(--gut)}
 #modal.errore #err{display:flex}
 #modal.errore #video{visibility:hidden}
 #err p{margin:0;font-size:22px;font-weight:700}
@@ -166,44 +202,116 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 #err div{display:flex;gap:16px}
 #err button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:17px;font-weight:700}
 #err #riprova{background:var(--red);border-color:var(--red)}
-
-/* schermi stretti (telefono): le righe vanno a capo */
 @media(max-width:700px){
-  .top{height:auto;flex-wrap:wrap;padding-top:8px}
-  .recenti{flex:1 1 100%;order:3;flex-wrap:wrap}
-  .cats{grid-template-columns:repeat(6,1fr)}
-  .pill{grid-column:span 2}.pill:nth-child(n+4){grid-column:span 3}
+  .top{height:60px;padding:0 12px 0 16px}
+  .marchio svg{height:22px}
+  #ora{display:none}
+  .tasto{height:56px;min-width:56px;margin-left:8px;padding:0 14px;justify-content:center}
+  #crlink span,#cerca span{display:none}#crlink{padding:0}
+  .ricerca input,.ricerca button{height:56px}
+  .palco,.palco.solo{display:block;height:auto;margin:2px 16px 0}
+  .eroe{height:256px;border-radius:14px 48px 14px 14px}
+  .eroe .quadro,.eroe .targa,.solo .eroe .quadro,.solo .eroe .targa{width:100%;height:58%}
+  .eroe .targa{place-items:center;padding:0}
+  .eroe .targa svg{width:64px;height:64px}
+  .velo,.solo .velo{background:linear-gradient(0deg,#0c0d12 0,#0c0d12 42%,rgba(12,13,18,.9) 53%,rgba(12,13,18,.5) 66%,rgba(12,13,18,0) 86%)}
+  .eroe .testo{left:16px;right:16px}
+  .eroe h1{font-size:22px}
+  .azioni .bott{flex:1;justify-content:center;padding:0 10px}
+  .lista{margin-top:10px}
+  .voce:nth-child(n+2){display:none}
+  .porte,body.vuota .porte{grid-template-columns:repeat(3,minmax(0,1fr))!important;height:auto;margin:16px 16px 0}
+  .ko .giu{display:block;white-space:normal;line-height:1.15}.giu svg{display:inline-block;vertical-align:-2px;margin-right:3px}
+  .ko.porta .segno{width:24px;height:24px}.piede .apri{position:absolute;right:10px;top:12px}.porta>.punto{right:36px;top:17px}
+  .porta{height:104px;padding:12px 10px 10px 12px}
+  .porta .segno{width:36px;height:36px}
+  .pn{font-size:16px}
+  body.vuota .porta{height:120px}
+  .porta.larga,body.vuota .porta.larga{grid-column:1/-1;height:auto}
+  body.vuota .sito{height:64px}
+  .tvz{margin:24px 16px 0}
+  #avviso{padding:0 16px 8px}
+  .griglia{grid-template-columns:1fr}
+  .fondo{margin:24px 16px 28px}
   .cmd{padding:0 14px}
   .riga{gap:8px}
+}
+@media(max-height:450px) and (min-width:701px){
+  .top{height:52px;padding:0 20px 0 24px}
+  .marchio svg{height:20px}
+  .tasto{height:52px}
+  .palco{height:150px;grid-template-columns:minmax(0,1fr) 300px;margin:0 24px}
+  .eroe .testo{bottom:10px;left:18px}
+  .occhiello{display:none}
+  .eroe h1,.eroe h1.lungo{font-size:19px;-webkit-line-clamp:1;margin:0}
+  .meta{margin-top:3px}
+  .linea{margin-top:7px}
+  .azioni{margin-top:9px}
+  .eroe .targa svg{width:72px;height:72px}
+  .palco .lista{flex-direction:column;width:300px}
+  .voce:nth-child(n+2){display:none}
+  .porte,body.vuota .porte{height:92px;margin:12px 24px 0}
+  .porta{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;padding:0 12px}
+  .porta .segno,body.vuota .porta .segno{width:32px;height:32px;flex:none}
+  .piede{flex:1;align-items:center}
+  .porta.larga{display:flex;padding:0 10px 0 12px}
+  .capo{flex-direction:column;gap:2px;flex:none}
+  .capo .pn{font-size:14px}
+  .capo .segno,body.vuota .capo .segno{width:28px;height:28px}
+  .siti{flex:1;align-self:center}
+  .sito,body.vuota .sito{height:64px}
+  .porta .pn{font-size:15px;line-height:1.15}
+  .tvz{margin:20px 24px 0}
+  .griglia{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .fondo{margin:24px}
+  .palco .voce{flex:1;min-height:0}
+  .voce .t{justify-content:center}
+  .porte.molti{height:auto}
+  .molti .porta{min-height:92px}
+  .molti .siti.n4{padding:8px 0}
+}
+@media(max-width:700px),(max-height:450px){
+  .voce{flex-direction:row;width:100%!important;height:auto}
+  .mini{flex:0 0 114px;height:auto}
+  .voce .t{padding:8px 12px 10px}
+  .voce .meta{margin-top:4px}
+  .gioca{left:6px;bottom:6px}
+  .molti .siti.n4{grid-template-columns:1fr 1fr!important}
 }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="s-film" viewBox="0 0 48 48"><circle cx="21.5" cy="22" r="15"/><path d="M21.5 37H43"/><circle cx="21.5" cy="13.6" r="2.7" fill="currentColor" stroke="none"/><circle cx="14.2" cy="26.2" r="2.7" fill="currentColor" stroke="none"/><circle cx="28.8" cy="26.2" r="2.7" fill="currentColor" stroke="none"/></symbol>
+<symbol id="s-serie" viewBox="0 0 48 48"><path d="M16 8.5H32M11 15H37"/><path d="M10 21.5h28a4 4 0 0 1 4 4v11a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4v-11a4 4 0 0 1 4-4z"/><path fill="currentColor" stroke="none" d="M20 25.6l10 5.4-10 5.4z"/></symbol>
+<symbol id="s-anime" viewBox="0 0 48 48"><path d="M5 11.5Q24 17.5 43 11.5"/><path d="M10.5 23.5H37.5M15.5 16V42M32.5 16V42"/></symbol>
+<symbol id="s-sport" viewBox="0 0 48 48"><circle cx="24" cy="24" r="16.5"/><path d="M12.6 12.6Q22.5 24 12.6 35.4M35.4 12.6Q25.5 24 35.4 35.4"/></symbol>
+<symbol id="s-cerca" viewBox="0 0 48 48"><circle cx="21" cy="21" r="12"/><path d="M30.5 30.5L42 42"/></symbol>
+<symbol id="s-storia" viewBox="0 0 48 48"><path d="M10.5 13.5A17 17 0 1 1 7.6 28"/><path d="M9 4.5v9.5h9.5M24 14.5V25l7 4.5"/></symbol>
+<symbol id="s-play" viewBox="0 0 48 48"><path fill="currentColor" stroke="none" d="M13 6.5L41 24L13 41.5z"/></symbol>
+<symbol id="s-capo" viewBox="0 0 48 48"><path d="M13.5 14A16 16 0 1 1 8.4 26"/><path d="M12 4.5V15h10.5"/></symbol>
+<symbol id="s-su" viewBox="0 0 48 48"><path d="M10 31L24 17L38 31"/></symbol>
+<symbol id="s-apri" viewBox="0 0 48 48"><path d="M14 34L34 14M18 13h17v17"/></symbol>
+<symbol id="s-avviso" viewBox="0 0 48 48"><path d="M24 7L44 41H4z"/><path d="M24 20v9M24 35v.5"/></symbol>
+<symbol id="s-op" viewBox="0 0 48 48"><path d="M7 43L41 33M7 33l34 10" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round"/><g stroke="none"><path d="M13 31a11 11 0 1 1 22 0v4h-4v5H17v-5h-4z" fill="#f4f1e8"/><circle cx="19.5" cy="31" r="3" fill="#15161c"/><circle cx="28.5" cy="31" r="3" fill="#15161c"/><ellipse cx="24" cy="20" rx="21" ry="4.5" fill="#e9c46a"/><path d="M13 19q0-13 11-13t11 13z" fill="#e9c46a"/><path d="M13.3 15h21.4v3.4H13.3z" fill="#d62828"/></g></symbol>
+<symbol id="s-m" viewBox="19 27 70 55"><path d="M53.6,52.7 53.2,49.2 52.5,45.8 51.5,42.6 49.4,38.1 47.1,34.9 44.8,32.6 42.9,31.2 39.4,29.5 37,28.9 34.5,28.6 31.6,28.9 29,29.7 27.2,30.6 24.7,32.6 23.1,34.6 22.2,36.2 21.2,39.2 20.9,41 20.9,43.5 21.3,46.1 22.1,48.5 23.3,50.7 24,51.7 26.1,53.7 28.1,54.9 30.1,55.7 32.8,56.1 35.5,55.7 36.6,55.3 38.1,54.4 39.4,53.2 40.5,51.5 41,49.6 41,48.2 40.7,47.1 39.7,45.3 37.6,43.9 35.5,43.7 33.8,44.2 33.3,44.7 33.2,46 33.9,47.1 34.6,47.3 36.2,47.2 36.7,47.6 36.9,49 36,50.4 34.3,51.2 32.7,51.3 31,50.8 29.1,49.5 27.6,47.5 27.1,46.5 26.6,44.5 26.6,42.1 27,40.2 28.2,38 29.8,36.4 31,35.8 33.1,35.3 34.7,35.3 36.1,35.6 37.9,36.3 39.8,37.6 41.2,39 43,41.7 44.1,44.4 45,47.6 45.6,53.3Z"/><path d="M54.4,52.7 54.8,49.2 55.5,45.8 56.5,42.6 58.6,38.1 60.9,34.9 63.2,32.6 65.8,30.8 68.7,29.5 71,28.9 73.5,28.6 76.4,28.9 79,29.7 80.8,30.6 83.3,32.6 85.8,36.2 86.8,39.2 87.1,41 87,44.8 86.1,48 85,50.2 84,51.7 81.9,53.7 80,54.9 77.9,55.7 75.2,56.1 72.5,55.7 71.4,55.3 69.9,54.4 68.6,53.2 67.5,51.5 67,49.6 67,48.2 67.3,47.1 68.3,45.3 70.3,43.9 72.5,43.7 74.2,44.2 74.7,44.7 74.8,46 74.1,47.1 73.4,47.3 71.8,47.2 71.3,47.6 71.1,48.9 72,50.4 73.7,51.2 75.3,51.3 77,50.8 78.7,49.7 80.4,47.5 80.9,46.5 81.4,44.5 81.5,42.9 81,40.2 79.8,38 78.2,36.4 77,35.8 74.9,35.3 73.3,35.3 71.9,35.6 70.1,36.3 68.2,37.6 66.8,39 65,41.7 63.9,44.4 63,47.6 62.4,53.3Z"/><path d="M35,56 C36.4,53.4 38.2,51.6 40,51.4 Q42.6,51.2 42.6,54.4 L42.6,80 L35,80 Z"/><path d="M73,56 C71.6,53.4 69.8,51.6 68,51.4 Q65.4,51.2 65.4,54.4 L65.4,80 L73,80 Z"/><path d="M45.6,48.5 Q54,44 62.4,48.5 L62.4,53 C62.4,62 60.9,70.5 58.6,77 C57.7,79.8 50.3,79.8 49.4,77 C47.1,70.5 45.6,62 45.6,53 Z M47.9,57.4 a2,2.2 0 1,0 4,0 a2,2.2 0 1,0 -4,0 Z M56.1,57.4 a2,2.2 0 1,0 4,0 a2,2.2 0 1,0 -4,0 Z " fill-rule="evenodd"/></symbol>
+</defs></svg>
+
 <header class="top">
-  <div class="logo">IL <span>REGNO</span></div>
-  <nav class="recenti" id="recenti" aria-label="Aperti di recente" hidden></nav>
-  <button class="cerca" id="cerca">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff3048" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
-    Cerca
-  </button>
+  <div class="marchio" role="img" aria-label="Muflone"><svg viewBox="19 27 240.5 55"><use class="m" href="#s-m" x="19" y="27" width="70" height="55"/><g class="resto"><path d="M89,46 L96.6,46 L96.6,66.7 A5.7,5.7 0 0 0 107.9,66.7 L107.9,46 L115.5,46 L115.5,66.7 A13.3,13.3 0 0 1 89,66.7 Z" fill-rule="evenodd"/><path d="M120.1,46 L141.2,46 L141.2,53 L127.7,53 L127.7,58.7 L139.1,58.7 L139.1,65.7 L127.7,65.7 L127.7,80 L120.1,80 Z" fill-rule="evenodd"/><path d="M145.8,46 L153.4,46 L153.4,73 L166.2,73 L166.2,80 L145.8,80 Z" fill-rule="evenodd"/><path d="M185.4,46 L185.4,46 A14.6,14.6 0 0 1 200,60.6 L200,65.4 A14.6,14.6 0 0 1 185.4,80 L185.4,80 A14.6,14.6 0 0 1 170.8,65.4 L170.8,60.6 A14.6,14.6 0 0 1 185.4,46 Z M185.4,53.6 L185.4,53.6 A7,7 0 0 1 192.4,60.6 L192.4,65.4 A7,7 0 0 1 185.4,72.4 L185.4,72.4 A7,7 0 0 1 178.4,65.4 L178.4,60.6 A7,7 0 0 1 185.4,53.6 Z" fill-rule="evenodd"/><path d="M204.6,80 L204.6,46 L212.6,46 L224.2,65.7 L224.2,46 L231.8,46 L231.8,80 L223.9,80 L212.2,60.3 L212.2,80 Z" fill-rule="evenodd"/><path d="M236.4,46 L257.5,46 L257.5,53 L244,53 L244,58.7 L255.4,58.7 L255.4,65.7 L244,65.7 L244,73 L257.5,73 L257.5,80 L236.4,80 Z" fill-rule="evenodd"/></g></svg></div>
+  <div id="ora"></div>
+  <button class="tasto cerca" id="cerca" aria-label="Cerca un canale"><svg class="s" viewBox="0 0 48 48"><use href="#s-cerca"/></svg><span>Cerca un canale</span></button>
   <div class="ricerca" id="ricerca" hidden>
     <input id="q" type="text" placeholder="Cerca un canale" autocomplete="off" enterkeyhint="search" aria-label="Cerca un canale">
     <button id="chiudiRicerca" aria-label="Esci dalla ricerca">&#10005;</button>
   </div>
+  <button class="tasto" id="crlink" aria-label="Cronologia" hidden><svg class="s" viewBox="0 0 48 48"><use href="#s-storia"/></svg><span>Cronologia</span></button>
 </header>
 
-<nav class="cats" aria-label="Categorie">
-  <button class="pill on" id="live">Live TV</button>
-  <button class="pill" data-sito="film"><i class="sp"></i>Film</button>
-  <button class="pill" data-sito="serie"><i class="sp"></i>Serie TV</button>
-  <button class="pill" data-sito="sport"><i class="sp"></i>Sport</button>
-  <button class="pill" data-sito="anime"><i class="sp"></i>Anime</button>
-</nav>
-
-<div id="scelta" hidden role="dialog" aria-label="Scegli il sito"><div class="sc"><p id="scTit">Scegli il sito</p><div id="scLista"></div><button id="scChiudi">Chiudi</button></div></div>
 <div class="msg" id="avviso" hidden></div>
-<main class="gruppi" id="gruppi"><section class="gruppo"><div class="griglia"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div></section></main>
-<div class="fondo"><button class="su" id="su">&#8593; Torna in cima</button><a class="admin" href="admin.html">Admin</a></div>
+<!-- ciò che si preme sta in #gruppi con data-t e data-i: le frecce di Muflone (pagina.js) accendono il primo e lo ritrovano -->
+<main id="gruppi"><i id="palco" hidden></i><nav class="porte" id="porte" hidden></nav><section class="tvz" id="tv"><div class="griglia"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div></section></main>
+<div class="fondo"><button class="bott secondo" id="su"><svg class="s" viewBox="0 0 48 48"><use href="#s-su"/></svg>Torna in cima</button><a class="admin" href="admin.html">Admin</a></div>
 
 <div id="modal">
   <video id="video" playsinline></video>
@@ -222,13 +330,12 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 </div>
 
 <script>
-// Dati: una sola richiesta REST a Firebase; l'ultima copia buona resta sul dispositivo e si disegna subito.
+// Dati: una richiesta REST a Firebase; l'ultima copia buona resta sul dispositivo e si disegna subito
 const DB="https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app/v2.json";
 const $=s=>document.querySelector(s);
 const MESI="gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre".split(" ");
 const arr=x=>Array.isArray(x)?x.filter(Boolean):x?Object.values(x):[];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-// le WebView vecchie (Android 11 non aggiornato) non hanno AbortSignal.timeout
 const scade=ms=>{
   if(AbortSignal.timeout)return AbortSignal.timeout(ms);
   const c=new AbortController(); setTimeout(()=>c.abort(),ms); return c.signal;
@@ -239,20 +346,17 @@ const mem={
 };
 let D=null, STATO={}, ST={}, GUIDA={}, secondari=false, statoNoto=false;
 
-// ---------- copia sul dispositivo ----------
 function leggiCache(){
   try{
     const o=JSON.parse(mem.get("ilregno.v2")), v=o.canali?o:Object.values(o).find(x=>x&&x.canali);
-    const d=new Date(o.d||o.data||o.ts||o.date||0);   // forma scritta da salvaCache; il resto per tolleranza
+    const d=new Date(o.d||o.data||o.ts||o.date||0);
     return v?{v,d:isNaN(d)?null:d}:null;
   }catch(e){return null}
 }
 const salvaCache=v=>mem.set("ilregno.v2",JSON.stringify({d:new Date().toISOString(),v}));
 
-// ---------- programma in onda (guida), adesso o all'ora n ----------
 function programma(c,n=Date.now()){
   const l=arr(GUIDA.canali&&GUIDA.canali[c.epg||c.id]);
-  // le voci possono sovrapporsi (21:20 inizia prima che finisca il programma delle 20:39): in onda è quella partita per ultima
   let ora;
   l.forEach(p=>{
     const i=Date.parse(p.i), f=Date.parse(p.f);
@@ -261,56 +365,155 @@ function programma(c,n=Date.now()){
   return ora;
 }
 
-// ---------- disegno ----------
+// palco: Muflone.continua() è sincrono, il palco è già nella prima schermata e niente scende dopo. Dati di Muflone solo con esc() (cronologia.md K1)
+const B=window.Muflone, htt=u=>typeof u==="string"&&/^https?:\/\/[^\s/]+/i.test(u), num=x=>typeof x==="number"&&isFinite(x);
+const MONDI={film:["Film","s-film"],serie:["Serie TV","s-serie"],sport:["Sport","s-sport"],anime:["Anime","s-anime"]};
+const segno=(id,cl)=>`<svg class="s ${cl||""}" viewBox="0 0 48 48"><use href="#${id}"/></svg>`;
+const host=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return""}};
+const lettere=s=>String(s).toLowerCase().replace(/[^a-z]/g,"");
+let STORIA=[], VISTI=0;
+function leggiStoria(){
+  STORIA=[]; VISTI=0;
+  if(!B||typeof B.continua!=="function")return;
+  try{const l=JSON.parse(B.continua()); if(Array.isArray(l))STORIA=l.filter(e=>e&&htt(e.pagina)&&typeof e.titolo==="string"&&num(e.secondi)&&num(e.durata)&&e.durata>0).slice(0,4)}catch(e){}
+  if(!STORIA.length&&typeof B.cronologia==="function")try{VISTI=JSON.parse(B.cronologia()).length||0}catch(e){}
+}
+// da quale porta viene: sito con lo stesso indirizzo o col nome nell'indirizzo
+function mondo(e){
+  const h=host(e.pagina), k=lettere(h), ep=/[?&]e=\d/.test(e.pagina);
+  const s=D&&D.siti.find(x=>host(x.url)===h&&!(ep&&(x.pillola||x.id)==="film"))||D&&D.siti.find(x=>k.includes(lettere(x.nome))&&lettere(x.nome).length>3);
+  let c=s?s.pillola||s.id:/anime|onepace/.test(k)?"anime":ep?"serie":"film";
+  if(!MONDI[c])c="film";
+  return{c,dove:s&&sitiDi(c).length>1?s.nome:MONDI[c][0]};
+}
+// parti di un titolo: sopra (serie, saga), ciò che lo distingue (puntata, seguito), la versione fra parentesi
+function parti(e,dove){
+  let t=e.titolo.trim()||dove, ver="", p="";
+  try{const q=new URL(e.pagina).searchParams, s=q.get("s"), n=q.get("e"); if(/^\d{1,3}$/.test(s)&&/^\d{1,3}$/.test(n))p=`S${+s} E${+n}`}catch(x){}
+  const m=/\s*\(([^)]+)\)\s*$/.exec(t);
+  if(m){ver=m[1].charAt(0).toUpperCase()+m[1].slice(1); t=t.slice(0,m.index)}
+  const d=/ · /.exec(t);
+  if(!p&&d){p=t.slice(d.index+3); t=t.slice(0,d.index)}
+  if(p)return{sopra:t,nome:p,ver,t,p};
+  const s=/\s[-–]\s|:\s/.exec(t);
+  return s?{sopra:t.slice(0,s.index),nome:t.slice(s.index+s[0].length),ver,t}:{sopra:dove,nome:t,ver,t};
+}
+const due=n=>String(n).padStart(2,"0");
+const orologio=s=>{s=Math.floor(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60); return (h?h+":"+due(m):m)+":"+due(s%60)};
+const hm=s=>{const h=Math.floor(s/3600), m=Math.floor(s%3600/60); return h?h+" h "+due(m):m+" min"};
+const resto=e=>e.durata<3600?Math.floor(e.secondi/60)+" di "+Math.floor(e.durata/60)+" min":hm(e.secondi)+" di "+hm(e.durata);
+const tinta=c=>`--t:var(--${c})`;
+const pill=(x,c)=>x?`<span class="${c}">${esc(x)}</span>`:"";
+const quanto=e=>Math.max(0,Math.min(100,e.secondi/e.durata*100)).toFixed(1)+"%";
+// sotto la copertina c'è sempre la targa: se l'immagine non arriva si toglie
+// copertina anche data:image/…;base64 (fotogramma da Muflone); One Pace senza copertina: la sua icona
+const COP=/^(https:\/\/[^\s/]+\S*|data:image\/(webp|jpeg|png);base64,[\w+\/=]+)$/;
+const copertina=u=>typeof u==="string"&&u.length<=(u[0]==="d"?2e5:500)&&COP.test(u);
+const op=e=>e.sito==="pixeldrain.net"&&/^One Pace/.test(e.titolo)||lettere(e.sito||host(e.pagina)).includes("onepace");
+function figura(e,c,cl){
+  const ok=copertina(e.copertina);
+  return `<span class="targa" style="${tinta(c)}">${!ok&&op(e)?'<svg class="op" viewBox="0 0 48 48"><use href="#s-op"/></svg>':segno(MONDI[c][1])}</span>`+(ok?`<img class="${cl}" data-c="${esc(e.copertina)}" alt="" decoding="async" referrerpolicy="no-referrer"${cl?"":' loading="lazy"'} onerror="this.remove()">`:"");
+}
+function palcoH(){
+  if(!STORIA.length)return "";
+  const v=STORIA[0], altri=STORIA.slice(1), {c,dove}=mondo(v), q=parti(v,dove);
+  let h=`<section class="palco${altri.length?"":" solo"}" id="palco"><div class="eroe" style="${tinta(c)}">${figura(v,c,"quadro")}<div class="velo"></div><div class="testo"><div class="occhiello">Continua a guardare</div>`+
+    `<h1${q.t.length>30?' class="lungo"':""}>${esc(q.t)}</h1><div class="meta">${pill(q.p,"punt")}${pill(q.ver,"ver")}<span>${dove!==q.t?esc(dove)+" · ":""}sei a <b>${orologio(v.secondi)}</b> di ${orologio(v.durata)}</span></div>`+
+    `<div class="linea"><i style="width:${quanto(v)}"></i></div><div class="azioni"><button class="bott primo" data-t="riprendi" data-i="0" data-p="${esc(v.pagina)}">${segno("s-play")}Riprendi</button>`+
+    `<button class="bott secondo" data-t="inizio" data-i="0" data-p="${esc(v.pagina)}">${segno("s-capo")}Dall’inizio</button></div></div></div>`;
+  if(altri.length)h+=`<div class="lista n${altri.length}">`+altri.map((x,i)=>{
+    const m=mondo(x), q=parti(x,m.dove);
+    return `<button class="voce" style="${tinta(m.c)}" data-t="continua" data-i="${i+1}" data-p="${esc(x.pagina)}" aria-label="${esc("Riprendi "+q.nome+(q.ver?" "+q.ver:"")+", "+q.sopra+", "+resto(x))}">`+
+      `<span class="mini">${figura(x,m.c,"")}<span class="gioca">${segno("s-play")}</span></span><span class="t"><span class="sopra">${esc(q.sopra)}</span><b>${esc(q.nome)}</b>`+
+      `<span class="meta">${pill(q.ver,"ver")}<span>${resto(x)}</span></span></span><span class="linea"><i style="width:${quanto(x)}"></i></span></button>`}).join("")+"</div>";
+  return h+"</section>";
+}
+
+// i siti di un mondo: quelli con "pillola" uguale, o senza "pillola" e con quell'id
+const sitiDi=cat=>D?D.siti.filter(x=>(x.pillola||x.id)===cat):[];
+const PROVA=`<span class="giu">${segno("s-avviso")}Prova ad aprire</span>`;
+function porteH(){
+  let h="", col=[], molti=false;
+  Object.keys(MONDI).forEach(k=>{
+    const [nome,sg]=MONDI[k], l=sitiDi(k);
+    if(!l.length)return;
+    if(l.length>1){
+      if(l.length>3)molti=true;
+      col.push((.4+.78*l.length).toFixed(2)+"fr");
+      h+=`<div class="porta larga" style="${tinta(k)}"><div class="capo">${segno(sg,"segno")}<span class="pn">${nome}</span></div><div class="siti n${l.length}" style="grid-template-columns:repeat(${l.length},minmax(0,1fr))">`+
+        l.map(s=>`<button class="sito" data-t="sito" data-i="${esc(s.id)}"><span class="punto"></span>${esc(s.nome)}${PROVA}${segno("s-apri","apri")}</button>`).join("")+"</div></div>";
+    }else{
+      col.push("1fr");
+      h+=`<button class="porta" style="${tinta(k)}" data-t="sito" data-i="${esc(l[0].id)}">${segno(sg,"segno")}<span class="punto"></span><span class="piede"><span><span class="pn">${nome}</span>${PROVA}</span>${segno("s-apri","apri")}</span></button>`;
+    }
+  });
+  return h?`<nav class="porte${molti?" molti":""}" id="porte" style="grid-template-columns:${col.join(" ")}">${h}</nav>`:"";
+}
+
 function scheda(c){
   const n=(c.sigla||"").length, z=n<=2?"s1":"s"+Math.min(n,5);
   return `<button class="ch" data-t="canale" data-i="${esc(c.id)}"><span class="plate ${z}">`+
     `<img data-src="loghi/${esc(c.id)}.webp" width="50" height="46" alt=""><span class="sg">${esc(c.sigla||"")}</span></span>`+
     `<span class="info"><b>${esc(c.nome)}</b><span class="live">&#9679; LIVE</span><span class="prog"></span></span></button>`;
 }
-function disegna(){
-  const q=$("#q").value.trim().toLowerCase();
+const griglia=(t,n,l)=>`<div class="gruppo"><div class="titolo"><h2>${t}</h2>${n}</div><div class="griglia">${l.map(scheda).join("")}</div></div>`;
+function tvH(q){
+  const f=c=>!q||String(c.nome).toLowerCase().includes(q);
   const gr=[...D.gruppi];
   D.canali.forEach(c=>{c.gruppo=c.gruppo||"Altri"; if(!gr.includes(c.gruppo))gr.push(c.gruppo)});
-  // preferiti (stella nel lettore, visione.js): un gruppo in cima, i canali restano anche al loro posto
-  const pf=jx("ilregno.preferiti",[]).map(i=>trova("canale",i)).filter(c=>c&&(!q||String(c.nome).toLowerCase().includes(q)));
-  let h=pf.length?`<section class="gruppo"><h2>Preferiti</h2><div class="griglia">${pf.map(scheda).join("")}</div></section>`:"", n=pf.length;
+  // «I tuoi canali»: preferiti (visione.js), poi gli ultimi aperti
+  const miei=[...new Set([...jx("ilregno.preferiti",[]),...leggiRecenti().filter(x=>x&&x.tipo==="canale").map(x=>x.id)])].map(i=>trova("canale",i)).filter(c=>c&&f(c)).slice(0,8);
+  let h=miei.length?griglia("I tuoi canali","",miei):"", n=miei.length;
   gr.forEach(g=>{
-    const l=D.canali.filter(c=>c.gruppo===g&&(!q||String(c.nome).toLowerCase().includes(q)));
+    const l=D.canali.filter(c=>c.gruppo===g&&f(c));
     if(!l.length)return;
-    n+=l.length;
-    h+=`<section class="gruppo"><h2>${esc(g)}</h2><div class="griglia">${l.map(scheda).join("")}</div></section>`;
+    n+=l.length; h+=griglia(esc(g),`<span>${l.length} canali</span>`,l);
   });
-  $("#gruppi").innerHTML=n?h:'<div class="msg" style="padding-left:0">Nessun canale trovato</div>';
-  aggiorna(); recenti(); osservaLoghi();
+  return `<section class="tvz" id="tv">`+(n?`<div class="titolo"><h2>Live TV</h2><span>${D.canali.length} canali</span></div>`+h:'<div class="msg">Nessun canale trovato</div>')+"</section>";
 }
-// stato dei link e programma in onda: si applicano sulle schede già disegnate; ogni minuto si scrive solo ciò che è cambiato
+
+// #palco, #porte, #tv si sostituiscono interi e solo se cambiati; il riquadro acceso lo ritrova pagina.js (osserva i figli di #gruppi)
+const fatto={};
+function sostituisci(id,h){
+  if(fatto[id]===h)return;
+  fatto[id]=h;
+  $("#"+id).outerHTML=h||`<i id="${id}" hidden></i>`;
+}
+function disegna(){
+  const q=$("#q").value.trim().toLowerCase();
+  sostituisci("palco",palcoH());
+  if(D){sostituisci("porte",porteH()); sostituisci("tv",tvH(q))}
+  document.body.classList.toggle("vuota",!STORIA.length);
+  $("#crlink").hidden=!(STORIA.length||VISTI);
+  aggiorna(); osservaLoghi(); if(secondari)copri();
+}
+// le copertine si chiedono dopo la prima schermata: nessun host di fotografie prima che si possa aprire un sito
+const copri=()=>document.querySelectorAll("img[data-c]").forEach(i=>{i.src=i.dataset.c; i.removeAttribute("data-c")});
+// stati e programma in onda: si scrive solo ciò che è cambiato
 function aggiorna(){
   if(window.unisci)unisci();
-  if(statoNoto)document.querySelectorAll("[data-sito]").forEach(el=>{
-    // la pillola è verde se almeno uno dei suoi siti è ok
-    const ko=sitiDi(el.dataset.sito).every(x=>((STATO.siti||{})[x.id]||{}).ok===false);
-    const p=el.firstElementChild, cl="stato "+(ko?"ko":"ok");
-    if(p.className!==cl)p.className=cl;
+  if(statoNoto)document.querySelectorAll("#porte [data-i]").forEach(el=>{
+    const s=(STATO.siti||{})[el.dataset.i]||{}, c=s.ok===false?"ko":s.ok===true?"ok":"";
+    if(el.dataset.s!==c){el.dataset.s=c; el.classList.toggle("ok",c==="ok"); el.classList.toggle("ko",c==="ko")}
   });
   if(!D)return;
   document.querySelectorAll(".ch").forEach(el=>{
     const c=trova("canale",el.dataset.i); if(!c)return;
     const ko=((STATO.canali||{})[c.id]||{}).ok===false;
     if(el.classList.contains("off")!==ko){el.classList.toggle("off",ko); el.classList.toggle("ko",ko)}
-    scrivi(el.querySelector(".live"),ko?"non disponibile":"\u25CF LIVE");
+    scrivi(el.querySelector(".live"),ko?"non disponibile":"● LIVE");
     scrivi(el.querySelector(".prog"),ko?"":(programma(c)||{}).t||"");
   });
 }
-const scrivi=(el,t)=>{if(el.textContent!==t)el.textContent=t};
-// logo: si chiede solo quando la scheda è nella schermata o vicina (200 px); finché non arriva si vede la sigla, e se manca resta la sigla
+const scrivi=(el,t)=>{if(el&&el.textContent!==t)el.textContent=t};
+// logo: chiesto a 200 px dallo schermo; prima, o se manca, la sigla
 const vista=window.IntersectionObserver&&new IntersectionObserver(l=>l.forEach(o=>{
   if(!o.isIntersecting)return;
   vista.unobserve(o.target); caricaLogo(o.target);
 }),{rootMargin:"200px"});
 function caricaLogo(el){
   const i=el.querySelector("img[data-src]"); if(!i)return;
-  i.onload=()=>{i.parentNode.classList.add("ok"); const s=i.parentNode.querySelector(".sg"); if(s)s.remove()};   // il load non arriva a window: si ascolta sull'immagine
+  i.onload=()=>{i.parentNode.classList.add("ok"); const s=i.parentNode.querySelector(".sg"); if(s)s.remove()};
   i.src=i.dataset.src; i.removeAttribute("data-src");
 }
 function osservaLoghi(){
@@ -321,68 +524,31 @@ addEventListener("error",e=>{
   const i=e.target;
   if(i.tagName==="IMG"&&i.parentNode.classList.contains("plate"))i.remove();
 },true);
+function ora(){
+  if(M.classList.contains("open"))return;
+  const d=new Date();
+  scrivi($("#ora"),"dom lun mar mer gio ven sab".split(" ")[d.getDay()]+" "+d.getDate()+" "+MESI[d.getMonth()].slice(0,3)+" · "+due(d.getHours())+":"+due(d.getMinutes()));
+}
 
-// ---------- recenti (ultime 3 cose aperte) ----------
 const trova=(tipo,id)=>D&&(tipo==="sito"?D.siti:D.canali).find(x=>x.id===id);
-// ciò che sta nella memoria del dispositivo è dato: vale solo se ha la forma del valore di ripiego (elenco o oggetto), altrimenti il ripiego
+// memoria del dispositivo: vale solo con la forma del ripiego
 const jx=(k,d)=>{try{const v=JSON.parse(mem.get(k));return v&&typeof v==="object"&&Array.isArray(v)===Array.isArray(d)?v:d}catch(e){return d}};
 const leggiRecenti=()=>jx("ilregno.recenti",[]);
-function recenti(){
-  const v=leggiRecenti().map(x=>({x,o:trova(x.tipo,x.id)})).filter(a=>a.o), el=$("#recenti");
-  el.innerHTML=v.length?'<span class="lbl">Recenti</span>'+v.map(a=>
-    `<button class="chip ${a.x.tipo}" data-t="${a.x.tipo}" data-i="${esc(a.x.id)}">${esc(a.o.nome)}</button>`).join(""):"";
-  el.hidden=!v.length||!$("#ricerca").hidden;
-}
-// i siti di una categoria (pillola): quelli con "pillola" uguale, o senza "pillola" e con quell'id
-const sitiDi=cat=>D?D.siti.filter(x=>(x.pillola||x.id)===cat):[{id:cat}];
-function categoria(cat){
-  const l=sitiDi(cat);
-  if(l.length>1)scelta(cat,l);
-  else if(l.length)apri("sito",l[0].id);
-}
-// Indietro di Muflone chiude la scelta come la ricerca: una voce di cronologia in più, tolta se la scelta si chiude in altro modo
-// o prima di aprire il sito, così dal sito si torna a Il Regno senza un Indietro a vuoto
-let voceScelta=false, attesa=0, vaA=null;
-function scelta(cat,l){
-  const nome=$(`[data-sito="${cat}"]`).textContent.trim();
-  $("#scTit").textContent=nome;
-  $("#scLista").innerHTML=l.map(x=>`<button class="sito" data-t="sito" data-i="${esc(x.id)}"><i class="stato ${((STATO.siti||{})[x.id]||{}).ok===false?"ko":"ok"}"></i>${esc(x.nome)}</button>`).join("");
-  $("#scelta").hidden=false; $("#scLista button").focus();
-  if(!voceScelta){history.pushState(null,"");voceScelta=true}
-}
-function chiudiScelta(dalBack){
-  if(!voceScelta)return;
-  $("#scelta").hidden=true; voceScelta=false;
-  if(!dalBack){attesa++; history.back()}
-}
-// apre il sito in questa schermata; con la scelta aperta prima toglie la sua voce di cronologia
-function vai(url){
-  if(!voceScelta)return void(location.href=url);
-  vaA=url; chiudiScelta(false); setTimeout(vaPoi,500);
-}
-function vaPoi(){if(vaA){const u=vaA;vaA=null;location.href=u}}
 function apri(tipo,id){
   const o=trova(tipo,id); if(!o)return;
   mem.set("ilregno.recenti",JSON.stringify([{tipo,id},...leggiRecenti().filter(x=>!(x.tipo===tipo&&x.id===id))].slice(0,3)));
-  recenti();
-  if(tipo==="canale")mem.set("ilregno.ct",JSON.stringify({...jx("ilregno.ct",{}),[id]:Date.now()}));   // quando, per la fila «Continua» (continua.js)
-  if(tipo==="canale")guarda(o);
-  else if(o.url)vai(indirizzo(o));
+  if(tipo==="canale"){mem.set("ilregno.ct",JSON.stringify({...jx("ilregno.ct",{}),[id]:Date.now()})); guarda(o)}
+  else if(o.url)location.href=indirizzo(o);
 }
-// il controllo notturno può aver trovato che il vecchio indirizzo rimanda da sé al nuovo: vale solo se i dati hanno ancora esattamente quello
+// indirizzo nuovo trovato dal controllo notturno: vale solo se i dati hanno ancora esattamente il vecchio
 function indirizzo(o){
   const s=(STATO.siti||{})[o.id];
   return s&&s.nuovo&&s.sostituisce===o.url?s.nuovo:o.url;
 }
 
-// ---------- lettore ----------
-// Il codice del lettore sta in visione.js, che si scarica dopo le prime schede (dopoPrimaSchermata) come hls.js: la prima schermata
-// non lo aspetta. Qui restano lo strato e ciò che serve già al primo clic: aprirlo, chiuderlo, la barra che sparisce, in onda.
-// atteso = canale scelto prima che visione.js arrivasse: parte appena il codice c'è
+// lettore: il codice sta in visione.js (dopo la prima schermata); qui ciò che serve al primo clic
 const M=$("#modal");
 let cur=null, pos=0, atteso=null;
-// Un canale scelto prima di visione.js apre subito il lettore come riproduci() (titolo, in onda, X e comandi) e parte quando il
-// codice arriva; chiuso nell'attesa non parte più. Se visione.js non arriva: pannello V01, come per hls.js, e Riprova lo richiede.
 function guarda(c){
   if(window.riproduci)return riproduci(c);
   if(!M.classList.contains("open"))pos=scrollY;
@@ -391,7 +557,7 @@ function guarda(c){
   $("#titolo").textContent=c.nome;
   inOnda(c); clearInterval(ti); ti=setInterval(()=>inOnda(c),60000);
   carica("visione.js").then(ok=>{
-    if(atteso!==c)return;   // chiuso, o aperto un altro canale, nell'attesa
+    if(atteso!==c)return;
     atteso=null;
     if(ok)return riproduci(c);
     console.warn("lettore",c.id,"V01");
@@ -403,15 +569,13 @@ function chiudiLettore(){
   atteso=null; if(window.ferma)ferma(); M.className=""; clearTimeout(tb);
   document.body.classList.remove("pl"); document.documentElement.classList.remove("pl"); clearInterval(ti);
   if(scrollY!==pos)scrollTo(0,pos);
+  ora();
 }
-// titolo, X e comandi: visibili all'apertura e a ogni movimento o clic, spariscono 3 s dopo l'ultimo (come il puntatore di Muflone).
-// Nascosti non prendono il clic; col dito però il clic cade dopo che la pressione li ha già rimessi: quel clic si scarta.
-// Il clic da programma, come l'Indietro di Muflone, passa sempre.
+// comandi: spariscono 3 s dopo l'ultimo movimento; col dito il clic che li rimette si scarta
 let tb=0, ti=0, tocco=false;
 const nascosti=()=>M.classList.contains("nasc")&&!M.classList.contains("errore");
 M.addEventListener("pointerdown",()=>{tocco=nascosti()},true);
 M.addEventListener("click",e=>{if(tocco&&e.isTrusted){e.stopPropagation();e.preventDefault()} tocco=false},true);
-// in onda: «HH:MM – HH:MM  Titolo» e quanto ne è passato; senza guida niente
 function inOnda(c){
   const p=programma(c), ok=!!p;
   $("#inonda").hidden=$("#avanza").hidden=!ok;
@@ -428,55 +592,43 @@ function mostraBarra(forza){
   tb=setTimeout(()=>M.classList.add("nasc"),3000);
 }
 ["mousemove","pointermove","pointerdown","click"].forEach(t=>M.addEventListener(t,()=>mostraBarra()));
-// hls.js per la chiavetta (1 GB di RAM, Muflone già in swap): del video già visto se ne tengono 90 s e di quello in anticipo 30 s
-// o 30 MB, invece di tutto il visto e 60 MB; parte dalla qualità più bassa (startLevel 0) e sale da sola;
-// xhrSetup: «dato» = byte di un pezzo con risposta 2xx
+// hls.js per la chiavetta: 90 s dietro, 30 s o 30 MB avanti, dalla qualità più bassa
 const CONFIG_HLS={backBufferLength:90,maxBufferLength:30,maxMaxBufferLength:30,maxBufferSize:30*1000*1000,startLevel:0,
   xhrSetup:(x,u)=>x.addEventListener("progress",()=>{if(x.status>199&&x.status<300&&!/\.m3u8/.test(x.responseURL||u))dato=Date.now()})};
-// un solo caricamento per file (0 se manca)
 const carica=f=>carica[f]||(carica[f]=new Promise(ok=>{
   const s=document.head.appendChild(document.createElement("script"));
   s.src=f; s.onload=ok; s.onerror=()=>{delete carica[f]; ok(0)};
 }));
 
-// ---------- ricerca ----------
-// Indietro di Muflone torna alla pagina precedente (non manda Esc): aprendo la ricerca si aggiunge una voce alla cronologia,
-// così Indietro la chiude; chiudendola in altro modo (✕, Esc, Live TV) quella voce si toglie, senza lasciare un Indietro a vuoto
+// ricerca: una voce di cronologia in più, così Indietro di Muflone la chiude
 let voceRicerca=false;
 function ricerca(on,dalBack){
   if(on===!$("#ricerca").hidden)return;
-  $("#cerca").hidden=on; $("#ricerca").hidden=!on;
+  $("#cerca").hidden=on; $("#ricerca").hidden=!on; document.body.classList.toggle("cerco",on);
   if(on){$("#q").focus(); if(!voceRicerca){history.pushState(null,"");voceRicerca=true}}
   else{
     $("#q").value="";
     if(voceRicerca){voceRicerca=false; if(!dalBack)history.back()}
   }
-  if(D)disegna();
+  disegna();
 }
-addEventListener("popstate",()=>{
-  if(attesa){attesa--; vaPoi(); return}
-  if(voceScelta)chiudiScelta(true);
-  else if(voceRicerca)ricerca(false,true);
-});
+addEventListener("popstate",()=>{if(voceRicerca)ricerca(false,true)});
 
-// ---------- eventi ----------
 document.addEventListener("click",e=>{
-  if(e.target.id==="scelta")return chiudiScelta();
   const b=e.target.closest("button"); if(!b)return;
+  // titolo in corso: si riapre la sua pagina, il minuto lo ritrova Muflone (K4)
+  if(b.dataset.p)return void(htt(b.dataset.p)&&(location.href=b.dataset.p));
   if(b.dataset.t)return apri(b.dataset.t,b.dataset.i);
-  if(b.dataset.sito)return categoria(b.dataset.sito);
   switch(b.id){
-    case "live": if(!$("#ricerca").hidden)ricerca(false); return scrollTo(0,0);
     case "su": {   // in cima anche la selezione, che è ciò che seguono le frecce di Muflone
       scrollTo(0,0);
-      const vede=e=>e.getClientRects().length;   // senza riquadri (ricerca vuota, dati in arrivo) va sulla prima pillola
-      const p=[...document.querySelectorAll("#gruppi button,#gruppi a[href]")].find(vede)||[...document.querySelectorAll(".cats .pill,.top button")].find(vede);
+      const vede=e=>e.getClientRects().length;
+      const p=[...document.querySelectorAll("#gruppi button,#gruppi a[href]")].find(vede)||[...document.querySelectorAll(".top button")].find(vede);
       if(p)p.focus({preventScroll:true});
       return;
     }
     case "cerca": return ricerca(true);
     case "chiudiRicerca": return ricerca(false);
-    case "scChiudi": return chiudiScelta();
     case "closePlayer": case "chiudi": return chiudiLettore();
     case "riprova": return guarda(cur);
   }
@@ -484,40 +636,46 @@ document.addEventListener("click",e=>{
 $("#q").addEventListener("input",()=>D&&disegna());
 document.addEventListener("keydown",e=>{
   if(e.key!=="Escape")return;
-  if(voceScelta)chiudiScelta();
-  else if(M.classList.contains("open"))chiudiLettore();
+  if(M.classList.contains("open"))chiudiLettore();
   else if(!$("#ricerca").hidden)ricerca(false);
 });
-addEventListener("pageshow",recenti);   // tornando indietro da un sito
+// con le frecce, tornando al palco o alle porte la pagina torna in cima
+document.addEventListener("focusin",e=>{
+  const t=e.target;
+  if(window.__mufloneArrows===1&&scrollY&&t.closest&&t.closest("#palco,#porte")&&t.getBoundingClientRect().bottom+scrollY<innerHeight-12)scrollTo(0,0);
+});
+const rivedi=()=>{if(document.visibilityState!=="hidden"){leggiStoria(); disegna()}};
+addEventListener("pageshow",e=>{if(e.persisted)rivedi()});
+document.addEventListener("visibilitychange",rivedi);
 setInterval(aggiorna,60000);            // il programma in onda cambia
+setInterval(ora,15000);
 
-// ---------- avvio ----------
 function mostra(v){
   D={gruppi:arr(v.gruppi),canali:arr(v.canali),siti:arr(v.siti)};
   $("#avviso").hidden=true; disegna(); dopoPrimaSchermata();
 }
-// stato dei link e guida si chiedono solo dopo che i canali sono visibili
+// il resto si chiede dopo la prima schermata
 function dopoPrimaSchermata(){
-  if(secondari)return; secondari=true;
-  const sj=fetch("stato.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(s=>{STATO=ST=s}).catch(()=>{});   // senza stato.json: tutti ok (sconosciuto)
-  // col ponte di Muflone 0.6 si carica anche ponte.js; i pallini si scrivono quando c'è tutto
-  Promise.all([sj,window.Muflone&&Muflone.provaLink?carica("ponte.js"):0]).then(()=>{statoNoto=true;aggiorna()});
-  if(window.Muflone)carica("continua.js");   // «Continua», Cronologia, «Come si usa», avviso di versione: solo dentro Muflone
+  if(secondari)return; secondari=true; copri();
+  const sj=fetch("stato.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(s=>{STATO=ST=s}).catch(()=>{});
+  Promise.all([sj,B&&B.provaLink?carica("ponte.js"):0]).then(()=>{statoNoto=true;aggiorna()});
+  if(B)carica("continua.js");   // Cronologia, «Come si usa», avviso di versione: solo dentro Muflone
   ["visione.js","hls.min.js","archivio.js"].forEach(carica);
   fetch("guida.json").then(r=>r.json()).then(g=>{GUIDA=g;aggiorna()}).catch(()=>{});
 }
+ora(); leggiStoria();
 const cache=leggiCache(), copia=cache&&JSON.stringify(cache.v);   // prima di mostra(), che cambia i canali
-if(cache)mostra(cache.v);
+if(cache)mostra(cache.v); else disegna();
 const prendi=n=>fetch(DB,{signal:scade(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(v=>{
   if(!v||!v.canali)throw 0;
-  salvaCache(v); if(JSON.stringify(v)!==copia)mostra(v);   // dati uguali: schede ferme
+  salvaCache(v); if(JSON.stringify(v)!==copia)mostra(v);   // dati uguali: niente si ridisegna
 }).catch(e=>{
   if(!n&&e.name=="TypeError")return setTimeout(prendi,2e3,1);
   console.warn("D01 database non raggiungibile");
   const a=$("#avviso"), d=cache&&cache.d;
   a.textContent="Nessuna connessione"+(d?`: dati del ${d.getDate()} ${MESI[d.getMonth()]}`:"");
   a.hidden=false;
-  if(!cache){$("#gruppi").innerHTML=""; dopoPrimaSchermata()}
+  if(!cache){sostituisci("tv",'<section class="tvz" id="tv"></section>'); dopoPrimaSchermata()}
 });
 prendi()
 </script>
