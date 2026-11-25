@@ -6,7 +6,6 @@
 <title>Muflone</title>
 <link rel="preconnect" href="https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
 <style>
-/* Muflone, casa «a fasce» (tavole A del 25/11). TV 960x540, pulsanti alti almeno 64 px */
 :root{--bg:#07080b;--plate:#181b22;--text:#f6f7f9;--muted:#a3a6b2;--m3:#6f7280;--red:#ff3048;--verde:#2fd06b;--yel:#ffc531;
   --line:rgba(255,255,255,.10);--gut:24px;--film:255,48,72;--serie:224,62,126;--anime:150,112,255;--sport:255,122,51}
 *{box-sizing:border-box}
@@ -162,7 +161,7 @@ html.pl,html.pl body{overflow-x:hidden}
 #modal.nasc:not(.errore) #closePlayer,#modal.nasc:not(.errore) .cmd,#modal.nasc:not(.errore) #linea{pointer-events:none}
 #modal.nasc.inpausa:not(.errore) #diretta{opacity:1;pointer-events:auto}
 #closePlayer{flex:none;pointer-events:auto;width:64px;height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);font-size:22px}
-/* lettore aperto: niente si ridisegna dietro (sulla chiavetta il ridisegno sotto il video fa fermare hls.js) */
+/* lettore aperto: niente si ridisegna dietro (hls.js) */
 body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 .cmd{flex:none;max-width:100%;height:64px;padding:0 20px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);
   font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:auto}
@@ -310,7 +309,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 </header>
 
 <div class="msg" id="avviso" hidden></div>
-<!-- ciò che si preme sta in #gruppi con data-t e data-i: le frecce di Muflone (pagina.js) accendono il primo e lo ritrovano -->
+<!-- #gruppi, data-t, data-i: le frecce di pagina.js -->
 <main id="gruppi"><i id="palco" hidden></i><nav class="porte" id="porte" hidden></nav><section class="tvz" id="tv"><div class="griglia"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div></section></main>
 <div class="fondo"><button class="bott secondo" id="su"><svg class="s" viewBox="0 0 48 48"><use href="#s-su"/></svg>Torna in cima</button><a class="admin" href="admin.html">Admin</a></div>
 
@@ -331,7 +330,6 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 </div>
 
 <script>
-// Dati: una richiesta REST a Firebase; l'ultima copia buona resta sul dispositivo e si disegna subito
 const DB="https://il-regno-app-default-rtdb.europe-west1.firebasedatabase.app/v2.json";
 const $=s=>document.querySelector(s);
 const MESI="gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre".split(" ");
@@ -366,28 +364,26 @@ function programma(c,n=Date.now()){
   return ora;
 }
 
-// palco: Muflone.continua() è sincrono, il palco è già nella prima schermata e niente scende dopo. Dati di Muflone solo con esc() (cronologia.md K1)
+// palco: continua() è sincrono; dati di Muflone solo con esc() (K1)
 const B=window.Muflone, htt=u=>typeof u==="string"&&/^https?:\/\/[^\s/]+/i.test(u), num=x=>typeof x==="number"&&isFinite(x);
 const MONDI={film:["Film","s-film"],serie:["Serie TV","s-serie"],sport:["Sport","s-sport"],anime:["Anime","s-anime"]};
 const segno=(id,cl)=>`<svg class="s ${cl||""}" viewBox="0 0 48 48"><use href="#${id}"/></svg>`;
 const host=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return""}};
 const lettere=s=>String(s).toLowerCase().replace(/[^a-z]/g,"");
-let STORIA=[], VISTI=0;
+let STORIA=[], VISTI=0, vS=1, vP=0;
 function leggiStoria(){
-  STORIA=[]; VISTI=0;
+  STORIA=[]; VISTI=0; vS++;
   if(!B||typeof B.continua!=="function")return;
   try{const l=JSON.parse(B.continua()); if(Array.isArray(l))STORIA=l.filter(e=>e&&htt(e.pagina)&&typeof e.titolo==="string"&&num(e.secondi)&&num(e.durata)&&e.durata>0).slice(0,4)}catch(e){}
   if(!STORIA.length&&typeof B.cronologia==="function")try{VISTI=JSON.parse(B.cronologia()).length||0}catch(e){}
 }
-// da quale porta viene: sito con lo stesso indirizzo o col nome nell'indirizzo
 function mondo(e){
-  const h=host(e.pagina), k=lettere(h), ep=/[?&]e=\d/.test(e.pagina);
+  const h=host(e.pagina), k=op(e)?"onepace":lettere(h), ep=/[?&]e=\d/.test(e.pagina);
   const s=D&&D.siti.find(x=>host(x.url)===h&&!(ep&&(x.pillola||x.id)==="film"))||D&&D.siti.find(x=>k.includes(lettere(x.nome))&&lettere(x.nome).length>3);
   let c=s?s.pillola||s.id:/anime|onepace/.test(k)?"anime":ep?"serie":"film";
   if(!MONDI[c])c="film";
   return{c,dove:s&&sitiDi(c).length>1?s.nome:MONDI[c][0]};
 }
-// parti di un titolo: sopra (serie, saga), ciò che lo distingue (puntata, seguito), la versione fra parentesi
 function parti(e,dove){
   let t=e.titolo.trim()||dove, ver="", p="";
   try{const q=new URL(e.pagina).searchParams, s=q.get("s"), n=q.get("e"); if(/^\d{1,3}$/.test(s)&&/^\d{1,3}$/.test(n))p=`S${+s} E${+n}`}catch(x){}
@@ -406,31 +402,34 @@ const resto=e=>e.durata<3600?Math.floor(e.secondi/60)+" di "+Math.floor(e.durata
 const tinta=c=>`--t:var(--${c})`;
 const pill=(x,c)=>x?`<span class="${c}">${esc(x)}</span>`:"";
 const quanto=e=>Math.max(0,Math.min(100,e.secondi/e.durata*100)).toFixed(1)+"%";
-// sotto la copertina c'è sempre la targa: se l'immagine non arriva si toglie
-// copertina anche data:image/…;base64 (fotogramma da Muflone); One Pace senza copertina: la sua icona
 const COP=/^(https:\/\/[^\s/]+\S*|data:image\/(webp|jpeg|png);base64,[\w+\/=]+)$/;
 const copertina=u=>typeof u==="string"&&u.length<=(u[0]==="d"?2e5:500)&&COP.test(u);
 const op=e=>e.sito==="pixeldrain.net"&&/^One Pace/.test(e.titolo)||lettere(e.sito||host(e.pagina)).includes("onepace");
+// copertina: sotto c'è la targa; nell'HTML solo la sua identità, l'indirizzo in COPS
+let COPS={};
+const hid=s=>{let h=5381;for(let i=0;i<s.length;i++)h=(h*33^s.charCodeAt(i))>>>0;return h.toString(36)};
 function figura(e,c,cl){
-  const ok=copertina(e.copertina);
-  return `<span class="targa" style="${tinta(c)}">${!ok&&op(e)?'<svg class="op" viewBox="0 0 48 48"><use href="#s-op"/></svg>':segno(MONDI[c][1])}</span>`+(ok?`<img class="${cl}" data-c="${esc(e.copertina)}" alt="" decoding="async" referrerpolicy="no-referrer"${cl?"":' loading="lazy"'} onerror="this.remove()">`:"");
+  const u=e.copertina, k=copertina(u)&&(u[0]=="d"?u.length+u.slice(-24):u);
+  if(k)COPS[k]=u;
+  return `<span class="targa" style="${tinta(c)}">${!k&&op(e)?OPS:segno(MONDI[c][1])}</span>`+(k?`<img class="${cl}" data-c="${esc(k)}"${op(e)?' data-o="1"':""} alt="" decoding="async" referrerpolicy="no-referrer"${cl?"":' loading="lazy"'} onerror="ko(this)">`:"");
 }
+const OPS='<svg class="op" viewBox="0 0 48 48"><use href="#s-op"/></svg>', ko=i=>{if(i.dataset.o)i.previousSibling.innerHTML=OPS; i.remove()};
 function palcoH(){
+  COPS={};
   if(!STORIA.length)return "";
   const v=STORIA[0], altri=STORIA.slice(1), {c,dove}=mondo(v), q=parti(v,dove);
   let h=`<section class="palco${altri.length?"":" solo"}" id="palco"><div class="eroe" style="${tinta(c)}">${figura(v,c,"quadro")}<div class="velo"></div><div class="testo"><div class="occhiello">Continua a guardare</div>`+
     `<h1${q.t.length>30?' class="lungo"':""}>${esc(q.t)}</h1><div class="meta">${pill(q.p,"punt")}${pill(q.ver,"ver")}<span>${dove!==q.t?esc(dove)+" · ":""}sei a <b>${orologio(v.secondi)}</b> di ${orologio(v.durata)}</span></div>`+
     `<div class="linea"><i style="width:${quanto(v)}"></i></div><div class="azioni"><button class="bott primo" data-t="riprendi" data-i="0" data-p="${esc(v.pagina)}">${segno("s-play")}Riprendi</button>`+
-    `<button class="bott secondo" data-t="inizio" data-i="0" data-p="${esc(v.pagina)}">${segno("s-capo")}Dall’inizio</button></div></div></div>`;
+    (typeof B.daCapo=="function"?`<button class="bott secondo" data-t="inizio" data-i="0" data-p="${esc(v.pagina)}">${segno("s-capo")}Dall’inizio</button>`:"")+"</div></div></div>";
   if(altri.length)h+=`<div class="lista n${altri.length}">`+altri.map((x,i)=>{
     const m=mondo(x), q=parti(x,m.dove);
-    return `<button class="voce" style="${tinta(m.c)}" data-t="continua" data-i="${i+1}" data-p="${esc(x.pagina)}" aria-label="${esc("Riprendi "+q.nome+(q.ver?" "+q.ver:"")+", "+q.sopra+", "+resto(x))}">`+
+    return `<button class="voce" style="${tinta(m.c)}" data-t="continua" data-i="${hid(x.pagina)}" data-p="${esc(x.pagina)}" aria-label="${esc("Riprendi "+q.nome+(q.ver?" "+q.ver:"")+", "+q.sopra+", "+resto(x))}">`+
       `<span class="mini">${figura(x,m.c,"")}<span class="gioca">${segno("s-play")}</span></span><span class="t"><span class="sopra">${esc(q.sopra)}</span><b>${esc(q.nome)}</b>`+
       `<span class="meta">${pill(q.ver,"ver")}<span>${resto(x)}</span></span></span><span class="linea"><i style="width:${quanto(x)}"></i></span></button>`}).join("")+"</div>";
   return h+"</section>";
 }
 
-// i siti di un mondo: quelli con "pillola" uguale, o senza "pillola" e con quell'id
 const sitiDi=cat=>D?D.siti.filter(x=>(x.pillola||x.id)===cat):[];
 const PROVA=`<span class="giu">${segno("s-avviso")}Prova ad aprire</span>`;
 function porteH(){
@@ -458,13 +457,21 @@ function scheda(c){
     `<span class="info"><b>${esc(c.nome)}</b><span class="live">&#9679; LIVE</span><span class="prog"></span></span></button>`;
 }
 const griglia=(t,n,l)=>`<div class="gruppo"><div class="titolo"><h2>${t}</h2>${n}</div><div class="griglia">${l.map(scheda).join("")}</div></div>`;
+const filtro=q=>c=>!q||String(c.nome).toLowerCase().includes(q);
+// #miei si rifà da solo (le schede sotto restano); preferiti, poi 3 canali partiti (ilregno.rc e i canali di ilregno.recenti)
+let tutti=0;
+const recC=()=>[...new Set([...jx("ilregno.rc",[]),...leggiRecenti().filter(x=>x&&x.tipo=="canale").map(x=>x.id)])].slice(0,3);
+function mieiH(q){
+  const p=jx("ilregno.preferiti",[]), l=[...new Set([...p,...recC()])].map(i=>trova("canale",i)).filter(c=>c&&filtro(q)(c)), v=tutti?l:l.slice(0,8);
+  return l.length?`<div class="gruppo" id="miei"><div class="titolo"><h2>I tuoi canali</h2></div><div class="griglia">`+v.map(c=>p.includes(c.id)?scheda(c):
+    `<div class="ct">${scheda(c)}<button class="cx" data-r="${esc(c.id)}" aria-label="Togli dai recenti">✕</button></div>`).join("")+
+    (v.length<l.length?`<button class="ch" data-t="tutti" data-i="tutti"><b>Tutti i tuoi canali (${l.length})</b></button>`:"")+"</div></div>":"";
+}
 function tvH(q){
-  const f=c=>!q||String(c.nome).toLowerCase().includes(q);
+  const f=filtro(q);
   const gr=[...D.gruppi];
   D.canali.forEach(c=>{c.gruppo=c.gruppo||"Altri"; if(!gr.includes(c.gruppo))gr.push(c.gruppo)});
-  // «I tuoi canali»: preferiti (visione.js), poi gli ultimi aperti
-  const miei=[...new Set([...jx("ilregno.preferiti",[]),...leggiRecenti().filter(x=>x&&x.tipo==="canale").map(x=>x.id)])].map(i=>trova("canale",i)).filter(c=>c&&f(c)).slice(0,8);
-  let h=miei.length?griglia("I tuoi canali","",miei):"", n=miei.length;
+  let h='<i id="miei" hidden></i>', n=0;
   gr.forEach(g=>{
     const l=D.canali.filter(c=>c.gruppo===g&&f(c));
     if(!l.length)return;
@@ -473,28 +480,31 @@ function tvH(q){
   return `<section class="tvz" id="tv">`+(n?`<div class="titolo"><h2>Live TV</h2><span>${D.canali.length} canali</span></div>`+h:'<div class="msg">Nessun canale trovato</div>')+"</section>";
 }
 
-// #palco, #porte, #tv si sostituiscono interi e solo se cambiati; il riquadro acceso lo ritrova pagina.js (osserva i figli di #gruppi)
+// si sostituisce solo ciò che è cambiato
 const fatto={};
 function sostituisci(id,h){
   if(fatto[id]===h)return;
-  fatto[id]=h;
+  fatto[id]=h; if(id=="tv")delete fatto.miei;
   $("#"+id).outerHTML=h||`<i id="${id}" hidden></i>`;
 }
+// col lettore aperto non si riscrive niente: alla chiusura
+let rinvio=0, aspetto=0;
+const fermo=()=>aspetto||M.classList.contains("open")&&(rinvio=1);
 function disegna(){
+  if(fermo())return;
   const q=$("#q").value.trim().toLowerCase();
-  sostituisci("palco",palcoH());
-  if(D){sostituisci("porte",porteH()); sostituisci("tv",tvH(q))}
+  if(vP!==vS){vP=vS; sostituisci("palco",palcoH())}
+  if(D){sostituisci("porte",porteH()); sostituisci("tv",tvH(q)); sostituisci("miei",mieiH(q))}
   document.body.classList.toggle("vuota",!STORIA.length);
   $("#crlink").hidden=!(STORIA.length||VISTI);
-  aggiorna(); osservaLoghi(); if(secondari)copri();
+  aggiorna(); osservaLoghi(); if(dopo)copri();
 }
-// le copertine si chiedono dopo la prima schermata: nessun host di fotografie prima che si possa aprire un sito
-const copri=()=>document.querySelectorAll("img[data-c]").forEach(i=>{i.src=i.dataset.c; i.removeAttribute("data-c")});
-// stati e programma in onda: si scrive solo ciò che è cambiato
+const copri=()=>document.querySelectorAll("#palco img[data-c]").forEach(i=>{const u=COPS[i.dataset.c]; i.removeAttribute("data-c"); if(u)i.src=u});
 function aggiorna(){
+  if(fermo())return;
   if(window.unisci)unisci();
   if(statoNoto)document.querySelectorAll("#porte [data-i]").forEach(el=>{
-    const s=(STATO.siti||{})[el.dataset.i]||{}, c=s.ok===false?"ko":s.ok===true?"ok":"";
+    const c=((STATO.siti||{})[el.dataset.i]||{}).ok===false?"ko":"ok";
     if(el.dataset.s!==c){el.dataset.s=c; el.classList.toggle("ok",c==="ok"); el.classList.toggle("ko",c==="ko")}
   });
   if(!D)return;
@@ -507,7 +517,6 @@ function aggiorna(){
   });
 }
 const scrivi=(el,t)=>{if(el&&el.textContent!==t)el.textContent=t};
-// logo: chiesto a 200 px dallo schermo; prima, o se manca, la sigla
 const vista=window.IntersectionObserver&&new IntersectionObserver(l=>l.forEach(o=>{
   if(!o.isIntersecting)return;
   vista.unobserve(o.target); caricaLogo(o.target);
@@ -515,7 +524,7 @@ const vista=window.IntersectionObserver&&new IntersectionObserver(l=>l.forEach(o
 function caricaLogo(el){
   const i=el.querySelector("img[data-src]"); if(!i)return;
   i.onload=()=>{i.parentNode.classList.add("ok"); const s=i.parentNode.querySelector(".sg"); if(s)s.remove()};
-  i.src=i.dataset.src; i.removeAttribute("data-src");
+  i.src=i.__u||i.dataset.src; i.removeAttribute("data-src");
 }
 function osservaLoghi(){
   if(vista)vista.disconnect();
@@ -532,25 +541,35 @@ function ora(){
 }
 
 const trova=(tipo,id)=>D&&(tipo==="sito"?D.siti:D.canali).find(x=>x.id===id);
-// memoria del dispositivo: vale solo con la forma del ripiego
 const jx=(k,d)=>{try{const v=JSON.parse(mem.get(k));return v&&typeof v==="object"&&Array.isArray(v)===Array.isArray(d)?v:d}catch(e){return d}};
 const leggiRecenti=()=>jx("ilregno.recenti",[]);
+const recenti=(tipo,id,via)=>mem.set("ilregno.recenti",JSON.stringify([...via?[]:[{tipo,id}],...leggiRecenti().filter(x=>x&&!(x.tipo===tipo&&x.id===id))].slice(0,3)));
 function apri(tipo,id){
   const o=trova(tipo,id); if(!o)return;
-  mem.set("ilregno.recenti",JSON.stringify([{tipo,id},...leggiRecenti().filter(x=>!(x.tipo===tipo&&x.id===id))].slice(0,3)));
-  if(tipo==="canale"){mem.set("ilregno.ct",JSON.stringify({...jx("ilregno.ct",{}),[id]:Date.now()})); guarda(o)}
-  else if(o.url)location.href=indirizzo(o);
+  if(tipo==="canale")return guarda(o);
+  recenti(tipo,id);
+  if(o.url)location.href=indirizzo(o);
 }
-// indirizzo nuovo trovato dal controllo notturno: vale solo se i dati hanno ancora esattamente il vecchio
+// recente al primo fotogramma
+let segnato=null, fonte=null;
+$("#video").addEventListener("playing",()=>{
+  if(!cur||cur===segnato||!M.classList.contains("open"))return;
+  const id=(segnato=cur).id;
+  recenti("canale",id); mem.set("ilregno.rc",JSON.stringify([id,...jx("ilregno.rc",[]).filter(x=>x!==id)].slice(0,3)));
+  mem.set("ilregno.ct",JSON.stringify({...jx("ilregno.ct",{}),[id]:Date.now()})); rinvio=1;
+});
+function togliRecente(id){
+  recenti("canale",id,1); mem.set("ilregno.rc",JSON.stringify(jx("ilregno.rc",[]).filter(x=>x!==id))); disegna();
+}
 function indirizzo(o){
   const s=(STATO.siti||{})[o.id];
   return s&&s.nuovo&&s.sostituisce===o.url?s.nuovo:o.url;
 }
 
-// lettore: il codice sta in visione.js (dopo la prima schermata); qui ciò che serve al primo clic
 const M=$("#modal");
 let cur=null, pos=0, atteso=null;
 function guarda(c){
+  segnato=null;
   if(window.riproduci)return riproduci(c);
   if(!M.classList.contains("open"))pos=scrollY;
   atteso=cur=c;
@@ -571,8 +590,12 @@ function chiudiLettore(){
   document.body.classList.remove("pl"); document.documentElement.classList.remove("pl"); clearInterval(ti);
   if(scrollY!==pos)scrollTo(0,pos);
   ora();
+  if(!rinvio)return;
+  // la scheda da cui si era partiti resta ferma sullo schermo
+  rinvio=0;
+  const a=fonte&&fonte.isConnected&&fonte, y=a&&a.getBoundingClientRect().top, g=$("#gruppi"), h=g.offsetHeight;
+  disegna(); scrollBy(0,a&&a.isConnected?a.getBoundingClientRect().top-y:g.offsetHeight-h);
 }
-// comandi: spariscono 3 s dopo l'ultimo movimento; col dito il clic che li rimette si scarta
 let tb=0, ti=0, tocco=false;
 const nascosti=()=>M.classList.contains("nasc")&&!M.classList.contains("errore");
 M.addEventListener("pointerdown",()=>{tocco=nascosti()},true);
@@ -593,7 +616,6 @@ function mostraBarra(forza){
   tb=setTimeout(()=>M.classList.add("nasc"),3000);
 }
 ["mousemove","pointermove","pointerdown","click"].forEach(t=>M.addEventListener(t,()=>mostraBarra()));
-// hls.js per la chiavetta: 90 s dietro, 30 s o 30 MB avanti, dalla qualità più bassa
 const CONFIG_HLS={backBufferLength:90,maxBufferLength:30,maxMaxBufferLength:30,maxBufferSize:30*1000*1000,startLevel:0,
   xhrSetup:(x,u)=>x.addEventListener("progress",()=>{if(x.status>199&&x.status<300&&!/\.m3u8/.test(x.responseURL||u))dato=Date.now()})};
 const carica=f=>carica[f]||(carica[f]=new Promise(ok=>{
@@ -601,7 +623,6 @@ const carica=f=>carica[f]||(carica[f]=new Promise(ok=>{
   s.src=f; s.onload=ok; s.onerror=()=>{delete carica[f]; ok(0)};
 }));
 
-// ricerca: una voce di cronologia in più, così Indietro di Muflone la chiude
 let voceRicerca=false;
 function ricerca(on,dalBack){
   if(on===!$("#ricerca").hidden)return;
@@ -617,11 +638,12 @@ addEventListener("popstate",()=>{if(voceRicerca)ricerca(false,true)});
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b)return;
-  // titolo in corso: si riapre la sua pagina, il minuto lo ritrova Muflone (K4)
-  if(b.dataset.p)return void(htt(b.dataset.p)&&(location.href=b.dataset.p));
-  if(b.dataset.t)return apri(b.dataset.t,b.dataset.i);
+  if(b.dataset.p){if(!htt(b.dataset.p))return; if(b.dataset.t=="inizio")try{B.daCapo(b.dataset.p)}catch(x){} return void(location.href=b.dataset.p)}
+  if(b.dataset.r)return togliRecente(b.dataset.r);
+  if(b.dataset.t=="tutti"){tutti=1; disegna(); const x=$("#miei .griglia").children[8]; return x&&(x.querySelector("button")||x).focus()}
+  if(b.dataset.t){if(b.dataset.t=="canale")fonte=b; return apri(b.dataset.t,b.dataset.i)}
   switch(b.id){
-    case "su": {   // in cima anche la selezione, che è ciò che seguono le frecce di Muflone
+    case "su": {
       scrollTo(0,0);
       const vede=e=>e.getClientRects().length;
       const p=[...document.querySelectorAll("#gruppi button,#gruppi a[href]")].find(vede)||[...document.querySelectorAll(".top button")].find(vede);
@@ -629,6 +651,7 @@ document.addEventListener("click",e=>{
       return;
     }
     case "cerca": return ricerca(true);
+    case "crlink": if(!window.apriCron){crDopo=1; carica("continua.js")} return;
     case "chiudiRicerca": return ricerca(false);
     case "closePlayer": case "chiudi": return chiudiLettore();
     case "riprova": return guarda(cur);
@@ -640,7 +663,6 @@ document.addEventListener("keydown",e=>{
   if(M.classList.contains("open"))chiudiLettore();
   else if(!$("#ricerca").hidden)ricerca(false);
 });
-// con le frecce, tornando al palco o alle porte la pagina torna in cima
 document.addEventListener("focusin",e=>{
   const t=e.target;
   if(window.__mufloneArrows===1&&scrollY&&t.closest&&t.closest("#palco,#porte")&&t.getBoundingClientRect().bottom+scrollY<innerHeight-12)scrollTo(0,0);
@@ -648,28 +670,36 @@ document.addEventListener("focusin",e=>{
 const rivedi=()=>{if(document.visibilityState!=="hidden"){leggiStoria(); disegna()}};
 addEventListener("pageshow",e=>{if(e.persisted)rivedi()});
 document.addEventListener("visibilitychange",rivedi);
-setInterval(aggiorna,60000);            // il programma in onda cambia
+setInterval(aggiorna,60000);
 setInterval(ora,15000);
 
 function mostra(v){
-  D={gruppi:arr(v.gruppi),canali:arr(v.canali),siti:arr(v.siti)};
-  $("#avviso").hidden=true; disegna(); dopoPrimaSchermata();
+  D={gruppi:arr(v.gruppi),canali:arr(v.canali),siti:arr(v.siti)}; vS++;
+  $("#avviso").hidden=true; if(aspetto)return; disegna(); dopoPrimaSchermata();
 }
-// il resto si chiede dopo la prima schermata
+// il resto dopo un fotogramma vero
+let dopo=0, crDopo=0;
 function dopoPrimaSchermata(){
-  if(secondari)return; secondari=true; copri();
+  if(secondari)return; secondari=true;
+  document.hidden?dopo0():requestAnimationFrame(()=>setTimeout(dopo0));
+}
+function dopo0(){
+  if(dopo)return; dopo=1; copri();
   const sj=fetch("stato.json").then(r=>{if(!r.ok)throw 0;return r.json()}).then(s=>{STATO=ST=s}).catch(()=>{});
   Promise.all([sj,B&&B.provaLink?carica("ponte.js"):0]).then(()=>{statoNoto=true;aggiorna()});
-  if(B)carica("continua.js");   // Cronologia, «Come si usa», avviso di versione: solo dentro Muflone
+  if(B)carica("continua.js");
   ["visione.js","hls.min.js","archivio.js"].forEach(carica);
   fetch("guida.json").then(r=>r.json()).then(g=>{GUIDA=g;aggiorna()}).catch(()=>{});
 }
-ora(); leggiStoria();
-const cache=leggiCache(), copia=cache&&JSON.stringify(cache.v);   // prima di mostra(), che cambia i canali
-if(cache)mostra(cache.v); else disegna();
+ora();
+const cache=leggiCache(), copia=cache&&JSON.stringify(cache.v);
+function avvia(){aspetto=0; leggiStoria(); D?(disegna(),dopoPrimaSchermata()):cache?mostra(cache.v):disegna()}
+// storia in caricamento (storiaPronta() false): al più 1 s senza niente da premere
+const pronta=()=>{try{return B.storiaPronta()!==false}catch(e){return 1}}, t0=Date.now(), attendi=()=>pronta()||Date.now()-t0>1e3?avvia():setTimeout(attendi,25);
+if(B&&B.storiaPronta&&!pronta()){aspetto=1; setTimeout(attendi,25)}else avvia();
 const prendi=n=>fetch(DB,{signal:scade(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(v=>{
   if(!v||!v.canali)throw 0;
-  salvaCache(v); if(JSON.stringify(v)!==copia)mostra(v);   // dati uguali: niente si ridisegna
+  salvaCache(v); if(JSON.stringify(v)!==copia)mostra(v);
 }).catch(e=>{
   if(!n&&e.name=="TypeError")return setTimeout(prendi,2e3,1);
   console.warn("D01 database non raggiungibile");
