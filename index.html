@@ -467,7 +467,12 @@ document.addEventListener("click",e=>{
   if(b.dataset.sito)return categoria(b.dataset.sito);
   switch(b.id){
     case "live": if(!$("#ricerca").hidden)ricerca(false); return scrollTo(0,0);
-    case "su": return scrollTo(0,0);
+    case "su": {   // in cima anche la selezione, che è ciò che seguono le frecce di Muflone
+      scrollTo(0,0);
+      const p=[...document.querySelectorAll("#gruppi button,#gruppi a[href]")].find(e=>e.getClientRects().length);
+      if(p)p.focus({preventScroll:true});
+      return;
+    }
     case "cerca": return ricerca(true);
     case "chiudiRicerca": return ricerca(false);
     case "scChiudi": return chiudiScelta();
