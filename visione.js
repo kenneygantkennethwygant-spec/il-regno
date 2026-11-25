@@ -299,9 +299,12 @@ document.addEventListener("click",e=>{
   st.addEventListener("click",()=>{
     if(!cur)return;
     const l=jx("ilregno.preferiti",[]), p=l.includes(cur.id);
-    mem.set("ilregno.preferiti",JSON.stringify(p?l.filter(x=>x!==cur.id):[...l,cur.id]));
-    sporco=true; aggiornaStella();
-    pa.textContent=p?"Tolto dai preferiti":"Aggiunto ai preferiti"; pa.hidden=false;
+    const j=JSON.stringify(p?l.filter(x=>x!==cur.id):[...l,cur.id]);
+    mem.set("ilregno.preferiti",j);
+    const ok=mem.get("ilregno.preferiti")===j;   // mem.set tace sugli errori: si conferma solo ciò che si rilegge
+    if(ok)sporco=true;
+    aggiornaStella();
+    pa.textContent=ok?p?"Tolto dai preferiti":"Aggiunto ai preferiti":"Non riesco a salvarlo"; pa.hidden=false;
     clearTimeout(tpa); tpa=setTimeout(()=>pa.hidden=true,2000);
   });
   const chiudi0=chiudiLettore;

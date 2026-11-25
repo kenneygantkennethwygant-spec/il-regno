@@ -324,7 +324,8 @@ addEventListener("error",e=>{
 
 // ---------- recenti (ultime 3 cose aperte) ----------
 const trova=(tipo,id)=>D&&(tipo==="sito"?D.siti:D.canali).find(x=>x.id===id);
-const jx=(k,d)=>{try{return JSON.parse(mem.get(k))||d}catch(e){return d}};
+// ciò che sta nella memoria del dispositivo è dato: vale solo se ha la forma del valore di ripiego (elenco o oggetto), altrimenti il ripiego
+const jx=(k,d)=>{try{const v=JSON.parse(mem.get(k));return v&&typeof v==="object"&&Array.isArray(v)===Array.isArray(d)?v:d}catch(e){return d}};
 const leggiRecenti=()=>jx("ilregno.recenti",[]);
 function recenti(){
   const v=leggiRecenti().map(x=>({x,o:trova(x.tipo,x.id)})).filter(a=>a.o), el=$("#recenti");

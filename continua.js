@@ -30,6 +30,7 @@ body.cn #recenti{display:none}
 .cop img{display:block;width:36px;height:54px;object-fit:cover}
 .cx{position:absolute;right:0;top:0;width:52px;height:64px;display:flex;align-items:center;justify-content:center;border:0;background:none;font-size:20px;color:var(--muted)}
 .tf .ct .ch{padding-right:44px}
+.crlink.crsola{margin:0;padding:0;height:64px;font-size:19px;font-weight:800}
 .crlink{margin-left:auto;align-self:flex-end;height:64px;margin-top:-40px;padding:40px 0 0 24px;border:0;background:none;font-size:15px;font-weight:600;line-height:24px;color:#e4e6eb}
 .nuova{margin:12px var(--gut) 0;display:flex;align-items:center;gap:12px;padding:0 6px 0 18px;min-height:44px;border-radius:14px;border:1px solid rgba(255,48,72,.45);background:#160c10;font-size:16px;font-weight:600}
 .nuova.chiudi{min-height:64px;padding:0 0 0 18px;line-height:1.3}
@@ -102,7 +103,7 @@ function titolo(e){
 function voce(e,tf,visto){
   const s=sito(e.sito||hostDi(e.pagina)), p=visto?100:Math.max(0,Math.min(100,e.secondi/(e.durata||1)*100));
   const cop=tf&&typeof e.copertina==="string"&&e.copertina.length<=500&&/^https:\/\/[^\s/]+/i.test(e.copertina)?
-    `<span class="cop" data-s="${esc(s.sg)}"><img src="${esc(e.copertina)}" alt="" width="36" height="54" decoding="async" referrerpolicy="no-referrer"></span>`:placca(s.sg);
+    `<span class="cop" data-s="${esc(s.sg)}"><img data-src="${esc(e.copertina)}" alt="" width="36" height="54" decoding="async" referrerpolicy="no-referrer"></span>`:placca(s.sg);
   const sotto=visto?"visto · "+s.nome:tempo(e)+(visto===false?" · "+s.nome:"");   // visto: true/false nella Cronologia, assente nella fila
   return `<div class="ct">`+
     `<button class="ch cv" data-p="${esc(e.pagina)}">${cop}<span class="info"><b>${esc(titolo(e))}</b><span class="crsotto">${esc(sotto)}</span></span><i class="visto-l" style="width:${p.toFixed(1)}%"></i></button>`+
@@ -117,23 +118,28 @@ document.addEventListener("error",e=>{
 // ---------- la fila «Continua» ----------
 // Film e puntate da Muflone (continua()) e i canali guardati da poco (ilregno.recenti, col loro orario in ilregno.ct), dal più recente,
 // al più 4. Solo se Muflone ha qualcosa da riprendere: altrimenti «Recenti» resta com'è. Mai durante una ricerca.
+// Il link «Cronologia ›» (telefono, più di 2 voci) dipende dalla cronologia, non dai film da riprendere: se non ce n'è nessuno
+// resta il solo link, al posto della fila, e «Recenti» non si tocca.
 let ultima="";
 function fila(){
   const tf=tel(), g=$("#gruppi"), q=$("#q").value.trim();
   document.body.classList.toggle("tf",tf);
   const vecchia=$("#cn");
   const film=q||!D?[]:lista("continua");
-  if(!film.length){
+  const lungo=tf&&!q&&!!D&&lista("cronologia").length>2;
+  if(!film.length&&!lungo){
     if(vecchia)vecchia.remove();
     document.body.classList.remove("cn"); ultima=""; return;
   }
-  const ct=jx("ilregno.ct",{});
-  const c=jx("ilregno.recenti",[]).filter(x=>x&&x.tipo==="canale").map(x=>trova("canale",x.id)).filter(Boolean).map(o=>({t:ct[o.id]||0,id:o.id,h:o}));
-  const tutti=[...film.map(e=>({t:e.quando,e})),...c].sort((a,b)=>b.t-a.t).slice(0,4);
-  const lungo=tf&&lista("cronologia").length>2;
-  const h=`<section class="gruppo" id="cn"><h2>Continua${lungo?'<button class="crlink" id="crlink">Cronologia ›</button>':""}</h2><div class="griglia">`+
-    tutti.map(x=>x.e?voce(x.e,tf):`<div class="ct">${scheda(x.h)}${tf?`<button class="cx" data-x="c:${esc(x.id)}" aria-label="Togli">✕</button>`:""}</div>`).join("")+`</div></section>`;
-  document.body.classList.add("cn");
+  let h;
+  if(film.length){
+    const ct=jx("ilregno.ct",{});
+    const c=jx("ilregno.recenti",[]).filter(x=>x&&x.tipo==="canale").map(x=>trova("canale",x.id)).filter(Boolean).map(o=>({t:ct[o.id]||0,id:o.id,h:o}));
+    const tutti=[...film.map(e=>({t:e.quando,e})),...c].sort((a,b)=>b.t-a.t).slice(0,4);
+    h=`<section class="gruppo" id="cn"><h2>Continua${lungo?'<button class="crlink" id="crlink">Cronologia ›</button>':""}</h2><div class="griglia">`+
+      tutti.map(x=>x.e?voce(x.e,tf):`<div class="ct">${scheda(x.h)}${tf?`<button class="cx" data-x="c:${esc(x.id)}" aria-label="Togli">✕</button>`:""}</div>`).join("")+`</div></section>`;
+  }else h=`<section class="gruppo" id="cn"><h2><button class="crlink crsola" id="crlink">Cronologia ›</button></h2></section>`;
+  document.body.classList.toggle("cn",film.length>0);
   if(vecchia&&ultima===h&&vecchia.isConnected)return;
   ultima=h;
   if(vecchia)vecchia.remove();
@@ -158,6 +164,7 @@ function cronologia(){
   l.forEach(e=>{const n=gruppoDi(e.quando); let x=g.find(y=>y[0]===n); if(!x)g.push(x=[n,[]]); x[1].push(e)});
   $("#crl").innerHTML=g.map(x=>`<section class="gruppo"><h2>${x[0]}</h2><div class="griglia">${x[1].map(e=>voce(e,true,e.visto===true)).join("")}</div></section>`).join("");
   $(".crf").hidden=!l.length;
+  osservaLoghi();   // le copertine delle voci si chiedono quando entrano in vista (come i loghi)
   return l.length;
 }
 function apriCron(){
@@ -189,7 +196,7 @@ const GL="⏪︎", GF="⏩︎";
 const USO_TV=[
   [IC.fr,"Frecce — su Il Regno saltano da un riquadro all'altro; negli altri siti muovono il puntatore"],
   ["OK","OK — apri"],
-  [IC.ind,"Indietro — torna indietro; dalla pagina principale esce da Muflone"],
+  [IC.ind,"Indietro — torna indietro; dalla pagina principale premilo due volte per uscire da Muflone"],
   ["☰","☰ — torna a Il Regno"],
   [IC.pp,"Play/Pausa — ferma il video e lo fa ripartire"],
   [IC.rw+IC.ff,`<span class="gl">${GL} ${GF}</span> — nel video, 10 secondi indietro o avanti`],
