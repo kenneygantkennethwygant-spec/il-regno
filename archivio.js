@@ -1,6 +1,6 @@
 // Archivio di Mediaset (S2): «Ricomincia» e il tempo indietro sui canali Mediaset, che mandano solo 2 minuti di lista ma tengono
 // per ore i pezzi vecchi. La pagina scrive da sola le righe dei pezzi più vecchi (il numero di un pezzo è il suo nome) e le dà a hls.js
-// davanti alla lista vera, fino a 3 ore, dall'inizio del programma in onda meno 1 minuto. Misure e ragioni: tasks/2026-10-18-sera-mattia/tempo.md §2.
+// davanti alla lista vera, fino a 3 ore, dall'inizio del programma in onda meno 1 minuto. Misure e ragioni: archivio/2026-10-18-sera-mattia/tempo.md §2.
 // Si carica dopo la prima schermata, insieme a hls.js: se manca, i Mediaset suonano come canali senza archivio. Usa dalla pagina:
 // MS, CONFIG_HLS, hls, cur, V, programma(), aggiornaTempo(), mem, scade(). La pagina usa da qui solo `details.vero` (vedi spegni).
 // Se qualcosa non torna l'archivio si SPEGNE da solo, in silenzio, per il giorno: il canale resta in diretta e continua a suonare.
