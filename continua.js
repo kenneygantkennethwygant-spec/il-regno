@@ -98,11 +98,11 @@ function titolo(e){
   }catch(x){}
   return t;
 }
-// una scheda di film o puntata: targa (o copertina, solo sul telefono), titolo, «42 min di 1 h 58 · sito», linea rossa di quanto è visto;
+// una scheda di film o puntata: copertina se Muflone la dà, altrimenti targa (dal 25/11 anche sulla TV), titolo, «42 min di 1 h 58 · sito», linea rossa di quanto è visto;
 // ✕ per toglierla, solo sul telefono
 function voce(e,tf,visto){
   const s=sito(e.sito||hostDi(e.pagina)), p=visto?100:Math.max(0,Math.min(100,e.secondi/(e.durata||1)*100));
-  const cop=tf&&typeof e.copertina==="string"&&e.copertina.length<=500&&/^https:\/\/[^\s/]+/i.test(e.copertina)?
+  const cop=typeof e.copertina==="string"&&e.copertina.length<=500&&/^https:\/\/[^\s/]+/i.test(e.copertina)?
     `<span class="cop" data-s="${esc(s.sg)}"><img data-src="${esc(e.copertina)}" alt="" width="36" height="54" decoding="async" referrerpolicy="no-referrer"></span>`:placca(s.sg);
   const sotto=visto?"visto · "+s.nome:tempo(e)+(visto===false?" · "+s.nome:"");   // visto: true/false nella Cronologia, assente nella fila
   return `<div class="ct">`+
