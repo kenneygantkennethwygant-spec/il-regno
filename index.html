@@ -469,7 +469,8 @@ document.addEventListener("click",e=>{
     case "live": if(!$("#ricerca").hidden)ricerca(false); return scrollTo(0,0);
     case "su": {   // in cima anche la selezione, che è ciò che seguono le frecce di Muflone
       scrollTo(0,0);
-      const p=[...document.querySelectorAll("#gruppi button,#gruppi a[href]")].find(e=>e.getClientRects().length);
+      const vede=e=>e.getClientRects().length;   // senza riquadri (ricerca vuota, dati in arrivo) va sulla prima pillola
+      const p=[...document.querySelectorAll("#gruppi button,#gruppi a[href]")].find(vede)||[...document.querySelectorAll(".cats .pill,.top button")].find(vede);
       if(p)p.focus({preventScroll:true});
       return;
     }
