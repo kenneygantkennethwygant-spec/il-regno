@@ -103,8 +103,8 @@ button.porta:focus-visible{background:linear-gradient(158deg,rgba(var(--t),.55),
 .sito .apri{position:absolute;right:6px;bottom:6px;width:13px;height:13px;margin:0}
 .ko.sito .giu{display:block;white-space:normal;line-height:1.15}
 .sito .giu svg{display:inline-block;vertical-align:-2px;margin-right:3px}
-.porta:hover,.sito:hover,.voce:hover,.ch:hover,.bott:hover,.tasto:hover{box-shadow:0 0 0 2px rgba(255,48,72,.6)}
-.porta.ko:hover,.sito.ko:hover,.ch.off:hover{box-shadow:0 0 0 2px var(--yel)}
+button.porta:hover,.sito:hover,.voce:hover,.ch:hover,.bott:hover,.tasto:hover{box-shadow:0 0 0 2px rgba(255,48,72,.6)}
+button.porta.ko:hover,.sito.ko:hover,.ch.off:hover{box-shadow:0 0 0 2px var(--yel)}
 .admin:hover{color:#c9ccd4}
 .tvz{margin:24px 32px 0}
 .titolo{display:flex;align-items:baseline;gap:10px;height:22px;margin-bottom:8px}
@@ -136,6 +136,7 @@ button.porta:focus-visible{background:linear-gradient(158deg,rgba(var(--t),.55),
 .ch.off .plate{background:#121318;color:#8a7a4a}
 .ch.off b{color:#c9c2a8}
 .ch.off .live{color:var(--yel)}
+.ct{position:relative;min-width:0}#tv .cx{display:none}.cx{position:absolute;right:0;top:0;width:52px;height:64px;align-items:center;justify-content:center;font-size:20px;color:var(--muted)}
 .sk{height:64px;border-radius:14px;background:rgba(255,255,255,.04)}
 .msg{padding:12px 0;font-size:16px;color:var(--muted)}
 #avviso{padding:0 32px 8px}
@@ -207,7 +208,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
   .marchio svg{height:22px}
   #ora{display:none}
   .tasto{height:56px;min-width:56px;margin-left:8px;padding:0 14px;justify-content:center}
-  #crlink span,#cerca span{display:none}#crlink{padding:0}
+  #crlink span{display:none}#tv .cx{display:flex}.ct .ch{padding-right:44px}#crlink{padding:0}
   .ricerca input,.ricerca button{height:56px}
   .palco,.palco.solo{display:block;height:auto;margin:2px 16px 0}
   .eroe{height:256px;border-radius:14px 48px 14px 14px}
