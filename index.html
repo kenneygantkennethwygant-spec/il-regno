@@ -398,7 +398,11 @@ function scheda(c){
 const griglia=(t,n,l)=>`<div class="gruppo"><div class="titolo"><h2>${t}</h2>${n}</div><div class="griglia">${l.map(scheda).join("")}</div></div>`;
 const filtro=q=>c=>!q||String(c.nome).toLowerCase().includes(q);
 let tutti=0;
-const recC=()=>[...new Set([...jx("ilregno.rc",[]),...leggiRecenti().filter(x=>x&&x.tipo=="canale").map(x=>x.id)])].slice(0,3);
+const recC=()=>{
+  const r=jx("ilregno.rc",[]), l=[...new Set([...r,...leggiRecenti().filter(x=>x&&x.tipo=="canale").map(x=>x.id)])].slice(0,3);
+  if(l.join()!=r.join())mem.set("ilregno.rc",JSON.stringify(l));   // i canali di una pagina di prima passano alla loro lista, che i siti non toccano
+  return l;
+};
 function mieiH(q){
   const p=jx("ilregno.preferiti",[]), l=[...new Set([...p,...recC()])].map(i=>trova("canale",i)).filter(c=>c&&filtro(q)(c)), v=tutti?l:l.slice(0,8);
   return l.length?`<div class="gruppo" id="miei"><div class="titolo"><h2>I tuoi canali</h2></div><div class="griglia">`+v.map(c=>p.includes(c.id)?scheda(c):
@@ -480,7 +484,7 @@ function ora(){
 const trova=(tipo,id)=>D&&(tipo==="sito"?D.siti:D.canali).find(x=>x.id===id);
 const jx=(k,d)=>{try{const v=JSON.parse(mem.get(k));return v&&typeof v==="object"&&Array.isArray(v)===Array.isArray(d)?v:d}catch(e){return d}};
 const leggiRecenti=()=>jx("ilregno.recenti",[]);
-const recenti=(tipo,id,via)=>mem.set("ilregno.recenti",JSON.stringify([...via?[]:[{tipo,id}],...leggiRecenti().filter(x=>x&&!(x.tipo===tipo&&x.id===id))].slice(0,3)));
+const recenti=(tipo,id,via)=>recC()&&mem.set("ilregno.recenti",JSON.stringify([...via?[]:[{tipo,id}],...leggiRecenti().filter(x=>x&&!(x.tipo===tipo&&x.id===id))].slice(0,3)));
 function apri(tipo,id){
   const o=trova(tipo,id); if(!o)return;
   if(tipo==="canale")return guarda(o);
