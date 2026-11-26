@@ -57,7 +57,6 @@ body.cerco #palco,body.cerco #porte,body.cerco #ora,body.cerco #crlink{display:n
 .azioni{display:flex;gap:12px;margin-top:12px}
 .bott{height:64px;padding:0 22px 0 18px;border-radius:32px;font-weight:600;display:inline-flex;align-items:center;gap:10px;white-space:nowrap}
 .bott svg{width:17px;height:17px}
-.partita .bott svg{width:20px;height:20px}
 .bott.primo{background:#e0263d;color:#fff}
 .bott.primo:focus-visible{background:#fff;color:#0b0c10}
 .bott.secondo{background:rgba(255,255,255,.11);font-weight:500}
@@ -217,7 +216,6 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 <symbol id="s-cerca" viewBox="0 0 48 48"><circle cx="21" cy="21" r="12"/><path d="M30.5 30.5L42 42"/></symbol>
 <symbol id="s-storia" viewBox="0 0 48 48"><path d="M10.5 13.5A17 17 0 1 1 7.6 28"/><path d="M9 4.5v9.5h9.5M24 14.5V25l7 4.5"/></symbol>
 <symbol id="s-play" viewBox="0 0 48 48"><path fill="currentColor" stroke="none" d="M13 6.5L41 24L13 41.5z"/></symbol>
-<symbol id="s-sport" viewBox="0 0 48 48"><circle cx="24" cy="24" r="17.5"/><path d="M24 15l8.6 6.2-3.3 10.1H18.7l-3.3-10.1z" fill="currentColor" stroke-width="1.5"/><path d="M24 15V7.5M32.6 21.2l7-2.3M29.3 31.3l4.3 6M18.7 31.3l-4.3 6M15.4 21.2l-7-2.3" stroke-width="3"/></symbol>
 <symbol id="s-capo" viewBox="0 0 48 48"><path d="M13.5 14A16 16 0 1 1 8.4 26"/><path d="M12 4.5V15h10.5"/></symbol>
 <symbol id="s-su" viewBox="0 0 48 48"><path d="M10 31L24 17L38 31"/></symbol>
 <symbol id="s-apri" viewBox="0 0 48 48"><path d="M14 34L34 14M18 13h17v17"/></symbol>
@@ -320,24 +318,16 @@ const quanto=e=>Math.max(0,Math.min(100,e.secondi/e.durata*100)).toFixed(1)+"%";
 const COP=/^(https:\/\/[^\s/]+\S*|data:image\/(webp|jpeg|png);base64,[\w+\/=]+)$/;
 const copertina=u=>typeof u==="string"&&u.length<=(u[0]==="d"?2e5:500)&&COP.test(u);
 const op=e=>e.sito==="pixeldrain.net"&&/^One Pace/.test(e.titolo)||lettere(e.sito||host(e.pagina)).includes("onepace");
-let COPS={};
+let COPS={}, NCOP=0;
 function figura(e,c,cl){
-  const u=e.copertina, k=copertina(u)&&(u[0]=="d"?u.length+u.slice(-24):u);
+  const u=e.copertina, k=copertina(u)&&(u[0]=="d"?"d"+NCOP++:u);   // un data: ha una chiave sua: due immagini diverse non si sovrascrivono mai
   if(k)COPS[k]=u;
   return `<span class="targa" style="${tinta(c)}">${k?"":op(e)?OPS:SZ(cl?c+"-palco":c)}</span>`+(k?`<img class="${cl}" data-c="${esc(k)}" data-m="${cl?c+"-palco":c}"${op(e)?' data-o="1"':""} alt="" decoding="async" referrerpolicy="no-referrer"${cl?"":' loading="lazy"'} onerror="ko(this)">`:"");
 }
 const OPS='<svg class="op" viewBox="0 0 48 48"><use href="#s-op"/></svg>', SZ=c=>`<img class="sz" ${dopo?"src":"data-s"}="sezioni/${c}.svg" alt="" decoding="async" onerror="this.remove()">`, ko=i=>{i.previousSibling.innerHTML=i.dataset.o?OPS:SZ(i.dataset.m); i.remove()};
-const P=window.__partita, SP=()=>sitiDi("sport")[0];
-const squadre=t=>{const m=/^(.+?)\s+(?:vs\.?|-|–)\s+(.+)$/i.exec(t.split(" | ")[0]); return m?m[1]+" – "+m[2]:"Partita su "+SP().nome};
-function partitaH(){
-  const s=SP(); if(!P||!s||P.fa>=180)return "";
-  return `<section class="palco" id="palco"><div class="eroe partita"><span class="targa">${SZ("sport-palco")}</span><div class="velo"></div><div class="testo">`+
-    `<h1>${esc(squadre(P.titolo))}</h1><div class="meta"><span>${esc(s.nome)} · lasciata ${P.fa} min fa</span></div>`+
-    `<div class="azioni"><button class="bott primo" data-t="partita" data-i="${esc(s.id)}">${segno("s-sport")}Torna alla partita</button></div></div></div></section>`;
-}
 function palcoH(){
-  COPS={};
-  if(!STORIA.length)return partitaH();
+  COPS={}; NCOP=0;
+  if(!STORIA.length)return "";
   const v=STORIA[0], {c,dove}=mondo(v), q=parti(v,dove,c);
   return `<section class="palco" id="palco"><div class="eroe" style="${tinta(c)}">${figura(v,c,"quadro")}<div class="velo"></div><div class="testo">`+
     `<h1${q.t.length>30?' class="lungo"':""}>${esc(q.t)}</h1><div class="meta">${pill(q.p,"punt")}${pill(q.ver,"ver")}<span>${dove!==q.t?esc(dove)+" · ":""}sei a <b>${orologio(v.secondi)}</b> di ${orologio(v.durata)}</span></div>`+
@@ -413,7 +403,7 @@ function disegna(){
   const q=$("#q").value.trim().toLowerCase();
   if(vP!==vS){vP=vS; sostituisci("palco",palcoH())}
   if(D){sostituisci("porte",porteH()); sostituisci("tv",tvH(q)); sostituisci("miei",mieiH(q))}
-  document.body.classList.toggle("vuota",!STORIA.length&&!partitaH());
+  document.body.classList.toggle("vuota",!STORIA.length);
   $("#crlink").hidden=STORIA.length||!VISTI;
   aggiorna(); osservaLoghi(); if(dopo)copri();
 }
