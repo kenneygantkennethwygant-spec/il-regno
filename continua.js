@@ -1,7 +1,8 @@
-// Il Regno dentro Muflone: la fila «Continua», la Cronologia (telefono), «Come si usa» e l'avviso di versione nuova.
+// Muflone, la pagina principale dentro l'app: la Cronologia, «Come si usa» e l'avviso di versione nuova. Ciò che stavi guardando
+// (il palco con «Riprendi») lo disegna index.html nella prima schermata (palcoH, leggiStoria).
 // Si carica dopo la prima schermata (dopoPrimaSchermata) e solo se c'è window.Muflone: nel browser non si scarica.
-// Script normale, non un modulo: usa per nome ciò che sta nella pagina ($, esc, mem, jx, D, trova, scheda, aggiorna, osservaLoghi,
-// disegna, scade, M, voceScelta). Ciò che arriva da Muflone è dato: entra nella pagina solo con esc() o come testo, e gli indirizzi
+// Script normale, non un modulo: usa per nome ciò che sta nella pagina ($, esc, mem, scade, M, osservaLoghi, leggiStoria, disegna,
+// copertina, op). Ciò che arriva da Muflone è dato: entra nella pagina solo con esc() o come testo, e gli indirizzi
 // solo se sono http(s).
 // Ponte con Muflone (muflone/contratti/cronologia.md, «The row on Il Regno»): continua(), cronologia(), togliDaCronologia(pagina),
 // svuotaCronologia(), versione(). Ogni chiamata può mancare o dare un errore: allora non si disegna nulla.
@@ -21,7 +22,6 @@ const lista=f=>{
 // ---------- stile (si aggiunge qui perché la prima schermata non lo paga) ----------
 const css=document.createElement("style");
 css.textContent=`
-body.cn #recenti{display:none}
 .ct{position:relative;min-width:0}.ct>.ch{width:100%}
 .cv{position:relative;overflow:hidden}
 .crsotto{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -29,22 +29,27 @@ body.cn #recenti{display:none}
 .cop{flex:0 0 auto;width:36px;height:54px;margin:0 11px;border-radius:4px;overflow:hidden;background:var(--plate)}
 .cop img{display:block;width:36px;height:54px;object-fit:cover}
 .cx{position:absolute;right:0;top:0;width:52px;height:64px;display:flex;align-items:center;justify-content:center;border:0;background:none;font-size:20px;color:var(--muted)}
-.tf .ct .ch{padding-right:44px}
-.crlink.crsola{margin:0;padding:0;height:64px;font-size:19px;font-weight:800}
-.crlink{margin-left:auto;align-self:flex-end;height:64px;margin-top:-40px;padding:40px 0 0 24px;border:0;background:none;font-size:15px;font-weight:600;line-height:24px;color:#e4e6eb}
+#cron .ct .ch{padding-right:44px}
+#cron .gruppi{padding:0 32px}#cron .gruppo h2{margin:0 0 8px;font-size:15px}
+@media(max-width:700px){#cron .gruppi{padding:0 16px}}
+.ct .plate{margin-right:0}
 .nuova{margin:12px var(--gut) 0;display:flex;align-items:center;gap:12px;padding:0 6px 0 18px;min-height:44px;border-radius:14px;border:1px solid rgba(255,48,72,.45);background:#160c10;font-size:16px;font-weight:600}
 .nuova.chiudi{min-height:64px;padding:0 0 0 18px;line-height:1.3}
 .nuova .cx{position:static;margin-left:auto;flex:none}
-.nuova+.cats{padding-top:26px}
+/* sulla TV l'avviso sta sopra la testata, accanto al marchio: arriva tardi e non deve spostare ciò che si preme */
+.nuova:not(.chiudi){position:absolute;top:18px;left:166px;margin:0}
 #cron{display:none}
 body.cr #cron{display:block}
-body.cr .top,body.cr .cats,body.cr #gruppi,body.cr #avviso,body.cr .nuova,body.cr .fondo:not(.crf){display:none}
+body.cr .top,body.cr #gruppi,body.cr #avviso,body.cr .nuova,body.cr .fondo:not(.crf){display:none}
 .crtop{height:64px;display:flex;align-items:center;gap:6px;padding:8px var(--gut) 0;border:0;background:none;font-size:19px;font-weight:800}
 .crtop span{font-size:30px;font-weight:400;margin-top:-4px}
 .cancella{height:64px;padding:0 26px;border-radius:999px;border:1px solid rgba(255,48,72,.5);background:#11131a;font-size:15px;font-weight:700;color:#ff6b7c}
 #crconf,#uso{position:fixed;top:0;left:0;right:0;bottom:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(7,8,11,.9)}
 #uso{z-index:60;background:var(--bg);overflow:auto}   /* pieno, non al 92% come sulla tavola: sotto non si deve leggere la pagina, e la chiavetta non la mescola */
-.sc .rosso{background:var(--red);border-color:var(--red);color:#fff;justify-content:center}
+.sc{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:560px;padding:28px 32px;border-radius:20px;background:#11131a}
+.sc p{width:100%;margin:0 0 4px;text-align:center;font-size:19px;font-weight:700}
+.sc button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#1b1e26;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.sc .rosso{background:var(--red);border-color:var(--red);color:#fff}
 .gcol{display:flex;flex-direction:column;gap:6px;width:720px;max-width:100%;margin:auto}
 .gcol .gt{margin:0 0 10px;font-size:19px;font-weight:800}
 .gr{display:flex;align-items:center;gap:16px;min-height:48px;font-size:16px;line-height:1.3}
@@ -100,59 +105,29 @@ function titolo(e){
 }
 // una scheda di film o puntata: copertina se Muflone la dà, altrimenti targa (dal 25/11 anche sulla TV), titolo, «42 min di 1 h 58 · sito», linea rossa di quanto è visto;
 // ✕ per toglierla, solo sul telefono
-function voce(e,tf,visto){
-  const s=sito(e.sito||hostDi(e.pagina)), p=visto?100:Math.max(0,Math.min(100,e.secondi/(e.durata||1)*100));
-  const cop=typeof e.copertina==="string"&&e.copertina.length<=500&&/^https:\/\/[^\s/]+/i.test(e.copertina)?
-    `<span class="cop" data-s="${esc(s.sg)}"><img data-src="${esc(e.copertina)}" alt="" width="36" height="54" decoding="async" referrerpolicy="no-referrer"></span>`:placca(s.sg);
+// La copertina non entra nell'HTML: va in cop[] e la scheda la prende quando entra in vista (img.__u, caricaLogo di index.html).
+// La voce si apre col solo gestore di questo file (data-v, non data-p che è del palco).
+const OPI='<span class="plate s1"><svg width="44" height="44" viewBox="0 0 48 48"><use href="#s-op"/></svg></span>';
+function voce(e,tf,visto,cop){
+  const s=sito(e.sito||hostDi(e.pagina)), p=visto?100:Math.max(0,Math.min(100,e.secondi/(e.durata||1)*100)), o=op(e);
+  const c=copertina(e.copertina)?(cop.push(e.copertina),
+    `<span class="cop" data-s="${esc(s.sg)}"${o?' data-o="1"':""}><img data-src="" alt="" width="36" height="54" decoding="async" referrerpolicy="no-referrer"></span>`):
+    o?OPI:placca(s.sg);   // One Pace senza copertina: la sua icona
   const sotto=visto?"visto · "+s.nome:tempo(e)+(visto===false?" · "+s.nome:"");   // visto: true/false nella Cronologia, assente nella fila
   return `<div class="ct">`+
-    `<button class="ch cv" data-p="${esc(e.pagina)}">${cop}<span class="info"><b>${esc(titolo(e))}</b><span class="crsotto">${esc(sotto)}</span></span><i class="visto-l" style="width:${p.toFixed(1)}%"></i></button>`+
+    `<button class="ch cv" data-v="${esc(e.pagina)}">${c}<span class="info"><b>${esc(titolo(e))}</b><span class="crsotto">${esc(sotto)}</span></span><i class="visto-l" style="width:${p.toFixed(1)}%"></i></button>`+
     (tf?`<button class="cx" data-x="${esc(e.pagina)}" aria-label="Togli">✕</button>`:"")+`</div>`;
 }
-// copertina che non arriva: resta la targa
+// copertina che non arriva: resta la targa (One Pace: la sua icona)
 document.addEventListener("error",e=>{
   const i=e.target, c=i.tagName==="IMG"&&i.parentNode;
-  if(c&&c.classList.contains("cop"))c.outerHTML=placca(c.dataset.s||"");
+  if(c&&c.classList.contains("cop"))c.outerHTML=c.dataset.o?OPI:placca(c.dataset.s||"");
 },true);
 
-// ---------- la fila «Continua» ----------
-// Film e puntate da Muflone (continua()) e i canali guardati da poco (ilregno.recenti, col loro orario in ilregno.ct), dal più recente,
-// al più 4. Solo se Muflone ha qualcosa da riprendere: altrimenti «Recenti» resta com'è. Mai durante una ricerca.
-// Il link «Cronologia ›» (telefono, più di 2 voci) dipende dalla cronologia, non dai film da riprendere: se non ce n'è nessuno
-// resta il solo link, al posto della fila, e «Recenti» non si tocca.
-let ultima="";
-function fila(){
-  const tf=tel(), g=$("#gruppi"), q=$("#q").value.trim();
-  document.body.classList.toggle("tf",tf);
-  const vecchia=$("#cn");
-  const film=q||!D?[]:lista("continua");
-  const lungo=tf&&!q&&!!D&&lista("cronologia").length>2;
-  if(!film.length&&!lungo){
-    if(vecchia)vecchia.remove();
-    document.body.classList.remove("cn"); ultima=""; return;
-  }
-  let h;
-  if(film.length){
-    const ct=jx("ilregno.ct",{});
-    const c=jx("ilregno.recenti",[]).filter(x=>x&&x.tipo==="canale").map(x=>trova("canale",x.id)).filter(Boolean).map(o=>({t:ct[o.id]||0,id:o.id,h:o}));
-    const tutti=[...film.map(e=>({t:e.quando,e})),...c].sort((a,b)=>b.t-a.t).slice(0,4);
-    h=`<section class="gruppo" id="cn"><h2>Continua${lungo?'<button class="crlink" id="crlink">Cronologia ›</button>':""}</h2><div class="griglia">`+
-      tutti.map(x=>x.e?voce(x.e,tf):`<div class="ct">${scheda(x.h)}${tf?`<button class="cx" data-x="c:${esc(x.id)}" aria-label="Togli">✕</button>`:""}</div>`).join("")+`</div></section>`;
-  }else h=`<section class="gruppo" id="cn"><h2><button class="crlink crsola" id="crlink">Cronologia ›</button></h2></section>`;
-  document.body.classList.toggle("cn",film.length>0);
-  if(vecchia&&ultima===h&&vecchia.isConnected)return;
-  ultima=h;
-  if(vecchia)vecchia.remove();
-  g.insertAdjacentHTML("afterbegin",h);
-  aggiorna(); osservaLoghi();
-}
-// il gruppo di Il Regno si ridisegna da sé (dati nuovi, ricerca, preferiti): dopo ogni ridisegno la fila torna in cima
-const disegna0=disegna;
-disegna=function(){disegna0(); ultima=""; fila()};
-["pageshow","visibilitychange"].forEach(t=>addEventListener(t,()=>{if(document.visibilityState!=="hidden"&&D)fila()}));
-try{matchMedia(Q).addEventListener("change",()=>{if(D){ultima=""; fila()}})}catch(e){}
+// dopo un cambio della storia (voce tolta, cronologia svuotata) la pagina ridisegna il palco e la Cronologia
+const rifai=()=>{leggiStoria(); disegna()};
 
-// ---------- Cronologia (telefono) ----------
+// ---------- Cronologia ----------
 const GIORNO=864e5;
 function gruppoDi(q){
   const o=new Date(); o.setHours(0,0,0,0);
@@ -160,9 +135,10 @@ function gruppoDi(q){
   return d<=0?"Oggi":d<=GIORNO?"Ieri":d<=6*GIORNO?"Questa settimana":"Prima";
 }
 function cronologia(){
-  const l=lista("cronologia").sort((a,b)=>b.quando-a.quando), g=[];
+  const l=lista("cronologia").sort((a,b)=>b.quando-a.quando), g=[], cop=[];
   l.forEach(e=>{const n=gruppoDi(e.quando); let x=g.find(y=>y[0]===n); if(!x)g.push(x=[n,[]]); x[1].push(e)});
-  $("#crl").innerHTML=g.map(x=>`<section class="gruppo"><h2>${x[0]}</h2><div class="griglia">${x[1].map(e=>voce(e,true,e.visto===true)).join("")}</div></section>`).join("");
+  $("#crl").innerHTML=g.map(x=>`<section class="gruppo"><h2>${x[0]}</h2><div class="griglia">${x[1].map(e=>voce(e,true,e.visto===true,cop)).join("")}</div></section>`).join("");
+  $("#crl").querySelectorAll(".cop img").forEach((i,n)=>{i.__u=cop[n]});
   $(".crf").hidden=!l.length;
   osservaLoghi();   // le copertine delle voci si chiedono quando entrano in vista (come i loghi)
   return l.length;
@@ -171,13 +147,17 @@ function apriCron(){
   if(strato||!document.getElementById("cron"))return;
   const y=scrollY;
   if(!cronologia())return;
-  su(()=>{document.body.classList.remove("cr"); $("#crconf").hidden=true; scrollTo(0,y); fila()});   // prima della voce: il browser ricorda dov'eri
+  su(()=>{document.body.classList.remove("cr"); $("#crconf").hidden=$("#scelta").hidden=true; $("#crl").innerHTML=""; scrollTo(0,y); rifai(); const c=$("#crlink"); if(c&&!c.hidden)c.focus({preventScroll:true})});   // prima della voce: il browser ricorda dov'eri; la lista chiusa si libera
   document.body.classList.add("cr"); scrollTo(0,0);
+  const f=$("#crl button"); if(f)f.focus({preventScroll:true});   // le frecce partono dalla prima voce
 }
 document.body.insertAdjacentHTML("beforeend",
   `<section id="cron"><button class="crtop" id="crtorna"><span>‹</span> Cronologia</button><div class="gruppi" id="crl"></div>`+
   `<div class="fondo crf" style="padding-top:20px"><button class="cancella" id="crvuota">Cancella tutto</button></div></section>`+
-  `<div id="crconf" hidden role="dialog" aria-label="Cancellare la cronologia"><div class="sc"><p>Cancellare tutta la cronologia?</p><button class="rosso" id="crsi">Sì, cancella</button><button id="crno" style="justify-content:center">No</button></div></div>`);
+  `<div id="crconf" hidden role="dialog" aria-label="Cancellare la cronologia"><div class="sc" id="scelta" hidden><p>Cancellare tutta la cronologia?</p><button class="rosso" id="crsi">Sì, cancella</button><button id="crno">No</button></div></div>`);
+// la domanda si chiama #scelta perché le frecce di Muflone (pagina.js) restano dentro una #scelta aperta; si parte da «No»,
+// e chiusa col «No» il fuoco torna su «Cancella tutto»
+const conf=on=>{$("#crconf").hidden=$("#scelta").hidden=!on; $(on?"#crno":"#crvuota").focus()};
 
 // ---------- «Come si usa» ----------
 const IC={
@@ -194,10 +174,10 @@ const IC={
 const GL="⏪︎", GF="⏩︎";
 // le righe dicono Muflone com'è con le frecce che saltano i riquadri su Il Regno e il puntatore negli altri siti (S9)
 const USO_TV=[
-  [IC.fr,"Frecce — su Il Regno saltano da un riquadro all'altro; negli altri siti muovono il puntatore"],
+  [IC.fr,"Frecce — qui saltano da un riquadro all'altro; negli altri siti muovono il puntatore"],
   ["OK","OK — apri"],
   [IC.ind,"Indietro — torna indietro; dalla pagina principale premilo due volte per uscire da Muflone"],
-  ["☰","☰ — torna a Il Regno"],
+  ["☰","☰ — torna a questa pagina"],
   [IC.pp,"Play/Pausa — ferma il video e lo fa ripartire"],
   [IC.rw+IC.ff,`<span class="gl">${GL} ${GF}</span> — nel video, 10 secondi indietro o avanti`],
   [IC.rw+"×2",`<span class="gl">${GL}</span> due volte, fuori dai video — passa dalle frecce al puntatore e viceversa`]
@@ -205,7 +185,7 @@ const USO_TV=[
 const USO_TEL=[
   [IC.tocco,"Tocca per aprire"],
   [IC.indt,"Indietro — torna indietro"],
-  [IC.casa,"La casetta in basso a destra — torna a Il Regno"],
+  [IC.casa,"La casetta in basso a destra — torna a questa pagina"],
   [IC.pip,"Se esci dall'app durante un video, il video continua in una finestrella"]
 ];
 function apriUso(){
@@ -219,7 +199,7 @@ function apriUso(){
 function primaVolta(){
   if(mem.get("ilregno.uso")||typeof B.continua!=="function")return;
   mem.set("ilregno.prova","1"); if(mem.get("ilregno.prova")!=="1")return;
-  if(M.classList.contains("open")||voceScelta||strato||!$("#ricerca").hidden)return;
+  if(M.classList.contains("open")||strato||!$("#ricerca").hidden)return;
   apriUso();
 }
 if(typeof B.continua==="function")$(".fondo").insertAdjacentHTML("beforeend",'<button class="admin" id="usoLink">Come si usa</button>');
@@ -241,13 +221,13 @@ function avviso(ultimaV){
 // ---------- comandi ----------
 document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b)return;
-  if(b.classList.contains("cv"))return giu0(b.dataset.p);
+  if(b.classList.contains("cv"))return giu0(b.dataset.v);
   if(b.dataset.x)return togli(b.dataset.x);
   switch(b.id){
     case "crlink": return apriCron();
     case "crtorna": return giu();
-    case "crvuota": $("#crconf").hidden=false; $("#crsi").focus(); return;
-    case "crno": $("#crconf").hidden=true; return;
+    case "crvuota": return conf(1);
+    case "crno": return conf(0);
     case "crsi": try{B.svuotaCronologia()}catch(x){} return giu();
     case "usoOk": return giu();
     case "usoLink": return apriUso();
@@ -257,18 +237,16 @@ document.addEventListener("click",e=>{
 // un clic su una scheda riapre la pagina del film: il minuto lo ritrova Muflone (contratto K4); dalla Cronologia prima si toglie la sua voce
 const giu0=u=>htt(u)&&(strato?giu(u):location.href=u);
 function togli(x){
-  if(x.startsWith("c:")){
-    const id=x.slice(2);
-    mem.set("ilregno.recenti",JSON.stringify(jx("ilregno.recenti",[]).filter(r=>!(r&&r.tipo==="canale"&&r.id===id))));
-    recenti();
-  }else try{B.togliDaCronologia(x)}catch(e){}
+  try{B.togliDaCronologia(x)}catch(e){}
   if(document.body.classList.contains("cr")){if(!cronologia())giu()}
-  ultima=""; fila();
 }
 
 // ---------- avvio ----------
-fila();
-primaVolta();
+const tf=()=>document.body.classList.toggle("tf",tel());   // telefono: «Come si usa» e Cronologia a misura di dito
+tf(); try{matchMedia(Q).addEventListener("change",tf)}catch(e){}
+window.apriCron=apriCron;
+if(crDopo){crDopo=0; apriCron()}   // «Cronologia» premuta prima che questo file arrivasse
+else primaVolta();
 if(typeof B.versione==="function"){
   fetch("versione.json",{signal:scade(8000)}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{if(j&&typeof j.muflone==="string")avviso(j.muflone)}).catch(()=>{});
 }

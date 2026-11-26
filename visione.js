@@ -1,8 +1,94 @@
 // Lettore di Il Regno: il flusso del canale aperto (nativo o hls.js), attese e codici, caduta e riconnessione, pausa, tracce audio,
 // comandi del tempo. Si carica dopo la prima schermata (dopoPrimaSchermata, `carica`), come hls.js: la prima schermata non lo aspetta.
 // Script normale, non un modulo: le sue variabili stanno nello stesso spazio di quelle della pagina, e archivio.js le usa per nome
-// (MS, hls, V, aggiornaTempo() da qui; CONFIG_HLS, cur, programma(), mem, scade() dalla pagina). Restano nella pagina lo strato
-// del lettore e ciò che serve al primo clic prima che questo file arrivi: guarda(), chiudiLettore(), la barra che sparisce, in onda.
+// (MS, hls, V, aggiornaTempo(), CONFIG_HLS, inOnda(), mostraBarra() da qui; cur, programma(), mem, scade() dalla pagina). Restano nella
+// pagina il nero del lettore con titolo e ✕ e ciò che serve al primo clic prima che questo file arrivi: guarda(), chiudiLettore().
+// Note di index.html, spostate qui perché la pagina sta sotto i 16.384 byte gzip:
+//  - palco: continua() è sincrono; dati di Muflone solo con esc() (K1).
+//  - copertina: sotto c'è la targa; nell'HTML solo la sua identità (lunghezza e coda), l'indirizzo in COPS e in `src` dopo la prima schermata.
+//  - #miei: preferiti, poi 3 canali partiti (ilregno.rc e i canali di ilregno.recenti); si rifà da solo, le schede sotto restano.
+//  - sostituisci(): si riscrive solo ciò che è cambiato, così il fuoco ripristinato da pagina.js (che osserva i figli di #gruppi) vale ancora.
+//  - recente al primo fotogramma: il canale entra nei recenti all'evento `playing`, non al clic.
+//  - dopoPrimaSchermata(): il resto parte dopo un fotogramma vero (requestAnimationFrame, poi un compito).
+//  - storia in caricamento (Muflone.storiaPronta() false): si aspetta al più 1 s senza niente da premere.
+//  - lettore e scorrimento: alla chiusura la scheda da cui si era partiti resta ferma sullo schermo. Chrome ancora la pagina da solo quando
+//    «I tuoi canali» nasce sopra la scheda: perciò il compenso si misura dopo il disegno (S11@98: due compensi sommati sposterebbero la scheda di 114 px).
+// Lo strato del lettore sta qui e non in index.html, che tiene solo il nero, il titolo e la ✕ (il primo clic su un canale è subito): stile,
+// comandi, errore, barra che sparisce, programma in onda. Arriva dopo la prima schermata, prima del resto di questo file.
+const stile=document.head.appendChild(document.createElement("style"));
+stile.textContent=`#inonda{margin-top:3px;font-size:14px;font-weight:500;color:rgba(255,255,255,.8);text-shadow:0 0 4px #000,0 2px 6px #000;white-space:pre;overflow:hidden;text-overflow:ellipsis}
+#avanza{width:200px;max-width:100%;height:3px;margin-top:8px;border-radius:2px;background:rgba(255,255,255,.2);overflow:hidden}
+#avanza i{display:block;height:100%;width:0;background:var(--red)}
+.barra,.cmd,#tempo,#audioScelte{transition:opacity .2s}
+#modal.nasc:not(.errore) .barra,#modal.nasc:not(.errore) .cmd,#modal.nasc:not(.errore) #tempo,#modal.nasc:not(.errore) #audioScelte{opacity:0}
+#modal.nasc:not(.errore) #closePlayer,#modal.nasc:not(.errore) .cmd,#modal.nasc:not(.errore) #linea{pointer-events:none}
+#modal.nasc.inpausa:not(.errore) #diretta{opacity:1;pointer-events:auto}
+.cmd{flex:none;max-width:100%;height:64px;padding:0 20px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);
+  font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:auto}
+#audio{min-width:0;flex:0 1 auto}
+#audioScelte{position:absolute;top:80px;right:var(--margine-lato);z-index:3;display:flex;flex-direction:column;gap:6px;padding:6px;min-width:250px;border-radius:20px;border:1px solid var(--line);background:rgba(12,13,18,.94)}
+#audioScelte .cmd{display:flex;align-items:center;gap:12px;border-color:transparent;background:transparent;text-align:left}
+#audioScelte .cmd::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
+#audioScelte [aria-pressed=true]::before{background:var(--red);border-color:var(--red)}
+#basso{position:absolute;left:var(--margine-lato);right:var(--margine-lato);bottom:var(--gut);z-index:2;display:flex;flex-direction:column;pointer-events:none}
+.riga{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+#pausa{width:64px;padding:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.92);border-color:transparent;color:#07080b}
+#pausa svg{width:26px;height:26px;fill:currentColor}
+#modal:not(.inpausa) #pausa .i-riprendi,#modal.inpausa #pausa .i-pausa{display:none}
+.tondo{min-width:64px;padding:0 14px}
+#diretta{margin-left:auto;background:var(--red);border-color:var(--red)}
+#tempo{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+#lineaInizio,#lineaFine,#ritardo{flex:none;font-size:13px;font-weight:600;text-shadow:0 0 4px #000,0 2px 6px #000}
+#linea{position:relative;flex:1 1 0;min-width:0;height:64px;cursor:pointer;pointer-events:auto}
+#linea .binario{position:absolute;left:0;right:0;top:41px;height:5px;border-radius:3px;background:rgba(255,255,255,.22)}
+#linea i{position:absolute;top:0;bottom:0;border-radius:3px}
+#rivedibile{background:rgba(255,255,255,.45)}
+#visto{background:var(--red)}
+.binario #vivo{top:-6px;width:3px;height:17px;margin-left:-1.5px;border-radius:2px;background:var(--red)}
+.binario #punto{top:-7px;width:19px;height:19px;margin-left:-9.5px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.6)}
+#ritardo{position:absolute;top:10px;transform:translateX(-50%);white-space:nowrap}
+#ritardo.vivo{color:#ff6b7c}
+#inpausa,#riconnessione,#lenta{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:10px 24px;border-radius:999px;background:rgba(0,0,0,.6);
+  font-size:20px;font-weight:700;white-space:nowrap;pointer-events:none}
+#riconnessione,#lenta{font-size:16px;font-weight:600}
+#err{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:#000;text-align:center;padding:0 var(--gut)}
+#modal.errore #err{display:flex}
+#modal.errore #video{visibility:hidden}
+#err p{margin:0;font-size:22px;font-weight:700}
+#err #errcod{margin-top:-12px;font-size:15px;font-weight:500;color:var(--muted)}
+#err #errcod:empty{display:none}
+#modal.errore #pausa,#modal.errore #audio,#modal.errore #audioScelte,#modal.errore #diretta,#modal.errore #inpausa,#modal.errore #riconnessione,#modal.errore #lenta,
+#modal.errore #tempo,#modal.errore #ricomincia,#modal.errore #indietro30,#modal.errore #avanti30{display:none}
+#err div{display:flex;gap:16px}
+#err button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#11131a;font-size:17px;font-weight:700}
+#err #riprova{background:var(--red);border-color:var(--red)}
+@media(max-width:700px){.cmd{padding:0 14px}.riga{gap:8px}}`;
+$(".nome").insertAdjacentHTML("beforeend",'<div id="inonda" hidden></div><div id="avanza" hidden><i></i></div>');
+$("#closePlayer").insertAdjacentHTML("beforebegin",'<button class="cmd" id="audio" hidden></button>');
+M.insertAdjacentHTML("beforeend",`<div id="audioScelte" hidden></div><div id="inpausa" hidden>In pausa</div><div id="riconnessione" hidden>Riconnessione&hellip;</div><div id="lenta" hidden>Linea lenta, sto caricando&hellip;</div><div id="basso"><div id="tempo" hidden><span id="lineaInizio"></span><div id="linea"><span id="ritardo"></span><div class="binario"><i id="rivedibile"></i><i id="visto"></i><i id="vivo"></i><i id="punto"></i></div></div><span id="lineaFine"></span></div><div class="riga"><button class="cmd" id="ricomincia" hidden>Ricomincia</button><button class="cmd tondo" id="indietro30" hidden>&minus;30 s</button><button class="cmd" id="pausa" aria-label="Pausa"><svg class="i-pausa" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg><svg class="i-riprendi" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg></button><button class="cmd tondo" id="avanti30" hidden>+30 s</button><button class="cmd" id="diretta" hidden>In diretta</button></div></div><div id="err"><p id="errmsg"></p><p id="errcod"></p><div><button id="riprova">Riprova</button><button id="chiudi">Chiudi</button></div></div>`);
+let tocco=false;
+const nascosti=()=>M.classList.contains("nasc")&&!M.classList.contains("errore");
+M.addEventListener("pointerdown",()=>{tocco=nascosti()},true);
+M.addEventListener("click",e=>{if(tocco&&e.isTrusted){e.stopPropagation();e.preventDefault()} tocco=false},true);
+function inOnda(c){
+  const p=programma(c), ok=!!p;
+  $("#inonda").hidden=$("#avanza").hidden=!ok;
+  if(!ok)return;
+  const i=Date.parse(p.i), f=Date.parse(p.f);
+  $("#inonda").textContent=p.i.slice(11,16)+" – "+p.f.slice(11,16)+"  "+p.t;
+  $("#avanza i").style.width=Math.max(0,Math.min(100,(Date.now()-i)/(f-i)*100)).toFixed(1)+"%";
+}
+function mostraBarra(forza){
+  if(!forza&&!M.classList.contains("open"))return;
+  const nasc=M.classList.contains("nasc");
+  M.classList.remove("nasc"); clearTimeout(tb);
+  if(nasc&&window.aggiornaTempo)aggiornaTempo();
+  tb=setTimeout(()=>M.classList.add("nasc"),3000);
+}
+["mousemove","pointermove","pointerdown","click"].forEach(t=>M.addEventListener(t,()=>mostraBarra()));
+const CONFIG_HLS={backBufferLength:90,maxBufferLength:30,maxMaxBufferLength:30,maxBufferSize:30*1000*1000,startLevel:0,
+  xhrSetup:(x,u)=>x.addEventListener("progress",()=>{if(x.status>199&&x.status<300&&!/\.m3u8/.test(x.responseURL||u))dato=Date.now()})};
+
 const V=$("#video");
 let tok=0, hls=null, tm=[], rai=null, nrai=0;
 // cosa si sa del canale aperto (si azzera a ogni apertura, cambio e chiusura): avviato = ha mostrato la prima immagine,
@@ -309,9 +395,7 @@ document.addEventListener("click",e=>{
   });
   const chiudi0=chiudiLettore;
   chiudiLettore=function(){
+    if(sporco){sporco=false; rinvio=1}   // la casa si rifà dentro chiudiLettore, che sa tenere ferma la scheda guardata (un solo compenso dello scorrimento)
     chiudi0(); pa.hidden=true; clearTimeout(tpa);
-    if(!sporco)return;
-    sporco=false;
-    const g=$("#gruppi"), h=g.offsetHeight; disegna(); scrollBy(0,g.offsetHeight-h);   // il gruppo in cima non sposta ciò che si guardava
   };
 })();
