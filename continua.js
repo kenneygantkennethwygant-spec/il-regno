@@ -55,12 +55,12 @@ body.cr .top,body.cr #gruppi,body.cr #avviso,body.cr .nuova,body.cr .fondo:not(.
 @media(max-width:700px){.crtop{margin:8px 16px 0}}
 .crtop span{font-size:30px;font-weight:400;margin-top:-4px}
 @media(min-width:701px){#cron .crf{justify-content:flex-start}}
-.cancella{height:64px;padding:0 26px;border-radius:999px;border:1px solid rgba(255,48,72,.5);background:#11131a;font-size:15px;font-weight:700;color:#ff6b7c}
-#crconf,#uso{position:fixed;top:0;left:0;right:0;bottom:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(7,8,11,.9)}
+.cancella{height:64px;padding:0 26px;border-radius:999px;border:1px solid rgba(255,48,72,.5);background:#26121a;font-size:15px;font-weight:700;color:#ff6b7c}
+#crconf,#uso{position:fixed;top:0;left:0;right:0;bottom:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(20,7,12,.9)}
 #uso{z-index:60;background:var(--bg);overflow:auto}   /* pieno, non al 92% come sulla tavola: sotto non si deve leggere la pagina, e la chiavetta non la mescola */
-.sc{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:560px;padding:28px 32px;border-radius:20px;background:#11131a}
+.sc{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:560px;padding:28px 32px;border-radius:20px;background:#26121a}
 .sc p{width:100%;margin:0 0 4px;text-align:center;font-size:19px;font-weight:700}.sc p.n{font-size:15px;font-weight:400;color:var(--muted)}
-.sc button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#1b1e26;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.sc button{height:64px;min-width:160px;padding:0 28px;border-radius:999px;border:1px solid var(--line);background:#2e1820;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .sc .rosso{background:var(--red);border-color:var(--red);color:#fff}
 .gcol{display:flex;flex-direction:column;gap:6px;width:720px;max-width:100%;margin:auto}
 .gcol .gt{margin:0 0 10px;font-size:19px;font-weight:800}
