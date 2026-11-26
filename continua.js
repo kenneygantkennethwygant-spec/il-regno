@@ -1,4 +1,4 @@
-// Muflone, la pagina principale dentro l'app: la Cronologia, «Come si usa» e l'avviso di versione nuova. Ciò che stavi guardando
+// Muflone, la pagina principale dentro l'app: la sezione «Continua a guardare» (era la Cronologia: un posto solo, ultimi 15 titoli, mai i canali), «Come si usa» e l'avviso di versione nuova. Ciò che stavi guardando
 // (il palco con «Riprendi») lo disegna index.html nella prima schermata (palcoH, leggiStoria).
 // Si carica dopo la prima schermata (dopoPrimaSchermata) e solo se c'è window.Muflone: nel browser non si scarica.
 // Script normale, non un modulo: usa per nome ciò che sta nella pagina ($, esc, mem, scade, M, osservaLoghi, leggiStoria, disegna,
@@ -28,10 +28,17 @@ css.textContent=`
 .visto-l{position:absolute;left:0;bottom:0;height:3px;background:var(--red)}
 .cop{flex:0 0 auto;width:36px;height:54px;margin:0 11px;border-radius:4px;overflow:hidden;background:var(--plate)}
 .cop img{display:block;width:36px;height:54px;object-fit:cover}
-.cx{position:absolute;right:0;top:0;width:52px;height:64px;display:flex;align-items:center;justify-content:center;border:0;background:none;font-size:20px;color:var(--muted)}
-#cron .ct .ch{padding-right:44px}
-#cron .gruppi{padding:0 32px}#cron .gruppo h2{margin:0 0 8px;font-size:15px}
-@media(max-width:700px){#cron .gruppi{padding:0 16px}}
+.cx{position:absolute;right:0;top:0;width:52px;height:64px;display:flex;align-items:center;justify-content:center;border:0;border-radius:28px;background:none;font-size:20px;color:var(--muted)}
+#cron .gruppi{padding:0 32px}#cron .gruppo{margin-top:14px}#cron .gruppo h2{margin:0 0 10px;font-size:15px}#cron .gruppo h2 span{font-weight:400;color:var(--m3);margin-left:6px}
+#cron .griglia{grid-template-columns:repeat(2,minmax(0,1fr))}
+#cron .ch{height:88px;gap:14px;padding:0 56px 0 8px;content-visibility:visible}
+#cron .cx{height:88px;width:56px;display:flex}
+.th{position:relative;flex:none;width:128px;height:72px;border-radius:8px;overflow:hidden}
+.th img,.th .targa{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
+.sopra{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cron .info b{font-size:16px;font-weight:700;margin:2px 0 3px}
+#cron .crsotto{display:flex;gap:6px;align-items:center}#cron .crsotto>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){#cron .gruppi{padding:0 16px}#cron .griglia{grid-template-columns:1fr}#cron .ch{height:80px}#cron .cx{height:80px}.th{width:112px;height:63px}}
 .ct .plate{margin-right:0}
 .nuova{margin:12px var(--gut) 0;display:flex;align-items:center;gap:12px;padding:0 6px 0 18px;min-height:44px;border-radius:14px;border:1px solid rgba(255,48,72,.45);background:#160c10;font-size:16px;font-weight:600}
 .nuova.chiudi{min-height:64px;padding:0 0 0 18px;line-height:1.3}
@@ -41,8 +48,10 @@ css.textContent=`
 #cron{display:none}
 body.cr #cron{display:block}
 body.cr .top,body.cr #gruppi,body.cr #avviso,body.cr .nuova,body.cr .fondo:not(.crf){display:none}
-.crtop{height:64px;display:flex;align-items:center;gap:6px;padding:8px var(--gut) 0;border:0;background:none;font-size:19px;font-weight:800}
+.crtop{height:64px;display:flex;align-items:center;gap:6px;margin:8px 32px 0;padding:0 18px 0 6px;border-radius:32px;font-size:19px;font-weight:800}
+@media(max-width:700px){.crtop{margin:8px 16px 0}}
 .crtop span{font-size:30px;font-weight:400;margin-top:-4px}
+@media(min-width:701px){#cron .crf{justify-content:flex-start}}
 .cancella{height:64px;padding:0 26px;border-radius:999px;border:1px solid rgba(255,48,72,.5);background:#11131a;font-size:15px;font-weight:700;color:#ff6b7c}
 #crconf,#uso{position:fixed;top:0;left:0;right:0;bottom:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(7,8,11,.9)}
 #uso{z-index:60;background:var(--bg);overflow:auto}   /* pieno, non al 92% come sulla tavola: sotto non si deve leggere la pagina, e la chiavetta non la mescola */
@@ -103,56 +112,45 @@ function titolo(e){
   }catch(x){}
   return t;
 }
-// una scheda di film o puntata: copertina se Muflone la dà, altrimenti targa (dal 25/11 anche sulla TV), titolo, «42 min di 1 h 58 · sito», linea rossa di quanto è visto;
-// ✕ per toglierla, solo sul telefono
-// La copertina non entra nell'HTML: va in cop[] e la scheda la prende quando entra in vista (img.__u, caricaLogo di index.html).
+// una scheda della sezione: immagine (copertina, o la targa del suo mondo, o l'icona di One Pace), in piccolo la serie o il
+// mondo, in grande la puntata o il titolo (parti() di index.html, come il palco), sotto il minuto o «visto» e il sito,
+// la linea rossa di quanto è visto; ✕ per toglierla, sulla TV e sul telefono.
 // La voce si apre col solo gestore di questo file (data-v, non data-p che è del palco).
-const OPI='<span class="plate s1"><svg width="44" height="44" viewBox="0 0 48 48"><use href="#s-op"/></svg></span>';
-function voce(e,tf,visto,cop){
-  const s=sito(e.sito||hostDi(e.pagina)), p=visto?100:Math.max(0,Math.min(100,e.secondi/(e.durata||1)*100)), o=op(e);
-  const c=copertina(e.copertina)?(cop.push(e.copertina),
-    `<span class="cop" data-s="${esc(s.sg)}"${o?' data-o="1"':""}><img data-src="" alt="" width="36" height="54" decoding="async" referrerpolicy="no-referrer"></span>`):
-    o?OPI:placca(s.sg);   // One Pace senza copertina: la sua icona
-  const sotto=visto?"visto · "+s.nome:tempo(e)+(visto===false?" · "+s.nome:"");   // visto: true/false nella Cronologia, assente nella fila
+function voce(e,visto){
+  const s=sito(e.sito||hostDi(e.pagina)), m=mondo(e), q=parti(e,m.dove,m.c), p=visto?100:Math.max(0,Math.min(100,e.secondi/(e.durata||1)*100));
+  const sotto=(visto?"visto":tempo(e))+(sitiDi(m.c).length>1?" · "+s.nome:"");
   return `<div class="ct">`+
-    `<button class="ch cv" data-v="${esc(e.pagina)}">${c}<span class="info"><b>${esc(titolo(e))}</b><span class="crsotto">${esc(sotto)}</span></span><i class="visto-l" style="width:${p.toFixed(1)}%"></i></button>`+
-    (tf?`<button class="cx" data-x="${esc(e.pagina)}" aria-label="Togli">✕</button>`:"")+`</div>`;
+    `<button class="ch cv" data-v="${esc(e.pagina)}" aria-label="${esc((visto?"":"Riprendi ")+q.nome+", "+q.sopra+", "+sotto)}"><span class="th">${figura(e,m.c,"")}</span>`+
+    `<span class="info"><span class="sopra">${esc(q.sopra+(q.ver?" · "+q.ver:""))}</span><b>${esc(q.nome)}</b><span class="crsotto"><span>${esc(sotto)}</span></span></span><i class="visto-l" style="width:${p.toFixed(1)}%"></i></button>`+
+    `<button class="cx" data-x="${esc(e.pagina)}" aria-label="Togli ${esc(q.nome)}">✕</button></div>`;
 }
-// copertina che non arriva: resta la targa (One Pace: la sua icona)
-document.addEventListener("error",e=>{
-  const i=e.target, c=i.tagName==="IMG"&&i.parentNode;
-  if(c&&c.classList.contains("cop"))c.outerHTML=c.dataset.o?OPI:placca(c.dataset.s||"");
-},true);
 
 // dopo un cambio della storia (voce tolta, cronologia svuotata) la pagina ridisegna il palco e la Cronologia
 const rifai=()=>{leggiStoria(); disegna()};
 
-// ---------- Cronologia ----------
-const GIORNO=864e5;
-function gruppoDi(q){
-  const o=new Date(); o.setHours(0,0,0,0);
-  const d=o.getTime()-q;
-  return d<=0?"Oggi":d<=GIORNO?"Ieri":d<=6*GIORNO?"Questa settimana":"Prima";
-}
+// ---------- «Continua a guardare» ----------
+// Gli ultimi 15 titoli (cronologia() li dà tutti, fino a 100): prima quelli a metà col loro minuto, poi quelli finiti.
+// I canali non ci sono mai: la storia di Muflone ha solo video che finiscono (contratto C2).
+const QUANTI=15;
 function cronologia(){
-  const l=lista("cronologia").sort((a,b)=>b.quando-a.quando), g=[], cop=[];
-  l.forEach(e=>{const n=gruppoDi(e.quando); let x=g.find(y=>y[0]===n); if(!x)g.push(x=[n,[]]); x[1].push(e)});
-  $("#crl").innerHTML=g.map(x=>`<section class="gruppo"><h2>${x[0]}</h2><div class="griglia">${x[1].map(e=>voce(e,true,e.visto===true,cop)).join("")}</div></section>`).join("");
-  $("#crl").querySelectorAll(".cop img").forEach((i,n)=>{i.__u=cop[n]});
+  const l=lista("cronologia").sort((a,b)=>b.quando-a.quando).slice(0,QUANTI), corso=l.filter(e=>e.visto!==true), visti=l.filter(e=>e.visto===true);
+  const gr=(t,x)=>x.length?`<section class="gruppo"><h2>${t}<span>${x.length}</span></h2><div class="griglia">${x.map(e=>voce(e,e.visto===true)).join("")}</div></section>`:"";
+  COPS={};
+  $("#crl").innerHTML=gr("A metà",corso)+gr("Già visti",visti);
+  $("#crl").querySelectorAll("img[data-c]").forEach(i=>{const u=COPS[i.dataset.c]; i.removeAttribute("data-c"); if(u)i.src=u});   // loading=lazy: il WebView le chiede quando entrano in vista
   $(".crf").hidden=!l.length;
-  osservaLoghi();   // le copertine delle voci si chiedono quando entrano in vista (come i loghi)
   return l.length;
 }
 function apriCron(){
   if(strato||!document.getElementById("cron"))return;
   const y=scrollY;
   if(!cronologia())return;
-  su(()=>{document.body.classList.remove("cr"); $("#crconf").hidden=$("#scelta").hidden=true; $("#crl").innerHTML=""; scrollTo(0,y); rifai(); const c=$("#crlink"); if(c&&!c.hidden)c.focus({preventScroll:true})});   // prima della voce: il browser ricorda dov'eri; la lista chiusa si libera
+  su(()=>{document.body.classList.remove("cr"); $("#crconf").hidden=$("#scelta").hidden=true; $("#crl").innerHTML=""; scrollTo(0,y); rifai(); const c=$("#tutti")||$("#crlink"); if(c&&!c.hidden)c.focus({preventScroll:true})});   // prima della voce: il browser ricorda dov'eri; la lista chiusa si libera
   document.body.classList.add("cr"); scrollTo(0,0);
   const f=$("#crl button"); if(f)f.focus({preventScroll:true});   // le frecce partono dalla prima voce
 }
 document.body.insertAdjacentHTML("beforeend",
-  `<section id="cron"><button class="crtop" id="crtorna"><span>‹</span> Cronologia</button><div class="gruppi" id="crl"></div>`+
+  `<section id="cron"><button class="crtop" id="crtorna"><span>‹</span> Continua a guardare</button><div class="gruppi" id="crl"></div>`+
   `<div class="fondo crf" style="padding-top:20px"><button class="cancella" id="crvuota">Cancella tutto</button></div></section>`+
   `<div id="crconf" hidden role="dialog" aria-label="Cancellare la cronologia"><div class="sc" id="scelta" hidden><p>Cancellare tutta la cronologia?</p><button class="rosso" id="crsi">Sì, cancella</button><button id="crno">No</button></div></div>`);
 // la domanda si chiama #scelta perché le frecce di Muflone (pagina.js) restano dentro una #scelta aperta; si parte da «No»,
@@ -224,7 +222,7 @@ document.addEventListener("click",e=>{
   if(b.classList.contains("cv"))return giu0(b.dataset.v);
   if(b.dataset.x)return togli(b.dataset.x);
   switch(b.id){
-    case "crlink": return apriCron();
+    case "crlink": case "tutti": return apriCron();
     case "crtorna": return giu();
     case "crvuota": return conf(1);
     case "crno": return conf(0);
@@ -237,8 +235,9 @@ document.addEventListener("click",e=>{
 // un clic su una scheda riapre la pagina del film: il minuto lo ritrova Muflone (contratto K4); dalla Cronologia prima si toglie la sua voce
 const giu0=u=>htt(u)&&(strato?giu(u):location.href=u);
 function togli(x){
+  const i=[...document.querySelectorAll("#crl .cv")].findIndex(b=>b.dataset.v===x);
   try{B.togliDaCronologia(x)}catch(e){}
-  if(document.body.classList.contains("cr")){if(!cronologia())giu()}
+  if(document.body.classList.contains("cr")){if(!cronologia())return giu(); const n=document.querySelectorAll("#crl .cv"), f=n[Math.min(Math.max(i,0),n.length-1)]||$("#crvuota"); if(f)f.focus({preventScroll:true})}
 }
 
 // ---------- avvio ----------
