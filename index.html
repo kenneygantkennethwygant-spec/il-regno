@@ -70,13 +70,13 @@ body.cerco #palco,body.cerco #porte,body.cerco #ora,body.cerco #crlink{display:n
 .porte{display:grid;gap:12px;height:150px;margin:16px 32px 0}
 .porta{position:relative;isolation:isolate;overflow:hidden;border-radius:16px;padding:14px 14px 12px;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;background:var(--s1)}
 .sf{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:-1}
-.porta:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(8,9,11,.94),rgba(8,9,11,.72) 30%,rgba(8,9,11,0) 62%)}
-button.porta:focus-visible:after{background:linear-gradient(0deg,rgba(8,9,11,.9),rgba(8,9,11,.4) 32%,rgba(8,9,11,0) 55%)}
-.porta.larga:after{background:linear-gradient(0deg,rgba(8,9,11,.92),rgba(8,9,11,.74) 48%,rgba(8,9,11,.12))}
+.porta:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(8,9,11,.84),rgba(8,9,11,.62) 32px,rgba(8,9,11,0) 56px)}
+button.porta:focus-visible:after{background:linear-gradient(0deg,rgba(8,9,11,.8),rgba(8,9,11,.52) 32px,rgba(8,9,11,0) 52px)}
+.porta.larga:after{background:linear-gradient(0deg,rgba(8,9,11,.6),rgba(8,9,11,.3) 55%,rgba(8,9,11,.1))}
 .porta.ko:after{box-shadow:inset 0 0 0 2px rgba(255,197,49,.7)}.porta.ko .sf{opacity:.45}
 .piede{display:flex;align-items:flex-end;justify-content:space-between;gap:6px}
 .pn{display:block;font-size:16px;font-weight:600}
-.apri{width:18px;height:18px;flex:none;color:var(--muted);stroke-width:5;margin-bottom:2px}
+.apri{width:14px;height:14px;flex:none;color:var(--muted);stroke-width:4;margin-bottom:4px}
 .punto{display:none;position:absolute;top:14px;right:18px;width:8px;height:8px;border-radius:4px;background:var(--verde);box-shadow:0 0 0 3px var(--anello)}
 .ok>.punto,.ko>.punto{display:block}
 .ko>.punto{display:none}
@@ -90,7 +90,7 @@ button.porta:focus-visible:after{background:linear-gradient(0deg,rgba(8,9,11,.9)
 .sito{position:relative;height:64px;border-radius:12px;background:var(--sito);font-weight:500;font-size:14px;line-height:1.18;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 4px}
 .sito:focus-visible{background:var(--s3)}
 .sito .punto{top:7px;right:8px;width:7px;height:7px}
-.sito .apri{position:absolute;right:6px;bottom:6px;width:13px;height:13px;margin:0}
+.sito .apri{position:absolute;right:8px;bottom:8px;width:11px;height:11px;margin:0;stroke-width:5}
 .ko.sito .giu{display:block;white-space:normal;line-height:1.15}
 .sito .giu svg{display:inline-block;vertical-align:-2px;margin-right:3px}
 button.porta:hover,.sito:hover,.ch:hover,.bott:hover,.tasto:hover,.occhiello:hover{box-shadow:0 0 0 2px rgba(255,48,72,.6)}
@@ -218,7 +218,7 @@ body.pl>:not(#modal){visibility:hidden}body.pl::before{display:none}
 <symbol id="s-play" viewBox="0 0 48 48"><path fill="currentColor" stroke="none" d="M13 6.5L41 24L13 41.5z"/></symbol>
 <symbol id="s-capo" viewBox="0 0 48 48"><path d="M13.5 14A16 16 0 1 1 8.4 26"/><path d="M12 4.5V15h10.5"/></symbol>
 <symbol id="s-su" viewBox="0 0 48 48"><path d="M10 31L24 17L38 31"/></symbol>
-<symbol id="s-apri" viewBox="0 0 48 48"><path d="M14 34L34 14M18 13h17v17"/></symbol>
+<symbol id="s-apri" viewBox="0 0 48 48"><path d="M15 33L33 15M19 15h14v14"/></symbol>
 <symbol id="s-avviso" viewBox="0 0 48 48"><path d="M24 7L44 41H4z"/><path d="M24 20v9M24 35v.5"/></symbol>
 <symbol id="s-op" viewBox="0 0 48 48"><path d="M7 43L41 33M7 33l34 10" stroke="#f4f1e8" stroke-width="4" stroke-linecap="round"/><g stroke="none"><path d="M13 31a11 11 0 1 1 22 0v4h-4v5H17v-5h-4z" fill="#f4f1e8"/><circle cx="19.5" cy="31" r="3" fill="#15161c"/><circle cx="28.5" cy="31" r="3" fill="#15161c"/><ellipse cx="24" cy="20" rx="21" ry="4.5" fill="#e9c46a"/><path d="M13 19q0-13 11-13t11 13z" fill="#e9c46a"/><path d="M13.3 15h21.4v3.4H13.3z" fill="#d62828"/></g></symbol>
 <symbol id="s-m" viewBox="19 27 70 55"><path d="M53.6,52.7 53.2,49.2 52.5,45.8 51.5,42.6 49.4,38.1 47.1,34.9 44.8,32.6 42.9,31.2 39.4,29.5 37,28.9 34.5,28.6 31.6,28.9 29,29.7 27.2,30.6 24.7,32.6 23.1,34.6 22.2,36.2 21.2,39.2 20.9,41 20.9,43.5 21.3,46.1 22.1,48.5 23.3,50.7 24,51.7 26.1,53.7 28.1,54.9 30.1,55.7 32.8,56.1 35.5,55.7 36.6,55.3 38.1,54.4 39.4,53.2 40.5,51.5 41,49.6 41,48.2 40.7,47.1 39.7,45.3 37.6,43.9 35.5,43.7 33.8,44.2 33.3,44.7 33.2,46 33.9,47.1 34.6,47.3 36.2,47.2 36.7,47.6 36.9,49 36,50.4 34.3,51.2 32.7,51.3 31,50.8 29.1,49.5 27.6,47.5 27.1,46.5 26.6,44.5 26.6,42.1 27,40.2 28.2,38 29.8,36.4 31,35.8 33.1,35.3 34.7,35.3 36.1,35.6 37.9,36.3 39.8,37.6 41.2,39 43,41.7 44.1,44.4 45,47.6 45.6,53.3Z"/><path d="M54.4,52.7 54.8,49.2 55.5,45.8 56.5,42.6 58.6,38.1 60.9,34.9 63.2,32.6 65.8,30.8 68.7,29.5 71,28.9 73.5,28.6 76.4,28.9 79,29.7 80.8,30.6 83.3,32.6 85.8,36.2 86.8,39.2 87.1,41 87,44.8 86.1,48 85,50.2 84,51.7 81.9,53.7 80,54.9 77.9,55.7 75.2,56.1 72.5,55.7 71.4,55.3 69.9,54.4 68.6,53.2 67.5,51.5 67,49.6 67,48.2 67.3,47.1 68.3,45.3 70.3,43.9 72.5,43.7 74.2,44.2 74.7,44.7 74.8,46 74.1,47.1 73.4,47.3 71.8,47.2 71.3,47.6 71.1,48.9 72,50.4 73.7,51.2 75.3,51.3 77,50.8 78.7,49.7 80.4,47.5 80.9,46.5 81.4,44.5 81.5,42.9 81,40.2 79.8,38 78.2,36.4 77,35.8 74.9,35.3 73.3,35.3 71.9,35.6 70.1,36.3 68.2,37.6 66.8,39 65,41.7 63.9,44.4 63,47.6 62.4,53.3Z"/><path d="M35,56 C36.4,53.4 38.2,51.6 40,51.4 Q42.6,51.2 42.6,54.4 L42.6,80 L35,80 Z"/><path d="M73,56 C71.6,53.4 69.8,51.6 68,51.4 Q65.4,51.2 65.4,54.4 L65.4,80 L73,80 Z"/><path d="M45.6,48.5 Q54,44 62.4,48.5 L62.4,53 C62.4,62 60.9,70.5 58.6,77 C57.7,79.8 50.3,79.8 49.4,77 C47.1,70.5 45.6,62 45.6,53 Z M47.9,57.4 a2,2.2 0 1,0 4,0 a2,2.2 0 1,0 -4,0 Z M56.1,57.4 a2,2.2 0 1,0 4,0 a2,2.2 0 1,0 -4,0 Z " fill-rule="evenodd"/></symbol>

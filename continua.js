@@ -142,7 +142,7 @@ function cronologia(){
   const corso=t.filter(e=>e.visto!==true).slice(0,QUANTI), visti=t.filter(e=>e.visto===true).slice(0,QUANTI-corso.length), l=[...corso,...visti];
   const gr=(t,x)=>x.length?`<section class="gruppo"><h2>${t}<span>${x.length}</span></h2><div class="griglia">${x.map(e=>voce(e,e.visto===true)).join("")}</div></section>`:"";
   COPS={}; NCOP=0;
-  $("#crl").innerHTML=gr("A metà",corso)+gr("Già visti",visti);
+  $("#crl").innerHTML=gr("Da finire",corso)+gr("Già visti",visti);
   // le copertine si chiedono quando la riga entra nello schermo (a 200 px), come i loghi: ogni immagine ha il suo indirizzo in __u
   $("#crl").querySelectorAll("img[data-c]").forEach(i=>{const u=COPS[i.dataset.c]; i.removeAttribute("data-c"); if(u){i.__u=u; i.dataset.src="1"}});
   osservaLoghi();
